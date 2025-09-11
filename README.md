@@ -1,2 +1,2 @@
 # QwaveMPS
-Python examples of waveguide QED systems solved with Matrix Product States
+Python package with waveguide QED examples of systems solved with Matrix Product States
