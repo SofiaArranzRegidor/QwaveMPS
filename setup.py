@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
+import setuptools
 
-setup(
+setuptools.setup(
     name="QwaveMPS",
     version="1.0.0", 
     author="Sofia Arranz Regidor",
@@ -16,8 +16,8 @@ setup(
         "Topic :: Scientific/Engineering :: Visualization"
     ],
     license="GNU General Public License v3 (GPLv3)",
-    packages=find_packages(),        # Automatically find packages in your repo
-    install_requires=[               # Optional: dependencies
+    packages=setuptools.find_packages(where="."),    
+    install_requires=[               
         "requests", 
     ],
     long_description=open("README.md").read(),
