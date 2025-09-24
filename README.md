@@ -7,7 +7,15 @@ Add a small description of the main things that this repo does.
 
 ## Installation
 
-A brief explanation of installing the package on the computer
+This package can be installed using the following command:
+```
+pip install QwaveMPS
+```
+(for now I am cloning the repository, going to the root folder, and installing it with 
+```
+pip install .
+```
+ I need to check that the other one works).
 
 ## Documentation and usage
 
