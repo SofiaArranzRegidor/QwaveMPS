@@ -17,14 +17,11 @@ setuptools.setup(
     ],
     license="GNU General Public License v3 (GPLv3)",
     packages=setuptools.find_packages(where="."),    
-    install_requires=[               
-        "requests", 
-    ],
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     python_requires=">=3.7",
     install_requires=[
         'numpy',
         'scipy',
-        'matplotlib'],
+        'matplotlib']
 )
