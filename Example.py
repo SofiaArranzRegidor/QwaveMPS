@@ -15,7 +15,7 @@ import QwaveMPS as QM
 """Choose the time step and end time"""
 
 Deltat = 0.05
-tmax = 10
+tmax = 8
 tlist=np.arange(0,tmax+Deltat,Deltat)
 
 """ Choose the initial state and coupling"""
