@@ -11,11 +11,11 @@ This package can be installed using the following command:
 ```
 pip install QwaveMPS
 ```
-(for now I am cloning the repository, going to the root folder, and installing it with 
+For now I am cloning the repository, going to the root folder, and installing it with 
 ```
 pip install .
 ```
- I need to check that the other one works).
+To be able to use the first option, we need to first publish it in PyPI. 
 
 ## Documentation and usage
 
