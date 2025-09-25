@@ -49,8 +49,8 @@ class basic_operators:
         a=np.kron(np.eye(2),np.sqrt(Deltat)*self.sigmaminus())       
         return a
     
-    def e1(d_sys=2):
-        exc = np.zeros((2,2),dtype=complex)
+    def e(self,d_sys=2):
+        exc = np.zeros((d_sys,d_sys),dtype=complex)
         exc[1,1]=1.      
         return exc
 
@@ -58,6 +58,11 @@ class basic_operators:
         """Time evolution operator. H is the Hamiltonian """
         sol= expm(-Hm.reshape(d_sys*d_t*d_t,d_sys*d_t*d_t))
         return sol.reshape(d_sys,d_t*d_t,d_sys,d_t*d_t)
+
+    def U_NM(self,Hm,d_sys=2,d_t=2):
+        """Time evolution operator with feedback. H is the Hamiltonian """
+        sol= expm(-Hm.reshape(d_sys*d_t*d_t*d_t*d_t,d_sys*d_t*d_t*d_t*d_t))
+        return sol.reshape(d_sys,d_t*d_t,d_t*d_t,d_sys,d_t*d_t,d_t*d_t)
 
     def swap(self,d_sys=2,d_t=2):
         d_t=d_t*d_t
