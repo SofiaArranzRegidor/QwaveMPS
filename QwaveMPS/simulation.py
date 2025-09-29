@@ -113,10 +113,9 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
     taubins.append(i_n0)
     
     
-    N=int(tmax/Deltat)
+    N=int(round(tmax/Deltat,0))
     t_k=0
     t_0=0
-    i_s=i_s0
     Ham=H
     evO=op.U_NM(Ham,d_sys)
     l=int(round(tau/Deltat,0)) #time steps between system and feedback
@@ -125,12 +124,12 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
         nbins.append(i_n0)
         t_0+=Deltat
     
-    i_stemp=i_s      
-    
-    for k in range(N):  
-        
+    i_stemp=i_s0      
+
+    for k in range(N):   
+        #swap of the feedback until being next to the system
         i_tau= nbins[k] #starting from the feedback bin
-        for i in range(k,k+l-1): #swap of the feedback until being next to the system
+        for i in range(k,k+l-1): 
             i_n=nbins[i+1] 
             swaps=ncon([i_tau,i_n,op.swap_t(d_t*d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
             swapsb=swaps.reshape(d_t*d_t*swaps.shape[0],d_t*d_t*swaps.shape[3]) 
@@ -167,14 +166,12 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
         i_stemp = u[:,range(chi2)].reshape(chi1,d_sys,chi2) #left normalized system bin      
         i_n = vt[range(chi2),:].reshape(chi2,d_t*d_t,phi1.shape[4]) #right normalized time bin
         stemp = sm[range(chi2)]/norm(sm[range(chi2)]) #Schmidt coeff 
-        # schmidt_tau.append(stemp)
         i_s = ncon([i_stemp,np.diag(stemp)],[[-1,-2,1],[1,-3]])  #the OC is in i_s              
         sbins.append(i_s) #the system bin is computed here as it is the moment it is the OC
         
         #swap system and i_n
         phi2=ncon([i_s,i_n,op.swap(d_sys,d_t)],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
-        # tbinsbins.append(phi2)
-        phi2b=phi2.reshape(d_sys*phi2.shape[0],d_t*d_t*phi2.shape[3])
+        phi2b=phi2.reshape(d_sys*phi2.shape[0],d_t*d_t*phi2.shape[-1])
         u,sm,vt=svd(phi2b,full_matrices=False) #SVD
         chi=min(bond,len(sm))    #Bond legth
         stemp = sm[range(chi)]/norm(sm[range(chi)]) #Schmidt coeff 
@@ -211,8 +208,10 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
             i_n2 = vt[range(chi),:].reshape(chi,d_t*d_t,swaps.shape[3]) #right normalized t bin
             stemp = sm[range(chi)]/norm(sm[range(chi)])  #Schmidt coeff 
             i_tau = ncon([i_t,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin                     
-            nbins[i]=i_n2    #update nbins
-            
+            nbins[i]=i_n2    #update nbins            
+        if k<(N-1):         
+            nbins[k+1] = ncon([np.diag(stemp),i_n2],[[-1,1],[1,-2,-3]]) #new tau bin for the next time step
+
     return sbins,tbins,taubins#,schmidt
 
 
@@ -323,8 +322,8 @@ def pop_dynamics_2TLS(sbins,tbins,taubins,tau,Deltat):
             in_L[i] = temp_inL
             total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
         if i>l:
-            temp_inR=np.sum(tbinsR[i-l:i]) #Because they seem to be one timestep off
-            temp_inL=np.sum(tbinsL[i-l:i])
+            temp_inR=np.sum(tbinsR[i-l+1:i+1]) #Because they seem to be one timestep off
+            temp_inL=np.sum(tbinsL[i-l+1:i+1])
             total[i]  = pop1[i] + pop2[i]  + temp_inR + temp_inL + trans[i] + ref[i]
             in_R[i] = temp_inR
             in_L[i] = temp_inL

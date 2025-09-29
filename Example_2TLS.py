@@ -20,7 +20,7 @@ tlist=np.arange(0,tmax+Deltat,Deltat)
 
 """Choose the delay time"""
 
-tau=0.5
+tau=2
 
 """ Choose the initial state and coupling"""
 
@@ -68,7 +68,7 @@ plt.plot(tlist,np.real(tbinsR)/Deltat,linewidth = 2,color = 'r',linestyle='--',l
 plt.legend()
 plt.xlabel('Time, t$\gamma$')
 # plt.ylabel('TLS Population')
-# plt.ylim([0.,1.05])
+plt.ylim([0.,1.05])
 # plt.xlim([0.,10.])
 plt.grid()
 plt.tight_layout()
