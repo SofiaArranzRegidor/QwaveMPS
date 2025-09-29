@@ -15,12 +15,12 @@ import QwaveMPS as QM
 """Choose the time step and end time"""
 
 Deltat = 0.02
-tmax = 8
+tmax = 5
 tlist=np.arange(0,tmax+Deltat,Deltat)
 
 """Choose the delay time"""
 
-tau=2
+tau=0.5
 
 """ Choose the initial state and coupling"""
 
@@ -32,7 +32,7 @@ i_n0=QM.initial_state.i_ng()
 gammaL1,gammaR1=QM.coupling()
 gammaL2,gammaR2=QM.coupling()
 
-phase=0
+phase=np.pi
 
 """Choose the Hamiltonian"""
 

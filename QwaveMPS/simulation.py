@@ -20,6 +20,34 @@ obs=observables()
 
 #%%
 
+def svd_tensors(tensor, left_shape, right_shape, bond,d_1,d_2):
+    """
+    Application of the SVD and reshaping of the tensors
+
+    Parameters
+    ----------
+    tensor : tensor to decompose
+    left_shape : left reshaping for decomposition
+    right_shape : right resaping for decomposition
+    bond : max. bond dimension
+    d_1 : physical dimension of first tensor
+    d_2 : physical dimension of second tensor
+
+    Returns
+    -------
+    u : left normalized tensor
+    s_norm : smichdt coefficients normalized 
+    vt : transposed right normalized tensor
+    """
+    u, s, vt = svd(tensor.reshape(left_shape, right_shape), full_matrices=False)
+    chi = min(bond, len(s))
+    # epsilon = 1e-12 #toa void dividing by zero
+    s_norm = s[:chi]# / (norm(s[:chi])+ epsilon)
+    u = u[:, :chi].reshape(tensor.shape[0],d_1,chi)
+    vt = vt[:chi, :].reshape(chi,d_2,tensor.shape[-1])
+    return u, s_norm, vt
+
+
 def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys=2,d_t=2):
     """ 
     Time evolution of the system without delay times
@@ -52,31 +80,16 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys=2,d_t=2):
     evO=op.U(Ham,d_sys)
            
     for k in range(1,N+1):      
-        phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, future time bin + U operator contraction  
-        phi1b=phi1.reshape(d_sys*phi1.shape[0],d_t*d_t*phi1.shape[-1]) #reshape for using SVD function
-    
-        u,sm,vt=svd(phi1b,full_matrices=False) #SVD
-        chi=min(bond,len(sm)) #bond length
-        i_s = u[:,range(chi)].reshape(phi1.shape[0],d_sys,chi) #left normalized system bin
-        i_n = vt[range(chi),:].reshape(chi,d_t*d_t,phi1.shape[-1]) # right normalized time bin
-        stemp = sm[range(chi)]/norm(sm[range(chi)]) #Schmidt coeff
-        i_s = ncon([i_s,np.diag(stemp)],[[-1,-2,1],[1,-3],]) #OC system bin
+        phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + U operator contraction  
+        i_s,stemp,i_n=svd_tensors(phi1,d_sys*phi1.shape[0],d_t*d_t*phi1.shape[-1], bond,d_sys,d_t*d_t)
+        i_s=i_s*stemp[None,None,:] #OC system bin
         sbins.append(i_s)
-        tbins.append(ncon([np.diag(stemp),i_n],[[-1,1],[1,-2,-3],]))
-        
-            
+        tbins.append(stemp[:,None,None]*i_n)
+                    
         phi2=ncon([i_s,i_n,op.swap()],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #system bin, time bin + swap contraction
-        phi2b=phi2.reshape(d_t*d_t*phi2.shape[0],d_sys*phi2.shape[-1]) #reshape for using SVD function
-    
-        u,sm,vt=svd(phi2b,full_matrices=False) #SVD
-        chi=min(bond,len(sm))     #bond length
-        stemp = sm[range(chi)]/norm(sm[range(chi)]) #Schmidt coeff
-        i_n = u[:,range(chi)].reshape(phi2.shape[0],d_t*d_t,chi) #left normalized time bins
-        i_st = vt[range(chi),:].reshape(chi,d_sys,phi2.shape[-1]) #right normalized system bin    
-        i_s = ncon([np.diag(stemp),i_st],[[-1,1],[1,-3,-4]]) #OC system bin
-            
+        i_n,stemp,i_st=svd_tensors(phi2,d_t*d_t*phi2.shape[0],d_sys*phi2.shape[-1], bond,d_t*d_t,d_sys)
+        i_s=stemp[:,None,None]*i_st   #OC system bin
         t_k += Deltat
-    
     return sbins,tbins
 
 
@@ -143,54 +156,28 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
             
         #Make the system bin the OC
         i_1=ncon([i_tau,i_stemp],[[-1,-2,1],[1,-3,-4]]) #feedback-system contraction
-        i_1b=i_1.reshape(i_1.shape[0]*d_t*d_t,i_1.shape[3]*d_sys)
-        u,sm,vt=svd(i_1b,full_matrices=False) #SVD
-        chi=min(bond,len(sm))  #bond length
-        stemp = sm[range(chi)]/norm(sm[range(chi)]) #Schmidt coeff
-        i_t = u[:,range(chi)].reshape(i_1.shape[0],d_t*d_t,chi) #left normalized tau bin
-        i_stemp = vt[range(chi),:].reshape(chi,d_sys,i_1.shape[3]) #right normalized system bin
-        i_s = ncon([np.diag(stemp),i_stemp],[[-1,1],[1,-3,-4]]) #OC system bin
+        i_t,stemp,i_stemp=svd_tensors(i_1,d_t*d_t*i_1.shape[0],d_sys*i_1.shape[-1], bond,d_t*d_t,d_sys)
+        i_s=stemp[:,None,None]*i_stemp #OC system bin
         
         #now contract the 3 bins and apply U, followed by 2 svd to recover the 3 bins                 
         phi1=ncon([i_t,i_s,i_n0,evO],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + U operator contraction
-        phi1b=phi1.reshape(d_t*d_t*phi1.shape[0],d_sys*d_t*d_t*phi1.shape[4]) #d*d in the second bc I do the double svd with the right part
-        u,sm,vt=svd(phi1b,full_matrices=False) #SVD       
-        chi1=min(bond,len(sm))  #Bond legth
-        i_t = u[:,range(chi1)].reshape(phi1.shape[0],d_t*d_t,chi1) #left normalized feedback bin    
-        i_2 = vt[range(chi1),:].reshape(chi1,d_sys,d_t*d_t,phi1.shape[4]) #right normalized 2site bin
-        stemp = sm[range(chi1)]/norm(sm[range(chi1)])   #Schmidt coeff 
-        
-        i_2 = ncon([np.diag(stemp),i_2],[[-1,1],[1,-2,-3,-4]]).reshape(d_sys*chi1,d_t*d_t*phi1.shape[4]) #OC 2site bin
-        u,sm,vt=svd(i_2,full_matrices=False) #SVD
-        chi2=min(bond,len(sm)) #Bond length
-        i_stemp = u[:,range(chi2)].reshape(chi1,d_sys,chi2) #left normalized system bin      
-        i_n = vt[range(chi2),:].reshape(chi2,d_t*d_t,phi1.shape[4]) #right normalized time bin
-        stemp = sm[range(chi2)]/norm(sm[range(chi2)]) #Schmidt coeff 
-        i_s = ncon([i_stemp,np.diag(stemp)],[[-1,-2,1],[1,-3]])  #the OC is in i_s              
-        sbins.append(i_s) #the system bin is computed here as it is the moment it is the OC
+        i_t,stemp,i_2=svd_tensors(phi1,d_t*d_t*phi1.shape[0],d_t*d_t*d_sys*phi1.shape[-1], bond,d_t*d_t,d_t*d_t*d_sys)
+        i_2=stemp[:,None,None]*i_2
+        i_stemp,stemp,i_n=svd_tensors(i_2,d_sys*i_2.shape[0],d_t*d_t*i_2.shape[-1], bond,d_sys,d_t*d_t)
+        i_s = i_stemp*stemp[None,None,:]
+        sbins.append(i_s) 
         
         #swap system and i_n
         phi2=ncon([i_s,i_n,op.swap(d_sys,d_t)],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
-        phi2b=phi2.reshape(d_sys*phi2.shape[0],d_t*d_t*phi2.shape[-1])
-        u,sm,vt=svd(phi2b,full_matrices=False) #SVD
-        chi=min(bond,len(sm))    #Bond legth
-        stemp = sm[range(chi)]/norm(sm[range(chi)]) #Schmidt coeff 
+        i_n,stemp,i_stemp=svd_tensors(phi2,d_sys*phi2.shape[0],d_t*d_t*phi2.shape[-1], bond,d_sys,d_t*d_t)   
+        i_n=i_n*stemp[None,None,:] #the OC in time bin     
         
-        i_n = u[:,range(chi)].reshape(phi2.shape[0],d_t*d_t,chi)  #left normalized time bin
-        i_stemp = vt[range(chi),:].reshape(chi,d_sys,phi2.shape[3]) #right normalized system bin 
-        i_n = ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #the OC in time bin     
-        cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) #feedback bin, time bin contraction
-        contb=cont.reshape(cont.shape[0]*d_t*d_t,cont.shape[3]*d_t*d_t)
-        u,sm,vt=svd(contb,full_matrices=False) #SVD
-        chi=min(bond,len(sm))   #Bond legth
-        stemp = sm[range(chi)]/norm(sm[range(chi)])  #Schmidt coeff 
+        cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) 
+        i_t,stemp,i_n=svd_tensors(cont,d_t*d_t*cont.shape[0],d_t*d_t*cont.shape[-1], bond,d_t*d_t,d_t*d_t)   
+        i_tau = i_t*stemp[None,None,:] #OC in feedback bin     
+        tbins.append(stemp[:,None,None]*i_n)
         
-        
-        i_t = u[:,range(chi)].reshape(cont.shape[0],d_t*d_t,chi) #left normalized feedback bin 
-        i_n = vt[range(chi),:].reshape(chi,d_t*d_t,cont.shape[3]) #right normalized time bin
-        i_tau = ncon([i_t,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC in feedback bin     
-        tbins.append(ncon([np.diag(stemp),i_n],[[-1,1],[1,-2,-3],]))
-        
+        #feedback bin, time bin contraction
         taubins.append(i_tau) 
         nbins[k+l-1]=i_tau #update of the feedback bin
         nbins.append(i_n)         
@@ -201,17 +188,11 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
         for i in range(k+l-1,k,-1): #goes from the last time bin to first one
             i_n=nbins[i-1] #time bin
             swaps=ncon([i_n,i_tau,op.swap_t(d_t*d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
-            swapsb=swaps.reshape(d_t*d_t*swaps.shape[0],d_t*d_t*chi)
-            u,sm,vt=svd(swapsb,full_matrices=False) #SVD
-            chi=min(bond,len(sm)) #Bond legth
-            i_t = u[:,range(chi)].reshape(swaps.shape[0],d_t*d_t,chi) #left normalized past tau bin
-            i_n2 = vt[range(chi),:].reshape(chi,d_t*d_t,swaps.shape[3]) #right normalized t bin
-            stemp = sm[range(chi)]/norm(sm[range(chi)])  #Schmidt coeff 
-            i_tau = ncon([i_t,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin                     
+            i_t,stemp,i_n2=svd_tensors(swaps,d_t*d_t*swaps.shape[0],d_t*d_t*swaps.shape[-1], bond,d_t*d_t,d_t*d_t)   
+            i_tau = i_t*stemp[None,None,:] #OC tau bin         
             nbins[i]=i_n2    #update nbins            
         if k<(N-1):         
-            nbins[k+1] = ncon([np.diag(stemp),i_n2],[[-1,1],[1,-2,-3]]) #new tau bin for the next time step
-
+            nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
     return sbins,tbins,taubins#,schmidt
 
 
@@ -236,25 +217,15 @@ def pop_dynamics(sbins,tbins,Deltat):
     to total # excitations.
 
     """
-    N=len(sbins)
-    pop=np.zeros(N,dtype=complex)
-    tbinsR=np.zeros(N,dtype=complex)
-    tbinsL=np.zeros(N,dtype=complex)
-    trans=np.zeros(N,dtype=complex)
-    ref=np.zeros(N,dtype=complex)
-    total=np.zeros(N,dtype=complex)
-    temp_trans=0
-    temp_ref=0
-    
-    for i in range(N):
-        pop[i]=op.expectation(sbins[i], obs.TLS_pop())
-        tbinsR[i]=np.real(op.expectation(tbins[i], obs.a_R_pop(Deltat)))
-        tbinsL[i]=np.real(op.expectation(tbins[i], obs.a_L_pop(Deltat)))
-        temp_trans+=tbinsR[i]
-        trans[i] = temp_trans
-        temp_ref+= tbinsL[i]
-        ref[i] = temp_ref
-        total[i] = temp_trans + temp_ref + pop[i]
+    pop=np.array([op.expectation(s, obs.TLS_pop()) for s in sbins])
+    tbinsR=np.array([op.expectation(t, obs.a_R_pop(Deltat)) for t in tbins])
+    tbinsL=np.array([op.expectation(t, obs.a_L_pop(Deltat)) for t in tbins])
+   
+    # Cumulative sums
+    trans = np.cumsum(tbinsR)
+    ref = np.cumsum(tbinsL)
+    total = trans + ref + pop
+
         
     return pop,tbinsR,tbinsL,trans,ref,total
 
@@ -322,7 +293,7 @@ def pop_dynamics_2TLS(sbins,tbins,taubins,tau,Deltat):
             in_L[i] = temp_inL
             total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
         if i>l:
-            temp_inR=np.sum(tbinsR[i-l+1:i+1]) #Because they seem to be one timestep off
+            temp_inR=np.sum(tbinsR[i-l+1:i+1]) 
             temp_inL=np.sum(tbinsL[i-l+1:i+1])
             total[i]  = pop1[i] + pop2[i]  + temp_inR + temp_inL + trans[i] + ref[i]
             in_R[i] = temp_inR
