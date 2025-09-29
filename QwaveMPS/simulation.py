@@ -200,7 +200,20 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_sys=2,d_t=2):
         t_k += Deltat
         schmidt.append(stemp) #storing the Schmidt coeff for calculating the entanglement
 
-    return sbins,tbins#,taubins,schmidt
+        #swap back of the feedback bin      
+        for i in range(k+l-1,k,-1): #goes from the last time bin to first one
+            i_n=nbins[i-1] #time bin
+            swaps=ncon([i_n,i_tau,op.swap_t(d_t*d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
+            swapsb=swaps.reshape(d_t*d_t*swaps.shape[0],d_t*d_t*chi)
+            u,sm,vt=svd(swapsb,full_matrices=False) #SVD
+            chi=min(bond,len(sm)) #Bond legth
+            i_t = u[:,range(chi)].reshape(swaps.shape[0],d_t*d_t,chi) #left normalized past tau bin
+            i_n2 = vt[range(chi),:].reshape(chi,d_t*d_t,swaps.shape[3]) #right normalized t bin
+            stemp = sm[range(chi)]/norm(sm[range(chi)])  #Schmidt coeff 
+            i_tau = ncon([i_t,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin                     
+            nbins[i]=i_n2    #update nbins
+            
+    return sbins,tbins,taubins#,schmidt
 
 
 
@@ -246,7 +259,7 @@ def pop_dynamics(sbins,tbins,Deltat):
         
     return pop,tbinsR,tbinsL,trans,ref,total
 
-def pop_dynamics_2TLS(sbins,tbins,Deltat):
+def pop_dynamics_2TLS(sbins,tbins,taubins,tau,Deltat):
     """
     It calculates the main population dynamics
 
@@ -271,29 +284,50 @@ def pop_dynamics_2TLS(sbins,tbins,Deltat):
     pop2=np.zeros(N,dtype=complex)
     tbinsR=np.zeros(N,dtype=complex)
     tbinsL=np.zeros(N,dtype=complex)
+    tbinsR2=np.zeros(N+1,dtype=complex)
+    tbinsL2=np.zeros(N+1,dtype=complex)
+    in_R=np.zeros(N,dtype=complex)
+    in_L=np.zeros(N,dtype=complex)
     trans=np.zeros(N,dtype=complex)
     ref=np.zeros(N,dtype=complex)
     total=np.zeros(N,dtype=complex)
-    temp_trans=0
-    temp_ref=0
-
+    temp_inR=0
+    temp_inL=0
+    temp_outR=0
+    temp_outL=0
+    l=int(round(tau/Deltat,0))
     
     for i in range(N):
         i_s=sbins[i]
-        i_s.reshape(i_s.shape[0]*2,i_s.shape[-1]*2)
-        # print(i_s.shape)
-        u,sm,vt=svd(i_s,full_matrices=False) #SVD
-        print(len(sm))
-        i_s1 = u[:,range(len(sm))].reshape(i_s.shape[0],2,len(sm)) #left normalized system bin      
-        i_s2 = vt[range(len(sm)),:].reshape(len(sm),2,i_s.shape[-1]) #right normalized time bin
+        i_sm=i_s.reshape(i_s.shape[0]*2,i_s.shape[-1]*2)
+        u,sm,vt=svd(i_sm,full_matrices=False) #SVD
+        i_s1 = u[:,range(len(sm))].reshape(i_s.shape[0],2,len(sm))  
+        i_s1 = ncon([i_s1,np.diag(sm)],[[-1,-2,1],[1,-3]]) 
+        i_s2 = vt[range(len(sm)),:].reshape(len(sm),2,i_s.shape[-1]) 
+        i_s2 = ncon([np.diag(sm),i_s2],[[-1,1],[1,-2,-3]]) 
         pop1[i]=op.expectation(i_s1, obs.TLS_pop())
-        pop2[i]=op.expectation(i_s2, obs.TLS_pop())
+        pop2[i]=op.expectation(i_s2, obs.TLS_pop())    
         tbinsR[i]=np.real(op.expectation(tbins[i], obs.a_R_pop(Deltat)))
         tbinsL[i]=np.real(op.expectation(tbins[i], obs.a_L_pop(Deltat)))
-        temp_trans+=tbinsR[i]
-        trans[i] = temp_trans
-        temp_ref+= tbinsL[i]
-        ref[i] = temp_ref
-        total[i] = temp_trans + temp_ref + pop1[i] + pop2[i]
+        tbinsR2[i]=np.real(op.expectation(taubins[i], obs.a_R_pop(Deltat)))
+        tbinsL2[i]=np.real(op.expectation(taubins[i], obs.a_L_pop(Deltat)))
+        temp_outR+=tbinsR2[i]
+        temp_outL+=tbinsL2[i]
+        trans[i]=temp_outR
+        ref[i]=temp_outL
+        
+        if i <=l:
+            temp_inR+=op.expectation(tbins[i], obs.a_R_pop(Deltat))
+            in_R[i] = temp_inR
+            temp_inL+= op.expectation(tbins[i], obs.a_L_pop(Deltat))
+            in_L[i] = temp_inL
+            total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
+        if i>l:
+            temp_inR=np.sum(tbinsR[i-l:i]) #Because they seem to be one timestep off
+            temp_inL=np.sum(tbinsL[i-l:i])
+            total[i]  = pop1[i] + pop2[i]  + temp_inR + temp_inL + trans[i] + ref[i]
+            in_R[i] = temp_inR
+            in_L[i] = temp_inL
+    
         
     return pop1,pop2,tbinsR,tbinsL,trans,ref,total
