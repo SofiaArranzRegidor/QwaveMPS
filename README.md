@@ -1,9 +1,17 @@
 # QwaveMPS
-Python package with waveguide QED examples of systems solved with Matrix Product States
+> QwaveMPS is an open-source Python package that calculates light-matter interactions in waveguide QED systems using Matrix Product States, allowing one to study delayed feedback effects in the non-Markovian regime.
 
-## Key features
+<!-- Add a small description of the main things that this repo does. -->
 
-Add a small description of the main things that this repo does.
+## Table of Contents
+- [Installation](#installation)
+- [Usage](#usage)
+- [Features](#features)
+- [Contributing](#contributing)
+- [Citing](#citing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+- [Contact](#contact)
 
 ## Installation
 
@@ -17,15 +25,27 @@ pip install .
 ```
 To be able to use the first option, we need to first publish it in PyPI. 
 
-## Documentation and usage
+## Usage
 
 Add a more detailed explanation on the repo and how to use it. We can also add here a link to readthedocs if we decide to create one
 
+![Diagram of the code workflow](images/diagram.png)
+
+## Features
+
+## Contributing
 
 ## Citing
 
 Once we have the paper/arxiv, add here how to cite the repo
 
-## References
+## License
 
-Add references used for creating this
+QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more information.
+
+## Acknowledgements
+
+Add acknowledgements here.
+
+## Contact
+For questions or support, open an issue or email [18sar4@queensu.ca](mailto:18sar4@queensu.ca).
