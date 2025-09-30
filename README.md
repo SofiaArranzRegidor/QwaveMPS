@@ -29,6 +29,8 @@ To be able to use the first option, we need to first publish it in PyPI.
 
 Add a more detailed explanation on the repo and how to use it. We can also add here a link to readthedocs if we decide to create one
 
+
+
 ## Features
 
 ## Contributing
