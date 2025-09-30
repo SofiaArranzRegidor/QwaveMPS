@@ -39,11 +39,11 @@ Once we have the paper/arxiv, add here how to cite the repo
 
 ## License
 
-QwavwMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more information.
+QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements
 
 Add acknowledgements here.
 
 ## Contact
-Add my contact info here
+For questions or support, open an issue or email [18sar4@queensu.ca](mailto:18sar4@queensu.ca).
