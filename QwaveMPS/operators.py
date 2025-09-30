@@ -104,3 +104,5 @@ class observables:
 
     def a_L_pop(self,Deltat,d_t=2):  
         return (self.op.DeltaBdagL(Deltat) @ self.op.DeltaBL(Deltat)).reshape(d_t*d_t,d_t*d_t)/Deltat
+    
+    

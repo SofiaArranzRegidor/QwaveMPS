@@ -12,11 +12,19 @@ import QwaveMPS as QM
 
 #%%
 
-"""Choose the time step and end time"""
+"""Choose the simulation parameters"""
+
+"Choose the time step and end time"
 
 Deltat = 0.05
 tmax = 8
 tlist=np.arange(0,tmax+Deltat,Deltat)
+
+
+"Choose max bond dimension"
+
+bond=8
+
 
 """ Choose the initial state and coupling"""
 
@@ -31,37 +39,30 @@ gammaL,gammaR=QM.coupling()
 Hm=QM.Hamiltonian_1TLS(Deltat, gammaL, gammaR)
 
 
-""" Choose max bond dimension"""
-
-bond=8
-
-
-""" Time evolution of the system"""
+"""Calculate time evolution of the system"""
 
 sys_b,time_b = QM.t_evol_M(Hm,i_s0,i_n0,Deltat,tmax,bond)
 
 
-""" Calculate population dynamics"""
+"""Calculate population dynamics"""
 
 pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,Deltat)
 
 
 #%%
 
-plt.figure()
+plt.figure(figsize=(4.5,4))
 # plt.plot(tlist,np.real(pop_an),linewidth = 2,color = 'magenta',linestyle='-',label='analytical')
-plt.plot(tlist,np.real(pop),linewidth = 2, color = 'k',linestyle='-',label='TLS pop')
-plt.plot(tlist,np.real(trans),linewidth = 2,color = 'y',linestyle='-',label='T')
-plt.plot(tlist,np.real(ref),linewidth = 2,color = 'magenta',linestyle='--',label='R')
-plt.plot(tlist,np.real(total),linewidth = 2,color = 'b',linestyle='--',label='Total')
-plt.plot(tlist,np.real(tbinsR)/Deltat,linewidth = 2,color = 'r',linestyle='--',label='n_R')
-# plt.plot(tlist,gaussian_f(tlist),linewidth = 2,color = 'magenta',linestyle='-',label='pulse')
-plt.legend()
-plt.xlabel('Time, t$\gamma$')
-# plt.ylabel('TLS Population')
-# plt.ylim([0.,1.05])
-# plt.xlim([0.,10.])
-plt.grid()
+plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission')
+plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection')
+plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label='TLS pop')
+# plt.plot(tlist,np.real(tbinsR)/Deltat,linewidth = 2,color = 'r',linestyle='--',label='n_R')
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
+plt.xlabel('Time, $\gamma t$')
+plt.ylabel('Population')
+plt.ylim([0.,1.05])
+plt.xlim([0.,8.])
 plt.tight_layout()
 # plt.savefig('pulse_5.pdf')
 plt.show()
