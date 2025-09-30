@@ -39,7 +39,7 @@ Once we have the paper/arxiv, add here how to cite the repo
 
 ## License
 
-QwavwMPS is distributed under the GNU GPLv3. See LICENSE for more information.
+QwavwMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements
 
