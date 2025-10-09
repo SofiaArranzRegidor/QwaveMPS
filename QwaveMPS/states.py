@@ -11,21 +11,21 @@ import numpy as np
 
 class initial_state:
 
-    def i_ng(d_t=2,bond0=1):
+    def i_ng(d_t,bond0=1):
         """Waveguide initially in vacuum state"""
-        i= np.zeros([bond0,d_t*d_t,bond0],dtype=complex) 
+        i= np.zeros([bond0,d_t,bond0],dtype=complex) 
         i[0,0,0]=1.
         return i
 
-    def i_sg(d_sys=2,bond0=1):
+    def i_sg(d_sys1=2,bond0=1):
         "Atom initially in ground state"
-        i_s = np.zeros([bond0,d_sys,bond0],dtype=complex) 
+        i_s = np.zeros([bond0,d_sys1,bond0],dtype=complex) 
         i_s[:,0,:]=1.
         return i_s
         
-    def i_se(d_sys=2,bond0=1):
+    def i_se(d_sys1=2,bond0=1):
         "Atom initially excited"
-        i_s = np.zeros([bond0,d_sys,bond0],dtype=complex) 
+        i_s = np.zeros([bond0,d_sys1,bond0],dtype=complex) 
         i_s[:,1,:]=1.
         return i_s
 

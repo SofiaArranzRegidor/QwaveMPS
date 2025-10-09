@@ -28,7 +28,17 @@ class basic_operators:
         a = np.zeros((2,2),dtype=complex)
         a[0,1]=1.       
         return a
-        
+    
+    def DeltaBdag(self,Deltat):  
+        """Left noise creation operator. Deltat is the time step"""
+        a=np.sqrt(Deltat)*self.sigmaplus()   
+        return a
+    
+    def DeltaB(self,Deltat):  
+        """Right noise creation operator. Deltat is the time step"""
+        a=np.sqrt(Deltat)*self.sigmaminus()
+        return a
+    
     def DeltaBdagL(self,Deltat):  
         """Left noise creation operator. Deltat is the time step"""
         a=np.kron(np.sqrt(Deltat)*self.sigmaplus(),np.eye(2))     
@@ -59,28 +69,47 @@ class basic_operators:
         sol= expm(-Hm.reshape(d_sys*d_t*d_t,d_sys*d_t*d_t))
         return sol.reshape(d_sys,d_t*d_t,d_sys,d_t*d_t)
 
-    def U_NM(self,Hm,d_sys=2,d_t=2):
-        """Time evolution operator with feedback. H is the Hamiltonian """
-        sol= expm(-Hm.reshape(d_sys*d_t*d_t*d_t*d_t,d_sys*d_t*d_t*d_t*d_t))
-        return sol.reshape(d_sys,d_t*d_t,d_t*d_t,d_sys,d_t*d_t,d_t*d_t)
+    def U_NM(self,Hm,d_t,d_sys):        
+        """Time evolution operator with feedback. H is the Hamiltonian """       
+        sol = expm(-Hm)
+        return sol.reshape(d_sys,d_t,d_t,d_sys,d_t,d_t)
 
-    def swap(self,d_sys=2,d_t=2):
-        d_t=d_t*d_t
+    # def swap(self,d_t,d_sys=2):
+    #     # d_t=d_t*d_t
+    #     swap = np.zeros([d_sys*d_t,d_sys*d_t],dtype=complex)
+    #     for i in range(d_sys):
+    #         swap[i,i*d_t]=1
+    #         swap[i+d_sys,(i*d_t)+1]=1
+    #         swap[i+2*d_sys,(i*d_t)+2]=1
+            
+    #     return swap.reshape(d_sys,d_t,d_sys,d_t)   
+    
+    def swap(self,d_t,d_sys=2):
+        # d_t=d_t*d_t
         swap = np.zeros([d_sys*d_t,d_sys*d_t],dtype=complex)
         for i in range(d_sys):
-            swap[i,i*d_t]=1
-            swap[i+d_sys,(i*d_t)+1]=1
-            swap[i+2*d_sys,(i*d_t)+2]=1
-            
+            for j in range(0,d_t-1):
+                swap[i + j*d_sys,(i*d_t)+j]=1
+                # swap[i+d_sys,(i*d_t)+1]=1
+                # swap[i+2*d_sys,(i*d_t)+2]=1   
         return swap.reshape(d_sys,d_t,d_sys,d_t)   
+    
+    
+    # def swap_t(self,d_t):
+    #     swap_t1 = np.zeros([d_t*d_t,d_t*d_t],dtype=complex)
+    #     for i in range(d_t):
+    #         swap_t1[i,i*d_t]=1
+    #         swap_t1[i+d_t,(i*d_t)+1]=1
+    #         swap_t1[i+2*d_t,(i*d_t)+2]=1
+    #         swap_t1[i+3*d_t,(i*d_t)+3]=1
+    #     swap_t1= swap_t1.reshape(d_t,d_t,d_t,d_t)   
+    #     return swap_t1
     
     def swap_t(self,d_t):
         swap_t1 = np.zeros([d_t*d_t,d_t*d_t],dtype=complex)
         for i in range(d_t):
-            swap_t1[i,i*d_t]=1
-            swap_t1[i+d_t,(i*d_t)+1]=1
-            swap_t1[i+2*d_t,(i*d_t)+2]=1
-            swap_t1[i+3*d_t,(i*d_t)+3]=1
+            for j in range(d_t):
+                swap_t1[i+j*d_t,(i*d_t)+j]=1
         swap_t1= swap_t1.reshape(d_t,d_t,d_t,d_t)   
         return swap_t1
  
@@ -105,4 +134,5 @@ class observables:
     def a_L_pop(self,Deltat,d_t=2):  
         return (self.op.DeltaBdagL(Deltat) @ self.op.DeltaBL(Deltat)).reshape(d_t*d_t,d_t*d_t)/Deltat
     
-    
+    def a_pop(self,Deltat,d_t=2):  
+        return (self.op.DeltaBdag(Deltat) @ self.op.DeltaB(Deltat)).reshape(d_t,d_t)/Deltat

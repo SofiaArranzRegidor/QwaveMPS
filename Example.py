@@ -19,7 +19,8 @@ import QwaveMPS as QM
 Deltat = 0.05
 tmax = 8
 tlist=np.arange(0,tmax+Deltat,Deltat)
-
+d_t=4
+d_sys=2
 
 "Choose max bond dimension"
 
@@ -29,7 +30,7 @@ bond=8
 """ Choose the initial state and coupling"""
 
 i_s0=QM.initial_state.i_se()
-i_n0=QM.initial_state.i_ng()
+i_n0=QM.initial_state.i_ng(d_t)
 
 gammaL,gammaR=QM.coupling()
 
@@ -41,7 +42,7 @@ Hm=QM.Hamiltonian_1TLS(Deltat, gammaL, gammaR)
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_M(Hm,i_s0,i_n0,Deltat,tmax,bond)
+sys_b,time_b = QM.t_evol_M(Hm,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t)
 
 
 """Calculate population dynamics"""
