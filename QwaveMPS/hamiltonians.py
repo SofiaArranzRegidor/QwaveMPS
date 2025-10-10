@@ -45,7 +45,7 @@ def Hamiltonian_1TLS_feedback(Deltat,gammaL,gammaR,phase,d_t,d_sys,Omega=0,Delta
     t2=np.sqrt(gammaR)*np.kron(np.kron(np.eye(d_t),op.sigmaplus()),op.DeltaB(Deltat))
     t3=np.sqrt(gammaL)*np.kron(np.kron(op.DeltaBdag(Deltat)*np.exp(1j*phase),op.sigmaminus()),np.eye(d_t))
     t4=np.sqrt(gammaR)*np.kron(np.kron(np.eye(d_t),op.sigmaminus()),op.DeltaBdag(Deltat))   
-    M = 1j*( Msys + t1 + t2 + t3 + t4)
+    M =  1j*(Msys + t1 + t2 + t3 + t4)
     return M
 
 
