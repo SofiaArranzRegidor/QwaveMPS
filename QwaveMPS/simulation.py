@@ -249,19 +249,32 @@ def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
     pop=np.array([op.expectation(s, obs.TLS_pop()) for s in sbins])
     tbins=np.array([op.expectation(t, obs.a_pop(Deltat)) for t in tbins])
     tbins2=np.real([op.expectation(taus, obs.a_pop(Deltat)) for taus in taubins])
+    ph_loop=np.zeros(N,dtype=complex)
     trans=np.zeros(N,dtype=complex)
     total=np.zeros(N,dtype=complex)
     
     l=int(round(tau/Deltat,0))
-    temp_outR=0
+    temp_out=0
+    in_loop=0
     for i in range(N):
+        temp_out+=tbins2[i]
+        ph_loop[i]=temp_out
         if i<=l:
-            total[i]=pop[i]
+            # temp_out+=tbins2[i]
+            # trans[i]=temp_out
+            in_loop=np.sum(tbins[:i+1]) 
+            trans[i]=in_loop
+            total[i]=pop[i]+ph_loop[i]+trans[i]
         if i>l:
-            trans[i]=np.sum(tbins[i-l+1:i+1]) 
-            total[i]  = pop[i] + trans[i] + tbins2[i]
-        
-    return pop,tbins,trans,total
+            # temp_out=np.sum(tbins2[i-l+1:i+1]) 
+            # trans[i]=temp_out
+            in_loop=np.sum(tbins[i-l+1:i+1]) 
+            trans[i]=in_loop
+            # trans[i]=np.sum(tbins[i-l+1:i+1]) 
+            total[i]  = pop[i] +  trans[i] + ph_loop[i]
+        # trans[i]=np.sum(tbins2[0:i]) 
+        # total[i]  = pop[i] + trans[i]*2
+    return pop,tbins,trans,ph_loop,total
 
 def pop_dynamics_2TLS(sbins,tbins,taubins,tau,Deltat):
     """

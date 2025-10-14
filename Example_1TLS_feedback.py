@@ -52,7 +52,7 @@ sys_b,time_b,tau_b = QM.t_evol_NM(Hm,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys)
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,total=QM.pop_dynamics_1TLS_NM(sys_b,time_b,tau_b,tau,Deltat)
+pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1TLS_NM(sys_b,time_b,tau_b,tau,Deltat)
 
 
 #%%
@@ -61,11 +61,12 @@ plt.figure(figsize=(4.5,4))
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(tbins)/Deltat,linewidth = 3,color = 'r',linestyle='-',label=r'$n_R/dt$')
 plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-# plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
+plt.plot(tlist,np.real(ph_loop),linewidth = 3,color = 'b',linestyle=':',label='loop')
 plt.plot(tlist,total,linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, t$\gamma$')
-plt.ylim([0.,1.05])
+# plt.ylim([0.9,1.05])
 plt.xlim([0.,tmax])
+# plt.xlim([0.,0.5])
 plt.tight_layout()
 plt.show()
