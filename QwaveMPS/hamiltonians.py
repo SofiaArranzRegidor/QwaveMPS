@@ -49,9 +49,9 @@ def Hamiltonian_1TLS_feedback(Deltat,gammaL,gammaR,phase,d_t,d_sys,Omega=0,Delta
     return M
 
 
-def Hamiltonian_2TLS(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
+def Hamiltonian_2TLS_NM(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
     '''
-    Hamilltonian for 2 TLSs in an infinite waveguide 
+    Hamiltonian for 2 TLSs in an infinite waveguide 
     Deltat is the timestep
     gammaL1 and gammaR1 are the left and right decay rates of the firt TLS
     gammaL2 and gammaR2 are the left and right decay rates of the second TLS
@@ -90,3 +90,43 @@ def Hamiltonian_2TLS(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omeg
     M = (Msys1 + Msys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc)
     return M
 
+def Hamiltonian_2TLS_M(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
+    '''
+    Hamilltonian for 2 TLSs in an infinite waveguide 
+    Deltat is the timestep
+    gammaL1 and gammaR1 are the left and right decay rates of the firt TLS
+    gammaL2 and gammaR2 are the left and right decay rates of the second TLS
+    phase is the feedback phase between the TLSs
+    d_sys is the TLS bin dimension (2 by default)
+    d_t is the time bin dimension (2 by default)
+    Omega is a possible classical pump (turned off by default)
+    Delta is the detuning between the pump and TLS  (turned off by default)
+    '''
+    d_sys1=int(d_sys/2)
+    d_sys2=int(d_sys/2)
+    sigmaplus1=np.kron(op.sigmaplus(),np.eye(d_sys2))
+    sigmaminus1=np.kron(op.sigmaminus(),np.eye(d_sys2))
+    sigmaplus2=np.kron(np.eye(d_sys1),op.sigmaplus())
+    sigmaminus2=np.kron(np.eye(d_sys1),op.sigmaminus())
+    e1=np.kron(op.e(),np.eye(d_sys2))    
+    e2=np.kron(np.eye(d_sys1),op.e())   
+    #TLS1 system term
+    Msys1=1j*Deltat*Omega1*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
+    +1j*Deltat*Delta1*np.kron(e1,np.eye(d_t)) 
+ 
+    #TLS2 system term  
+    Msys2=1j*Deltat*Omega2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
+    +1j*Deltat*Delta2* np.kron(e2,np.eye(d_t)) 
+ 
+    #interaction terms
+    t1R = np.sqrt(gammaR1)*(np.kron(sigmaminus1,op.DeltaBdagR(Deltat)) 
+    + np.kron(sigmaplus1,op.DeltaBR(Deltat)))
+    t1L = np.sqrt(gammaL1)*(np.kron(sigmaminus1,op.DeltaBdagL(Deltat)*np.exp(1j*phase)) 
+    + np.kron(sigmaplus1,op.DeltaBL(Deltat)*np.exp(-1j*phase)))
+    t2R = np.sqrt(gammaR2)*(np.kron(sigmaminus2,op.DeltaBdagR(Deltat)*np.exp(1j*phase)) 
+    + np.kron(sigmaplus2,op.DeltaBR(Deltat)*np.exp(-1j*phase)))                                                                                          
+    t2L = np.sqrt(gammaL2)*(np.kron(sigmaminus2,op.DeltaBdagL(Deltat)) 
+    + np.kron(sigmaplus2,op.DeltaBL(Deltat)))
+ 
+    M = (Msys1 + Msys2 + t1R + t1L + t2R + t2L )
+    return M

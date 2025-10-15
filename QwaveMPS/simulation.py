@@ -276,7 +276,7 @@ def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
         # total[i]  = pop[i] + trans[i]*2
     return pop,tbins,trans,ph_loop,total
 
-def pop_dynamics_2TLS(sbins,tbins,taubins,tau,Deltat):
+def pop_dynamics_2TLS(sbins,tbins,Deltat,taubins=[],tau=0):
     """
     It calculates the main population dynamics
 
@@ -326,25 +326,28 @@ def pop_dynamics_2TLS(sbins,tbins,taubins,tau,Deltat):
         pop2[i]=op.expectation(i_s2, obs.TLS_pop())    
         tbinsR[i]=np.real(op.expectation(tbins[i], obs.a_R_pop(Deltat)))
         tbinsL[i]=np.real(op.expectation(tbins[i], obs.a_L_pop(Deltat)))
-        tbinsR2[i]=np.real(op.expectation(taubins[i], obs.a_R_pop(Deltat)))
-        tbinsL2[i]=np.real(op.expectation(taubins[i], obs.a_L_pop(Deltat)))
-        temp_outR+=tbinsR2[i]
-        temp_outL+=tbinsL2[i]
-        trans[i]=temp_outR
-        ref[i]=temp_outL
-        
-        if i <=l:
-            temp_inR+=op.expectation(tbins[i], obs.a_R_pop(Deltat))
-            in_R[i] = temp_inR
-            temp_inL+= op.expectation(tbins[i], obs.a_L_pop(Deltat))
-            in_L[i] = temp_inL
-            total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
-        if i>l:
-            temp_inR=np.sum(tbinsR[i-l+1:i+1]) 
-            temp_inL=np.sum(tbinsL[i-l+1:i+1])
-            total[i]  = pop1[i] + pop2[i]  + temp_inR + temp_inL + trans[i] + ref[i]
-            in_R[i] = temp_inR
-            in_L[i] = temp_inL
-    
+        if tau != 0:
+            tbinsR2[i]=np.real(op.expectation(taubins[i], obs.a_R_pop(Deltat)))
+            tbinsL2[i]=np.real(op.expectation(taubins[i], obs.a_L_pop(Deltat)))
+            temp_outR+=tbinsR2[i]
+            temp_outL+=tbinsL2[i]
+            trans[i]=temp_outR
+            ref[i]=temp_outL
+            if i <=l:
+                temp_inR+=op.expectation(tbins[i], obs.a_R_pop(Deltat))
+                in_R[i] = temp_inR
+                temp_inL+= op.expectation(tbins[i], obs.a_L_pop(Deltat))
+                in_L[i] = temp_inL
+                total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
+            if i>l:
+                temp_inR=np.sum(tbinsR[i-l+1:i+1]) 
+                temp_inL=np.sum(tbinsL[i-l+1:i+1])
+                total[i]  = pop1[i] + pop2[i]  + temp_inR + temp_inL + trans[i] + ref[i]
+                in_R[i] = temp_inR
+                in_L[i] = temp_inL
+        if tau==0:
+            trans[i] = tbinsR[i]
+            ref[i] = tbinsL[i]
+            total[i]  = pop1[i] + pop2[i]  + trans[i] + ref[i]
         
     return pop1,pop2,tbinsR,tbinsL,trans,ref,total

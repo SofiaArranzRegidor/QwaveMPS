@@ -42,7 +42,7 @@ phase=np.pi
 
 """Choose the Hamiltonian"""
 
-Hm=QM.Hamiltonian_2TLS(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_t,d_sys)
+Hm=QM.Hamiltonian_2TLS_NM(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_t,d_sys)
 
 
 """ Choose max bond dimension"""
@@ -57,7 +57,7 @@ sys_b,time_b,tau_b = QM.t_evol_NM(Hm,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys)
 
 """ Calculate population dynamics"""
 
-pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,tau_b,tau,Deltat)
+pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,Deltat,tau_b,tau)
 
 
 #%%
