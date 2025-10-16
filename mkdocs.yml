@@ -8,3 +8,4 @@ nav:
   - Examples: examples.md
   - Contributing: contributing.md
   - References: references.md
+theme: readthedocs
