@@ -1,2 +1,7 @@
 site_name: QwaveMPS Documentation
 
+nav:
+  - Home: index.md
+  - Usage: usage.md
+theme:
+  name: material
