@@ -1,17 +1,7 @@
-# Welcome to MkDocs
+# QwaveMPS
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Welcome to the documentation for **QwaveMPS**!
 
-## Commands
+This project provides Python examples of waveguide QED (Quantum Electrodynamics) systems solved using Matrix Product States.
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
-
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+Explore the sections below to get started, understand the theory, and use the code.
