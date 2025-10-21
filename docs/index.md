@@ -12,7 +12,7 @@ Explore the sections below to get started, understand the theory, and use the co
 
 ## Download and installation
 
-The source repository is [available for download](https://github.com/SofiaArranzRegidor/QwaveMPS) on GitHub. The installation instructions are given [here](https://github.com/SofiaArranzRegidor/QwaveMPS/blob/main/docs/installation.md). 
+The source repository is [available for download](https://github.com/SofiaArranzRegidor/QwaveMPS) on GitHub. The installation instructions are given [here](installation.md). 
 
 ## Usage
 
