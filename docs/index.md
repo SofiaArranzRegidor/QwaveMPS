@@ -18,7 +18,7 @@ The source repository is [available for download](https://github.com/SofiaArranz
 
 Add a more detailed explanation on the repo and how to use it. We can also add here a link to readthedocs if we decide to create one
 
-![Diagram of the code workflow](images/diagram.png)
+![Diagram of the code workflow](../images/diagram.png)
 
 ## Features
 
