@@ -13,15 +13,41 @@ op=basic_operators()
 
 
 def Hamiltonian_1TLS(Deltat,gammaL,gammaR,d_t=2,d_sys=2,Omega=0,Delta=0):
-    '''
+    """
     Hamilltonian for 1 TLS in the waveguide
-    Deltat is the timestep
-    gammaL and gammaR are the left and right decay rates 
-    d_sys is the TLS bin dimension (2 by default)
-    d_t is the time bin dimension (2 by default)
-    Omega is a possible classical pump (turned off by default)
-    Delta is the detuning between the pump and TLS  (turned off by default)
-    '''
+    
+    Parameters
+    ----------
+    Deltat : float
+        Time step for system evolution.
+
+    gammaL : float
+        Left decay rate.
+
+    gammaR : float
+        Right decay rate.
+
+    d_sys : int, default: 2
+        TLS bin dimension
+
+    d_t : int, default: 2, default: 2
+        Time bin dimension
+
+    Omega : float, default: 0
+        Classical pump
+
+    Delta : float, default: 0
+        Detuning between the pump and TLS frequencies
+
+    Returns
+    -------
+    Hamiltonian : ndarray
+        Hamiltonian coupling a single TLS pumped by a classical field to a waveguide.
+
+    Examples
+    -------- 
+    """
+    
     Msys=Omega*Deltat*(np.kron(op.sigmaplus(),np.eye(d_t*d_t)) + np.kron(op.sigmaminus(),np.eye(d_t*d_t))) +Deltat*Delta*np.kron(op.e(),np.eye(d_t*d_t)) 
     t1= np.sqrt(gammaL)*(np.kron(op.sigmaplus(),op.DeltaBL(Deltat)) + np.kron(op.sigmaminus(),op.DeltaBdagL(Deltat))) 
     t2= np.sqrt(gammaR)*(np.kron(op.sigmaplus(),op.DeltaBR(Deltat)) + np.kron(op.sigmaminus(),op.DeltaBdagR(Deltat))) 
@@ -30,16 +56,43 @@ def Hamiltonian_1TLS(Deltat,gammaL,gammaR,d_t=2,d_sys=2,Omega=0,Delta=0):
 
     
 def Hamiltonian_1TLS_feedback(Deltat,gammaL,gammaR,phase,d_t,d_sys,Omega=0,Delta=0):
-    '''
+    """
     Hamilltonian for 1 TLS in a semi-infinite waveguide with a side mirror
-    Deltat is the timestep
-    gammaL and gammaR are the left and right decay rates 
-    phase is the feedback phase between the TLS and the mirror
-    d_sys is the TLS bin dimension (2 by default)
-    d_t is the time bin dimension (2 by default)
-    Omega is a possible classical pump (turned off by default)
-    Delta is the detuning between the pump and TLS  (turned off by default)
-    '''
+    
+    Parameters
+    ----------
+    Deltat : float
+        Time step for system evolution.
+
+    gammaL : float
+        Left decay rate.
+
+    gammaR : float
+        Right decay rate.
+
+    phase : float
+        Feedback phase between the TLS and the mirror.
+
+    d_sys : int, default: 2
+        TLS bin dimension
+
+    d_t : int, default: 2, default: 2
+        Time bin dimension
+
+    Omega : float, default: 0
+        Classical pump
+
+    Delta : float, default: 0
+        Detuning between the pump and TLS frequencies
+
+    Returns
+    -------
+    Hamiltonian : ndarray
+        Hamiltonian coupling a single TLS pumped by a classical field to the semi-infinite waveguide.
+
+    Examples
+    -------- 
+    """
     Msys=Omega*Deltat*(np.kron(np.kron(np.eye(d_t),op.sigmaplus()),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),op.sigmaminus()),np.eye(d_t)))
     t1=np.sqrt(gammaL)*np.kron(np.kron(op.DeltaB(Deltat)*np.exp(-1j*phase),op.sigmaplus()),np.eye(d_t))
     t2=np.sqrt(gammaR)*np.kron(np.kron(np.eye(d_t),op.sigmaplus()),op.DeltaB(Deltat))
@@ -50,17 +103,55 @@ def Hamiltonian_1TLS_feedback(Deltat,gammaL,gammaR,phase,d_t,d_sys,Omega=0,Delta
 
 
 def Hamiltonian_2TLS_NM(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
-    '''
-    Hamiltonian for 2 TLSs in an infinite waveguide 
-    Deltat is the timestep
-    gammaL1 and gammaR1 are the left and right decay rates of the firt TLS
-    gammaL2 and gammaR2 are the left and right decay rates of the second TLS
-    phase is the feedback phase between the TLSs
-    d_sys is the TLS bin dimension (2 by default)
-    d_t is the time bin dimension (2 by default)
-    Omega is a possible classical pump (turned off by default)
-    Delta is the detuning between the pump and TLS  (turned off by default)
-    '''
+    """
+    Hamilltonian for 2 TLSs in an infinite waveguide.
+    
+    Parameters
+    ----------
+    Deltat : float
+        Time step for system evolution.
+
+    gammaL1 : float
+        Left decay rate of the first TLS.
+
+    gammaR1 : float
+        Right decay rate of the first TLS.
+
+    gammaL2 : float
+        Left decay rate of the second TLS.
+
+    gammaR2 : float
+        Right decay rate of the second TLS.
+
+    phase : float
+        Feedback phase between the TLSs.
+
+    d_sys : int, default: 2
+        TLS bin dimension
+
+    d_t : int, default: 2, default: 2
+        Time bin dimension
+
+    Omega1 : float, default: 0
+        Classical pump for the first TLS.
+
+    Delta1 : float, default: 0
+        Detuning between the pump and TLS frequencies for the first TLS.
+    
+    Omega2 : float, default: 0
+        Classical pump for the second TLS.
+
+    Delta2 : float, default: 0
+        Detuning between the pump and TLS frequencies for the second TLS.
+
+    Returns
+    -------
+    Hamiltonian : ndarray
+        Hamiltonian coupling a two TLSs pumped by a classical fields to an infinite waveguide.
+
+    Examples
+    -------- 
+    """
     d_sys1=int(d_sys/2)
     d_sys2=int(d_sys/2)
     sigmaplus1=np.kron(op.sigmaplus(),np.eye(d_sys2))
@@ -91,17 +182,55 @@ def Hamiltonian_2TLS_NM(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,O
     return M
 
 def Hamiltonian_2TLS_M(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
-    '''
-    Hamilltonian for 2 TLSs in an infinite waveguide 
-    Deltat is the timestep
-    gammaL1 and gammaR1 are the left and right decay rates of the firt TLS
-    gammaL2 and gammaR2 are the left and right decay rates of the second TLS
-    phase is the feedback phase between the TLSs
-    d_sys is the TLS bin dimension (2 by default)
-    d_t is the time bin dimension (2 by default)
-    Omega is a possible classical pump (turned off by default)
-    Delta is the detuning between the pump and TLS  (turned off by default)
-    '''
+    """
+    Hamilltonian for 2 TLSs in an infinite waveguide.
+    
+    Parameters
+    ----------
+    Deltat : float
+        Time step for system evolution.
+
+    gammaL1 : float
+        Left decay rate of the first TLS.
+
+    gammaR1 : float
+        Right decay rate of the first TLS.
+
+    gammaL2 : float
+        Left decay rate of the second TLS.
+
+    gammaR2 : float
+        Right decay rate of the second TLS.
+
+    phase : float
+        Feedback phase between the TLSs.
+
+    d_sys : int, default: 2
+        TLS bin dimension
+
+    d_t : int, default: 2, default: 2
+        Time bin dimension
+
+    Omega1 : float, default: 0
+        Classical pump for the first TLS.
+
+    Delta1 : float, default: 0
+        Detuning between the pump and TLS frequencies for the first TLS.
+    
+    Omega2 : float, default: 0
+        Classical pump for the second TLS.
+
+    Delta2 : float, default: 0
+        Detuning between the pump and TLS frequencies for the second TLS.
+
+    Returns
+    -------
+    Hamiltonian : ndarray
+        Hamiltonian coupling a two TLSs pumped by a classical fields to an infinite waveguide.
+
+    Examples
+    -------- 
+    """
     d_sys1=int(d_sys/2)
     d_sys2=int(d_sys/2)
     sigmaplus1=np.kron(op.sigmaplus(),np.eye(d_sys2))
