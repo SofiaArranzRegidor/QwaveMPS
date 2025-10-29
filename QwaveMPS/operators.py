@@ -244,7 +244,7 @@ class basic_operators:
         sol = expm(-Hm)
         return sol.reshape(d_sys,d_t,d_t,d_sys,d_t,d_t)
     
-    def swap(self,d_t,d_sys):
+    def swap(self,dim1,dim2):
         """
         Swap tensor to swap the contents of adjacent MPS bins.
 
@@ -259,27 +259,47 @@ class basic_operators:
         Returns
         -------
         oper : ndarray
-            ndarray swap operator.
+            ndarray of shape (dim1,dim2,dim1,dim2) swap operator.
         
         Examples
         -------- 
         """ 
-        # d_t=d_t*d_t
-        swap = np.zeros([d_sys*d_t,d_sys*d_t],dtype=complex)
-        for i in range(d_sys):
-            for j in range(0,d_t):
-                swap[i + j*d_sys,(i*d_t)+j]=1
-        return swap.reshape(d_sys,d_t,d_sys,d_t)   
-    
-    
-    def swap_t(self,d_t):
-        swap_t1 = np.zeros([d_t*d_t,d_t*d_t],dtype=complex)
-        for i in range(d_t):
-            for j in range(d_t):
-                swap_t1[i+j*d_t,(i*d_t)+j]=1
-        swap_t1= swap_t1.reshape(d_t,d_t,d_t,d_t)   
-        return swap_t1
- 
+        size = dim1 * dim2
+        swap = np.zeros([size,size],dtype=complex)
+        for i in range(dim1):
+            for j in range(dim2):
+                swap[i + j*dim1,(i*dim2)+j]=1
+        return swap.reshape(dim1,dim2,dim1,dim2)   
+     
+    # I think slightly less performant for small dims, but slightly faster for large dims, could just remove
+    # Reduces to single explicit python loop
+    def vectorizedswap(self,dim1,dim2):
+        """
+        Swap tensor to swap the contents of adjacent MPS bins.
+
+        Parameters
+        ----------
+        dim1 : int
+            Size of the first Hilbert space.
+                
+        dim2 : int, default: 2
+            Size of the second Hilbert space.
+
+        Returns
+        -------
+        oper : ndarray
+            ndarray of shape (dim1,dim2,dim1,dim2) swap operator.
+        
+        Examples
+        -------- 
+        """ 
+        size = dim1*dim2
+        swap = np.zeros((size, size), dtype=complex)
+        indices = np.array([(i%dim2)*dim1 + int(i/dim2) for i in range(size)], dtype=int)
+        swap[indices, np.arange(swap.shape[0])] = 1
+        return swap.reshape(dim1,dim2,dim1,dim2)
+
+
     def expectation(self,AList, MPO):
         """
         The expectation value of a MPS bin with a given operator.
