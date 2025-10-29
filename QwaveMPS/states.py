@@ -32,7 +32,7 @@ class initial_state:
         -------- 
         """ 
         i= np.zeros([bond0,d_t,bond0],dtype=complex) 
-        i[0,0,0]=1.
+        i[:,0,:]=1.
         return i
 
     def i_sg(d_sys1=2,bond0=1):
