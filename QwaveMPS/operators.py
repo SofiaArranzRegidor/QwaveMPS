@@ -49,7 +49,7 @@ class basic_operators:
         a[0,1]=1.       
         return a
     
-    def DeltaBdag(self,Deltat):  
+    def DeltaBdag(self,Deltat, d_t=2):  
         """
         Time bin noise creation (raising) operator.
 
@@ -58,6 +58,9 @@ class basic_operators:
         Deltat : float
             Time step for system evolution.
 
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
+
         Returns
         -------
         oper : ndarray
@@ -65,12 +68,10 @@ class basic_operators:
         
         Examples
         -------- 
-        """        
-        a = np.zeros((2,2),dtype=complex)
-        a[1,0]=np.sqrt(Deltat)
-        return a
+        """
+        return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), -1) 
     
-    def DeltaB(self,Deltat):  
+    def DeltaB(self,Deltat, d_t=2):  
         """
         Time bin noise annihilation (lowering) operator.
 
@@ -78,6 +79,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -86,12 +90,10 @@ class basic_operators:
         
         Examples
         -------- 
-        """         
-        a = np.zeros((2,2),dtype=complex)
-        a[0,1]=np.sqrt(Deltat)
-        return a
+        """      
+        return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
     
-    def DeltaBdagL(self,Deltat):  
+    def DeltaBdagL(self,Deltat, d_t=2):  
         """
         Left time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -99,6 +101,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -108,10 +113,9 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.sqrt(Deltat)*self.sigmaplus(),np.eye(2))     
-        return a
+        return np.kron(self.DeltaBdag(Deltat, d_t),np.eye(d_t))     
     
-    def DeltaBdagR(self,Deltat): 
+    def DeltaBdagR(self,Deltat, d_t=2): 
         """
         Right time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -119,6 +123,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -128,10 +135,9 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.eye(2),np.sqrt(Deltat)*self.sigmaplus())     
-        return a
+        return np.kron(np.eye(d_t), self.DeltaBdag(Deltat, d_t))     
     
-    def DeltaBL(self,Deltat):  
+    def DeltaBL(self,Deltat, d_t=2):  
         """
         Left time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -139,6 +145,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -148,10 +157,9 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.sqrt(Deltat)*self.sigmaminus(),np.eye(2))     
-        return a
+        return np.kron(self.deltaB(Deltat, d_t),np.eye(d_t))     
     
-    def DeltaBR(self,Deltat):  
+    def DeltaBR(self,Deltat, d_t=2):  
         """
         Right time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -168,8 +176,7 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.eye(2),np.sqrt(Deltat)*self.sigmaminus())       
-        return a
+        return np.kron(np.eye(d_t),self.deltaB(Deltat, d_t))       
     
     def e(self,d_sys=2):
         """
