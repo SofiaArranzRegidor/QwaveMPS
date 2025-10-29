@@ -215,7 +215,7 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        sol= expm(-Hm.reshape(d_sys*d_t*d_t,d_sys*d_t*d_t))
+        sol= expm(-Hm)
         return sol.reshape(d_sys,d_t*d_t,d_sys,d_t*d_t)
 
     def U_NM(self,Hm,d_t,d_sys):
@@ -332,13 +332,13 @@ class observables:
         self.op = operators
 
     def TLS_pop(self,d_sys=2):    
-        return (self.op.sigmaplus() @ self.op.sigmaminus()).reshape(d_sys,d_sys)
+        return (self.op.sigmaplus() @ self.op.sigmaminus())
         
     def a_R_pop(self,Deltat,d_t=2):
-        return (self.op.DeltaBdagR(Deltat) @ self.op.DeltaBR(Deltat)).reshape(d_t*d_t,d_t*d_t)/Deltat
+        return (self.op.DeltaBdagR(Deltat) @ self.op.DeltaBR(Deltat))/Deltat
 
     def a_L_pop(self,Deltat,d_t=2):  
-        return (self.op.DeltaBdagL(Deltat) @ self.op.DeltaBL(Deltat)).reshape(d_t*d_t,d_t*d_t)/Deltat
+        return (self.op.DeltaBdagL(Deltat) @ self.op.DeltaBL(Deltat))/Deltat
     
     def a_pop(self,Deltat,d_t=2):  
-        return (self.op.DeltaBdag(Deltat) @ self.op.DeltaB(Deltat)).reshape(d_t,d_t)/Deltat
+        return (self.op.DeltaBdag(Deltat) @ self.op.DeltaB(Deltat))/Deltat
