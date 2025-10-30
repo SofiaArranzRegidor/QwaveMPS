@@ -157,7 +157,7 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        return np.kron(self.deltaB(Deltat, d_t),np.eye(d_t))     
+        return np.kron(self.DeltaB(Deltat, d_t),np.eye(d_t))     
     
     def DeltaBR(self,Deltat, d_t=2):  
         """
@@ -176,7 +176,7 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        return np.kron(np.eye(d_t),self.deltaB(Deltat, d_t))       
+        return np.kron(np.eye(d_t),self.DeltaB(Deltat, d_t))       
     
     def e(self,d_sys=2):
         """
