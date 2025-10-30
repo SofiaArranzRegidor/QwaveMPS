@@ -118,7 +118,7 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
         sbins.append(i_s)
         tbins.append(stemp[:,None,None]*i_n)
                     
-        phi2=ncon([i_s,i_n,op.swap(d_t,d_sys)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #system bin, time bin + swap contraction
+        phi2=ncon([i_s,i_n,op.swap(d_sys,d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #system bin, time bin + swap contraction
         i_n,stemp,i_st=svd_tensors(phi2,d_t*phi2.shape[0],d_sys*phi2.shape[-1], bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_st   #OC system bin
         t_k += Deltat
@@ -198,7 +198,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
         i_tau= nbins[k] #starting from the feedback bin
         for i in range(k,k+l-1): 
             i_n=nbins[i+1] 
-            swaps=ncon([i_tau,i_n,op.swap_t(d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
+            swaps=ncon([i_tau,i_n,op.swap(d_t,d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
             i_n2,stemp,i_t=svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[3],bond,d_t,d_t)
             i_tau = ncon([np.diag(stemp),i_t],[[-1,1],[1,-3,-4]]) 
             nbins[i]=i_n2 
@@ -217,7 +217,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
         sbins.append(i_s) 
         
         #swap system and i_n
-        phi2=ncon([i_s,i_n,op.swap(d_t,d_sys)],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
+        phi2=ncon([i_s,i_n,op.swap(d_sys,d_t)],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
         i_n,stemp,i_stemp=svd_tensors(phi2,d_sys*phi2.shape[0],d_t*phi2.shape[-1], bond,d_sys,d_t)   
         i_n=i_n*stemp[None,None,:] #the OC in time bin     
         
@@ -236,7 +236,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
         #swap back of the feedback bin      
         for i in range(k+l-1,k,-1): #goes from the last time bin to first one
             i_n=nbins[i-1] #time bin
-            swaps=ncon([i_n,i_tau,op.swap_t(d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
+            swaps=ncon([i_n,i_tau,op.swap(d_t,d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
             i_t,stemp,i_n2=svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[-1], bond,d_t,d_t)   
             i_tau = i_t*stemp[None,None,:] #OC tau bin         
             nbins[i]=i_n2    #update nbins            

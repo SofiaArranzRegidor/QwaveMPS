@@ -51,7 +51,7 @@ def Hamiltonian_1TLS(Deltat,gammaL,gammaR,d_t=2,d_sys=2,Omega=0,Delta=0):
     Msys=Omega*Deltat*(np.kron(op.sigmaplus(),np.eye(d_t*d_t)) + np.kron(op.sigmaminus(),np.eye(d_t*d_t))) +Deltat*Delta*np.kron(op.e(),np.eye(d_t*d_t)) 
     t1= np.sqrt(gammaL)*(np.kron(op.sigmaplus(),op.DeltaBL(Deltat)) + np.kron(op.sigmaminus(),op.DeltaBdagL(Deltat))) 
     t2= np.sqrt(gammaR)*(np.kron(op.sigmaplus(),op.DeltaBR(Deltat)) + np.kron(op.sigmaminus(),op.DeltaBdagR(Deltat))) 
-    M=1j*(Msys+t1+t2)#.reshape(d_sys,d_t*d_t,d_sys,d_t*d_t)
+    M=1j*(Msys+t1+t2)
     return M
 
     

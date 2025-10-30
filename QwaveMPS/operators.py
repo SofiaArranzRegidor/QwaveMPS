@@ -49,7 +49,7 @@ class basic_operators:
         a[0,1]=1.       
         return a
     
-    def DeltaBdag(self,Deltat):  
+    def DeltaBdag(self,Deltat, d_t=2):  
         """
         Time bin noise creation (raising) operator.
 
@@ -58,6 +58,9 @@ class basic_operators:
         Deltat : float
             Time step for system evolution.
 
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
+
         Returns
         -------
         oper : ndarray
@@ -65,12 +68,10 @@ class basic_operators:
         
         Examples
         -------- 
-        """        
-        a = np.zeros((2,2),dtype=complex)
-        a[1,0]=np.sqrt(Deltat)
-        return a
+        """
+        return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), -1) 
     
-    def DeltaB(self,Deltat):  
+    def DeltaB(self,Deltat, d_t=2):  
         """
         Time bin noise annihilation (lowering) operator.
 
@@ -78,6 +79,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -86,12 +90,10 @@ class basic_operators:
         
         Examples
         -------- 
-        """         
-        a = np.zeros((2,2),dtype=complex)
-        a[0,1]=np.sqrt(Deltat)
-        return a
+        """      
+        return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
     
-    def DeltaBdagL(self,Deltat):  
+    def DeltaBdagL(self,Deltat, d_t=2):  
         """
         Left time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -99,6 +101,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -108,10 +113,9 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.sqrt(Deltat)*self.sigmaplus(),np.eye(2))     
-        return a
+        return np.kron(self.DeltaBdag(Deltat, d_t),np.eye(d_t))     
     
-    def DeltaBdagR(self,Deltat): 
+    def DeltaBdagR(self,Deltat, d_t=2): 
         """
         Right time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -119,6 +123,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -128,10 +135,9 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.eye(2),np.sqrt(Deltat)*self.sigmaplus())     
-        return a
+        return np.kron(np.eye(d_t), self.DeltaBdag(Deltat, d_t))     
     
-    def DeltaBL(self,Deltat):  
+    def DeltaBL(self,Deltat, d_t=2):  
         """
         Left time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -139,6 +145,9 @@ class basic_operators:
         ----------
         Deltat : float
             Time step for system evolution.
+        
+        d_t : int, default: 2
+            Size of the truncated field Hilbert space
 
         Returns
         -------
@@ -148,10 +157,9 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.sqrt(Deltat)*self.sigmaminus(),np.eye(2))     
-        return a
+        return np.kron(self.DeltaB(Deltat, d_t),np.eye(d_t))     
     
-    def DeltaBR(self,Deltat):  
+    def DeltaBR(self,Deltat, d_t=2):  
         """
         Right time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -168,8 +176,7 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        a=np.kron(np.eye(2),np.sqrt(Deltat)*self.sigmaminus())       
-        return a
+        return np.kron(np.eye(d_t),self.DeltaB(Deltat, d_t))       
     
     def e(self,d_sys=2):
         """
@@ -215,7 +222,7 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        sol= expm(-Hm.reshape(d_sys*d_t*d_t,d_sys*d_t*d_t))
+        sol= expm(-Hm)
         return sol.reshape(d_sys,d_t*d_t,d_sys,d_t*d_t)
 
     def U_NM(self,Hm,d_t,d_sys):
@@ -244,7 +251,7 @@ class basic_operators:
         sol = expm(-Hm)
         return sol.reshape(d_sys,d_t,d_t,d_sys,d_t,d_t)
     
-    def swap(self,d_t,d_sys):
+    def swap(self,dim1,dim2):
         """
         Swap tensor to swap the contents of adjacent MPS bins.
 
@@ -259,27 +266,47 @@ class basic_operators:
         Returns
         -------
         oper : ndarray
-            ndarray swap operator.
+            ndarray of shape (dim1,dim2,dim1,dim2) swap operator.
         
         Examples
         -------- 
         """ 
-        # d_t=d_t*d_t
-        swap = np.zeros([d_sys*d_t,d_sys*d_t],dtype=complex)
-        for i in range(d_sys):
-            for j in range(0,d_t):
-                swap[i + j*d_sys,(i*d_t)+j]=1
-        return swap.reshape(d_sys,d_t,d_sys,d_t)   
-    
-    
-    def swap_t(self,d_t):
-        swap_t1 = np.zeros([d_t*d_t,d_t*d_t],dtype=complex)
-        for i in range(d_t):
-            for j in range(d_t):
-                swap_t1[i+j*d_t,(i*d_t)+j]=1
-        swap_t1= swap_t1.reshape(d_t,d_t,d_t,d_t)   
-        return swap_t1
- 
+        size = dim1 * dim2
+        swap = np.zeros([size,size],dtype=complex)
+        for i in range(dim1):
+            for j in range(dim2):
+                swap[i + j*dim1,(i*dim2)+j]=1
+        return swap.reshape(dim1,dim2,dim1,dim2)   
+     
+    # I think slightly less performant for small dims, but slightly faster for large dims, could just remove
+    # Reduces to single explicit python loop
+    def vectorizedswap(self,dim1,dim2):
+        """
+        Swap tensor to swap the contents of adjacent MPS bins.
+
+        Parameters
+        ----------
+        dim1 : int
+            Size of the first Hilbert space.
+                
+        dim2 : int, default: 2
+            Size of the second Hilbert space.
+
+        Returns
+        -------
+        oper : ndarray
+            ndarray of shape (dim1,dim2,dim1,dim2) swap operator.
+        
+        Examples
+        -------- 
+        """ 
+        size = dim1*dim2
+        swap = np.zeros((size, size), dtype=complex)
+        indices = np.array([(i%dim2)*dim1 + int(i/dim2) for i in range(size)], dtype=int)
+        swap[indices, np.arange(swap.shape[0])] = 1
+        return swap.reshape(dim1,dim2,dim1,dim2)
+
+
     def expectation(self,AList, MPO):
         """
         The expectation value of a MPS bin with a given operator.
@@ -312,13 +339,13 @@ class observables:
         self.op = operators
 
     def TLS_pop(self,d_sys=2):    
-        return (self.op.sigmaplus() @ self.op.sigmaminus()).reshape(d_sys,d_sys)
+        return (self.op.sigmaplus() @ self.op.sigmaminus())
         
     def a_R_pop(self,Deltat,d_t=2):
-        return (self.op.DeltaBdagR(Deltat) @ self.op.DeltaBR(Deltat)).reshape(d_t*d_t,d_t*d_t)/Deltat
+        return (self.op.DeltaBdagR(Deltat) @ self.op.DeltaBR(Deltat))/Deltat
 
     def a_L_pop(self,Deltat,d_t=2):  
-        return (self.op.DeltaBdagL(Deltat) @ self.op.DeltaBL(Deltat)).reshape(d_t*d_t,d_t*d_t)/Deltat
+        return (self.op.DeltaBdagL(Deltat) @ self.op.DeltaBL(Deltat))/Deltat
     
     def a_pop(self,Deltat,d_t=2):  
-        return (self.op.DeltaBdag(Deltat) @ self.op.DeltaB(Deltat)).reshape(d_t,d_t)/Deltat
+        return (self.op.DeltaBdag(Deltat) @ self.op.DeltaB(Deltat))/Deltat
