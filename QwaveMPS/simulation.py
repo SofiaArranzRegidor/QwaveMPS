@@ -20,24 +20,40 @@ obs=observables()
 
 #%%
 
-def svd_tensors(tensor, left_shape, right_shape, bond,d_1,d_2):
+def svd_tensors(tensor, left_shape, right_shape, bond, d_1, d_2):
     """
     Application of the SVD and reshaping of the tensors
 
     Parameters
     ----------
-    tensor : tensor to decompose
-    left_shape : left reshaping for decomposition
-    right_shape : right resaping for decomposition
-    bond : max. bond dimension
-    d_1 : physical dimension of first tensor
-    d_2 : physical dimension of second tensor
+    tensor : ndarray
+        tensor to decompose
+
+    left_shape : int
+        left reshaping for decomposition
+    
+    right_shape : int
+        right resaping for decomposition
+    
+    bond : int
+        max. bond dimension
+    
+    d_1 : int
+        physical dimension of first tensor
+    
+    d_2 : int
+        physical dimension of second tensor
 
     Returns
     -------
-    u : left normalized tensor
-    s_norm : smichdt coefficients normalized 
-    vt : transposed right normalized tensor
+    u : ndarray
+        left normalized tensor
+
+    s_norm : ndarray
+        smichdt coefficients normalized 
+    
+    vt : ndarray
+        transposed right normalized tensor
     """
     u, s, vt = svd(tensor.reshape(left_shape, right_shape), full_matrices=False)
     chi = min(bond, len(s))
@@ -54,18 +70,34 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
     
     Parameters
     ----------
-    i_s0 : Initial system bin
-    i_n0 : Initial time bin
-    Deltat : time step
-    tmax : max time 
-    bond : max bond dimension
-    d_sys : system bin dimension. The default is 2.
-    d_t : time bin dimension. The default is 2.
+    i_s0 : ndarray
+        Initial system bin
+    
+    i_n0 : ndarray
+        Initial time bin
+    
+    Deltat : float
+        time step
+
+    tmax : float
+        max time
+
+    bond : int
+        max bond dimension
+    
+    d_sys : int, default: 2
+        system bin dimension
+
+    d_t : int, default: 2
+        time bin dimension
 
     Returns
     -------
-    sbins : A list with the system bins.
-    tbins : A list with the time bins.
+    sbins : [ndarray]
+        A list with the system bins.
+    
+    tbins : [ndarray]
+        A list with the time bins.
     """
     sbins=[] 
     i_s0.reshape(1,d_sys,1)
@@ -99,21 +131,43 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
     
     Parameters
     ----------
-    i_s0 : Initial system bin
-    i_n0 : Initial time bin
-    tau: Feedback time
-    Deltat : time step
-    tmax : max time 
-    bond : max bond dimension
-    d_sys : system bin dimension. The default is 2.
-    d_t : time bin dimension. The default is 2.
+    i_s0 : ndarray
+        Initial system bin
+    
+    i_n0 : ndarray
+        Initial time bin
+
+    tau : float
+        Feedback time
+    
+    Deltat : float
+        time step
+
+    tmax : float
+        max time
+
+    bond : int
+        max bond dimension
+    
+    d_sys : int, default: 2
+        system bin dimension
+
+    d_t : int, default: 2
+        time bin dimension
 
     Returns
     -------
-    sbins : A list with the system bins.
-    tbins : A list with the time bins (with OC).
-    taubins: A list with the feedback bins (with OC). 
-    schmidt: A list with the Schmidt coefficients
+    sbins : [ndarray]
+        A list with the system bins.
+    
+    tbins : [ndarray]
+        A list with the time bins (with OC).
+    
+    taubins : [ndarray]
+        A list of the feedback bins (with OC)
+
+    schmidt : [ndarray]
+        A list of the Schmidt coefficients
     """
     sbins=[] 
     tbins=[]
@@ -194,23 +248,39 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
 
 def pop_dynamics(sbins,tbins,Deltat):
     """
-    It calculates the main population dynamics
+    Calculates the main population dynamics
 
     Parameters
     ----------
-    sbins : A list with the system bins.
-    tbins : A list with the time bins.
+    sbins : [ndarray] 
+        A list with the system bins.
+
+    tbins : [ndarray]
+        A list with the time bins.
+
+    Deltat : float
+        Time step size.
 
     Returns
     -------
-    pop : TLS population.
-    tbinsR : Right photon flux.
-    tbinsL : Left photon flux.
-    trans : Integrated flux to right.
-    ref : Integrated flux to the left.
-    total : Total leaving the system, must be equal 
-    to total # excitations.
+    pop : ndarray
+        1D array containing TLS population.
 
+    tbinsR : ndarray
+        1D array containing the right photon flux.
+
+    tbinsL : ndarray
+        1D array containing the left photon flux.
+
+    trans : ndarray
+        1D array containing the integrated flux to right.
+
+    ref : ndarray
+        1D array containing the integrated flux to the left.
+    
+    total : ndarray
+        1D array containig the total quanta leaving the system, must be equal 
+    to total # excitations.
     """
     pop=np.array([op.expectation(s, obs.TLS_pop()) for s in sbins])
     tbinsR=np.array([op.expectation(t, obs.a_R_pop(Deltat)) for t in tbins])
@@ -227,24 +297,41 @@ def pop_dynamics(sbins,tbins,Deltat):
 
 def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
     """
-    It calculates the main population dynamics
+    Calculates the main population dynamics
 
     Parameters
     ----------
-    sbins : A list with the system bins.
-    tbins : A list with the time bins.
+    sbins : [ndarray] 
+        A list with the system bins.
+
+    tbins : [ndarray]
+        A list with the time bins.
+
+    Deltat : float
+        Time step size.
 
     Returns
     -------
-    pop : TLS population.
-    tbinsR : Right photon flux.
-    tbinsL : Left photon flux.
-    trans : Integrated flux to right.
-    ref : Integrated flux to the left.
-    total : Total leaving the system, must be equal 
-    to total # excitations.
+    pop : ndarray
+        1D array containing TLS population.
 
+    tbinsR : ndarray
+        1D array containing the right photon flux.
+
+    tbinsL : ndarray
+        1D array containing the left photon flux.
+
+    trans : ndarray
+        1D array containing the integrated flux to right.
+
+    ref : ndarray
+        1D array containing the integrated flux to the left.
+    
+    total : ndarray
+        1D array containig the total quanta leaving the system, must be equal 
+    to total # excitations.
     """
+
     N=len(sbins) 
     pop=np.array([op.expectation(s, obs.TLS_pop()) for s in sbins])
     tbins=np.array([op.expectation(t, obs.a_pop(Deltat)) for t in tbins])
@@ -278,23 +365,39 @@ def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
 
 def pop_dynamics_2TLS(sbins,tbins,Deltat,taubins=[],tau=0):
     """
-    It calculates the main population dynamics
+    Calculates the main population dynamics
 
     Parameters
     ----------
-    sbins : A list with the system bins.
-    tbins : A list with the time bins.
+    sbins : [ndarray] 
+        A list with the system bins.
+
+    tbins : [ndarray]
+        A list with the time bins.
+
+    Deltat : float
+        Time step size.
 
     Returns
     -------
-    pop : TLS population.
-    tbinsR : Right photon flux.
-    tbinsL : Left photon flux.
-    trans : Integrated flux to right.
-    ref : Integrated flux to the left.
-    total : Total leaving the system, must be equal 
-    to total # excitations.
+    pop : ndarray
+        1D array containing TLS population.
 
+    tbinsR : ndarray
+        1D array containing the right photon flux.
+
+    tbinsL : ndarray
+        1D array containing the left photon flux.
+
+    trans : ndarray
+        1D array containing the integrated flux to right.
+
+    ref : ndarray
+        1D array containing the integrated flux to the left.
+    
+    total : ndarray
+        1D array containig the total quanta leaving the system, must be equal 
+    to total # excitations.
     """
     N=len(sbins)
     pop1=np.zeros(N,dtype=complex)
