@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
+ADDING A COMMENT HERE TO CHECK
+
 This module contains the simulation to evolve the system 
 and calculate the main observables.
 
