@@ -196,58 +196,56 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
     
     i_stemp=i_s0      
     
-    def _feedback_loop(M):
-        for k in range(M):   
-            #swap of the feedback until being next to the system
-            i_tau= nbins[k] #starting from the feedback bin
-            for i in range(k,k+l-1): 
-                i_n=nbins[i+1] 
-                swaps=ncon([i_tau,i_n,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
-                i_n2,stemp,i_t=_svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[3],bond,d_t,d_t)
-                i_tau = ncon([np.diag(stemp),i_t],[[-1,1],[1,-3,-4]]) 
-                nbins[i]=i_n2 
-                
-            #Make the system bin the OC
-            i_1=ncon([i_tau,i_stemp],[[-1,-2,1],[1,-3,-4]]) #feedback-system contraction
-            i_t,stemp,i_stemp=_svd_tensors(i_1,d_t*i_1.shape[0],d_sys*i_1.shape[-1], bond,d_t,d_sys)
-            i_s=stemp[:,None,None]*i_stemp #OC system bin
+    for k in range(N):   
+        #swap of the feedback until being next to the system
+        i_tau= nbins[k] #starting from the feedback bin
+        for i in range(k,k+l-1): 
+            i_n=nbins[i+1] 
+            swaps=ncon([i_tau,i_n,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
+            i_n2,stemp,i_t=_svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[3],bond,d_t,d_t)
+            i_tau = ncon([np.diag(stemp),i_t],[[-1,1],[1,-3,-4]]) 
+            nbins[i]=i_n2 
             
-            #now contract the 3 bins and apply U, followed by 2 svd to recover the 3 bins                 
-            phi1=ncon([i_t,i_s,i_n0,evO],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + U operator contraction
-            i_t,stemp,i_2=_svd_tensors(phi1,d_t*phi1.shape[0],d_t*d_sys*phi1.shape[-1], bond,d_t,d_t*d_sys)
-            i_2=stemp[:,None,None]*i_2
-            i_stemp,stemp,i_n=_svd_tensors(i_2,d_sys*i_2.shape[0],d_t*i_2.shape[-1], bond,d_sys,d_t)
-            i_s = i_stemp*stemp[None,None,:]
-            sbins.append(i_s) 
-            
-            #swap system and i_n
-            phi2=ncon([i_s,i_n,swap_sys_t],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
-            i_n,stemp,i_stemp=_svd_tensors(phi2,d_sys*phi2.shape[0],d_t*phi2.shape[-1], bond,d_sys,d_t)   
-            i_n=i_n*stemp[None,None,:] #the OC in time bin     
-            
-            cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) 
-            i_t,stemp,i_n=_svd_tensors(cont,d_t*cont.shape[0],d_t*cont.shape[-1], bond,d_t,d_t)   
-            i_tau = i_t*stemp[None,None,:] #OC in feedback bin     
-            tbins.append(stemp[:,None,None]*i_n)
-            
-            #feedback bin, time bin contraction
-            taubins.append(i_tau) 
-            nbins[k+l-1]=i_tau #update of the feedback bin
-            nbins.append(i_n)         
-            t_k += Deltat
-            schmidt.append(stemp) #storing the Schmidt coeff for calculating the entanglement
-    
-            #swap back of the feedback bin      
-            for i in range(k+l-1,k,-1): #goes from the last time bin to first one
-                i_n=nbins[i-1] #time bin
-                swaps=ncon([i_n,i_tau,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
-                i_t,stemp,i_n2=_svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[-1], bond,d_t,d_t)   
-                i_tau = i_t*stemp[None,None,:] #OC tau bin         
-                nbins[i]=i_n2    #update nbins            
-            if k<(M-1):         
-                nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
-        sbins,tbins,taubins#,schmidt
-    return _feedback_loop(N)
+        #Make the system bin the OC
+        i_1=ncon([i_tau,i_stemp],[[-1,-2,1],[1,-3,-4]]) #feedback-system contraction
+        i_t,stemp,i_stemp=_svd_tensors(i_1,d_t*i_1.shape[0],d_sys*i_1.shape[-1], bond,d_t,d_sys)
+        i_s=stemp[:,None,None]*i_stemp #OC system bin
+        
+        #now contract the 3 bins and apply U, followed by 2 svd to recover the 3 bins                 
+        phi1=ncon([i_t,i_s,i_n0,evO],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + U operator contraction
+        i_t,stemp,i_2=_svd_tensors(phi1,d_t*phi1.shape[0],d_t*d_sys*phi1.shape[-1], bond,d_t,d_t*d_sys)
+        i_2=stemp[:,None,None]*i_2
+        i_stemp,stemp,i_n=_svd_tensors(i_2,d_sys*i_2.shape[0],d_t*i_2.shape[-1], bond,d_sys,d_t)
+        i_s = i_stemp*stemp[None,None,:]
+        sbins.append(i_s) 
+        
+        #swap system and i_n
+        phi2=ncon([i_s,i_n,swap_sys_t],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
+        i_n,stemp,i_stemp=_svd_tensors(phi2,d_sys*phi2.shape[0],d_t*phi2.shape[-1], bond,d_sys,d_t)   
+        i_n=i_n*stemp[None,None,:] #the OC in time bin     
+        
+        cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) 
+        i_t,stemp,i_n=_svd_tensors(cont,d_t*cont.shape[0],d_t*cont.shape[-1], bond,d_t,d_t)   
+        i_tau = i_t*stemp[None,None,:] #OC in feedback bin     
+        tbins.append(stemp[:,None,None]*i_n)
+        
+        #feedback bin, time bin contraction
+        taubins.append(i_tau) 
+        nbins[k+l-1]=i_tau #update of the feedback bin
+        nbins.append(i_n)         
+        t_k += Deltat
+        schmidt.append(stemp) #storing the Schmidt coeff for calculating the entanglement
+
+        #swap back of the feedback bin      
+        for i in range(k+l-1,k,-1): #goes from the last time bin to first one
+            i_n=nbins[i-1] #time bin
+            swaps=ncon([i_n,i_tau,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
+            i_t,stemp,i_n2=_svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[-1], bond,d_t,d_t)   
+            i_tau = i_t*stemp[None,None,:] #OC tau bin         
+            nbins[i]=i_n2    #update nbins            
+        if k<(N-1):         
+            nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
+    return sbins,tbins,taubins#,schmidt
 
 
 
