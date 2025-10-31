@@ -15,10 +15,10 @@ It requires the module ncon (pip install --user ncon)
 import numpy as np
 from ncon import ncon
 from scipy.linalg import svd,norm
-from .operators import basic_operators,observables
+from .operators import * #basic_operators,observables
 
-op=basic_operators()
-obs=observables()
+# op=basic_operators()
+# obs=observables()
 
 #%%
 
@@ -102,7 +102,6 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
         A list with the time bins.
     """
     sbins=[] 
-    i_s0.reshape(1,d_sys,1)
     sbins.append(i_s0)
     tbins=[]
     tbins.append(i_n0)
@@ -111,7 +110,8 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
     t_k=0
     i_s=i_s0
     Ham=H
-    evO=op.U(Ham,d_sys,d_t)
+    evO=U(Ham,d_sys,d_t)
+    swap_sys_t=swap(d_sys,d_t)
            
     for k in range(1,N+1):      
         phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + U operator contraction  
@@ -120,7 +120,7 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
         sbins.append(i_s)
         tbins.append(stemp[:,None,None]*i_n)
                     
-        phi2=ncon([i_s,i_n,op.swap(d_sys,d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #system bin, time bin + swap contraction
+        phi2=ncon([i_s,i_n,swap_sys_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #system bin, time bin + swap contraction
         i_n,stemp,i_st=svd_tensors(phi2,d_t*phi2.shape[0],d_sys*phi2.shape[-1], bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_st   #OC system bin
         t_k += Deltat
@@ -176,7 +176,6 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
     taubins=[]
     nbins=[]
     schmidt=[]
-    i_s0.reshape(1,d_sys,1)
     sbins.append(i_s0)   
     tbins.append(i_n0)
     taubins.append(i_n0)
@@ -186,7 +185,9 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
     t_k=0
     t_0=0
     Ham=H
-    evO=op.U_NM(Ham,d_t,d_sys)
+    evO=U_NM(Ham,d_t,d_sys)
+    swap_t_t=swap(d_t,d_t)
+    swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/Deltat,0)) #time steps between system and feedback
     
     while t_0 < tau:
@@ -200,7 +201,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
         i_tau= nbins[k] #starting from the feedback bin
         for i in range(k,k+l-1): 
             i_n=nbins[i+1] 
-            swaps=ncon([i_tau,i_n,op.swap(d_t,d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
+            swaps=ncon([i_tau,i_n,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
             i_n2,stemp,i_t=svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[3],bond,d_t,d_t)
             i_tau = ncon([np.diag(stemp),i_t],[[-1,1],[1,-3,-4]]) 
             nbins[i]=i_n2 
@@ -219,7 +220,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
         sbins.append(i_s) 
         
         #swap system and i_n
-        phi2=ncon([i_s,i_n,op.swap(d_sys,d_t)],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
+        phi2=ncon([i_s,i_n,swap_sys_t],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
         i_n,stemp,i_stemp=svd_tensors(phi2,d_sys*phi2.shape[0],d_t*phi2.shape[-1], bond,d_sys,d_t)   
         i_n=i_n*stemp[None,None,:] #the OC in time bin     
         
@@ -238,7 +239,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
         #swap back of the feedback bin      
         for i in range(k+l-1,k,-1): #goes from the last time bin to first one
             i_n=nbins[i-1] #time bin
-            swaps=ncon([i_n,i_tau,op.swap(d_t,d_t)],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
+            swaps=ncon([i_n,i_tau,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
             i_t,stemp,i_n2=svd_tensors(swaps,d_t*swaps.shape[0],d_t*swaps.shape[-1], bond,d_t,d_t)   
             i_tau = i_t*stemp[None,None,:] #OC tau bin         
             nbins[i]=i_n2    #update nbins            
@@ -284,9 +285,9 @@ def pop_dynamics(sbins,tbins,Deltat):
         1D array containig the total quanta leaving the system, must be equal 
     to total # excitations.
     """
-    pop=np.array([op.expectation(s, obs.TLS_pop()) for s in sbins])
-    tbinsR=np.array([op.expectation(t, obs.a_R_pop(Deltat)) for t in tbins])
-    tbinsL=np.array([op.expectation(t, obs.a_L_pop(Deltat)) for t in tbins])
+    pop=np.array([expectation(s, TLS_pop()) for s in sbins])
+    tbinsR=np.array([expectation(t, a_R_pop(Deltat)) for t in tbins])
+    tbinsL=np.array([expectation(t, a_L_pop(Deltat)) for t in tbins])
    
     # Cumulative sums
     trans = np.cumsum(tbinsR)
@@ -335,9 +336,9 @@ def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
     """
 
     N=len(sbins) 
-    pop=np.array([op.expectation(s, obs.TLS_pop()) for s in sbins])
-    tbins=np.array([op.expectation(t, obs.a_pop(Deltat)) for t in tbins])
-    tbins2=np.real([op.expectation(taus, obs.a_pop(Deltat)) for taus in taubins])
+    pop=np.array([expectation(s, TLS_pop()) for s in sbins])
+    tbins=np.array([expectation(t, a_pop(Deltat)) for t in tbins])
+    tbins2=np.real([expectation(taus, a_pop(Deltat)) for taus in taubins])
     ph_loop=np.zeros(N,dtype=complex)
     trans=np.zeros(N,dtype=complex)
     total=np.zeros(N,dtype=complex)
@@ -428,21 +429,21 @@ def pop_dynamics_2TLS(sbins,tbins,Deltat,taubins=[],tau=0):
         i_s1 = ncon([i_s1,np.diag(sm)],[[-1,-2,1],[1,-3]]) 
         i_s2 = vt[range(len(sm)),:].reshape(len(sm),2,i_s.shape[-1]) 
         i_s2 = ncon([np.diag(sm),i_s2],[[-1,1],[1,-2,-3]]) 
-        pop1[i]=op.expectation(i_s1, obs.TLS_pop())
-        pop2[i]=op.expectation(i_s2, obs.TLS_pop())    
-        tbinsR[i]=np.real(op.expectation(tbins[i], obs.a_R_pop(Deltat)))
-        tbinsL[i]=np.real(op.expectation(tbins[i], obs.a_L_pop(Deltat)))
+        pop1[i]=expectation(i_s1, TLS_pop())
+        pop2[i]=expectation(i_s2, TLS_pop())    
+        tbinsR[i]=np.real(expectation(tbins[i], a_R_pop(Deltat)))
+        tbinsL[i]=np.real(expectation(tbins[i], a_L_pop(Deltat)))
         if tau != 0:
-            tbinsR2[i]=np.real(op.expectation(taubins[i], obs.a_R_pop(Deltat)))
-            tbinsL2[i]=np.real(op.expectation(taubins[i], obs.a_L_pop(Deltat)))
+            tbinsR2[i]=np.real(expectation(taubins[i], a_R_pop(Deltat)))
+            tbinsL2[i]=np.real(expectation(taubins[i], a_L_pop(Deltat)))
             temp_outR+=tbinsR2[i]
             temp_outL+=tbinsL2[i]
             trans[i]=temp_outR
             ref[i]=temp_outL
             if i <=l:
-                temp_inR+=op.expectation(tbins[i], obs.a_R_pop(Deltat))
+                temp_inR+=expectation(tbins[i], a_R_pop(Deltat))
                 in_R[i] = temp_inR
-                temp_inL+= op.expectation(tbins[i], obs.a_L_pop(Deltat))
+                temp_inL+= expectation(tbins[i], a_L_pop(Deltat))
                 in_L[i] = temp_inL
                 total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
             if i>l:
