@@ -111,7 +111,7 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
     t_k=0
     i_s=i_s0
     Ham=H
-    evO=op.U(Ham,d_sys)
+    evO=op.U(Ham,d_sys,d_t)
            
     for k in range(1,N+1):      
         phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + U operator contraction  
@@ -347,18 +347,18 @@ def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
     in_loop=0
     for i in range(N):
         temp_out+=tbins2[i]
-        ph_loop[i]=temp_out
+        trans[i]=temp_out
         if i<=l:
             # temp_out+=tbins2[i]
             # trans[i]=temp_out
             in_loop=np.sum(tbins[:i+1]) 
-            trans[i]=in_loop
+            ph_loop[i]=in_loop
             total[i]=pop[i]+ph_loop[i]+trans[i]
         if i>l:
             # temp_out=np.sum(tbins2[i-l+1:i+1]) 
             # trans[i]=temp_out
             in_loop=np.sum(tbins[i-l+1:i+1]) 
-            trans[i]=in_loop
+            ph_loop[i]=in_loop
             # trans[i]=np.sum(tbins[i-l+1:i+1]) 
             total[i]  = pop[i] +  trans[i] + ph_loop[i]
         # trans[i]=np.sum(tbins2[0:i]) 
@@ -418,7 +418,8 @@ def pop_dynamics_2TLS(sbins,tbins,Deltat,taubins=[],tau=0):
     temp_outR=0
     temp_outL=0
     l=int(round(tau/Deltat,0))
-    
+    temp_trans=0
+    temp_ref=0
     for i in range(N):
         i_s=sbins[i]
         i_sm=i_s.reshape(i_s.shape[0]*2,i_s.shape[-1]*2)
@@ -451,8 +452,10 @@ def pop_dynamics_2TLS(sbins,tbins,Deltat,taubins=[],tau=0):
                 in_R[i] = temp_inR
                 in_L[i] = temp_inL
         if tau==0:
-            trans[i] = tbinsR[i]
-            ref[i] = tbinsL[i]
+            temp_trans+= tbinsR[i]
+            trans[i] = temp_trans
+            temp_ref += tbinsL[i]
+            ref[i] = temp_ref
             total[i]  = pop1[i] + pop2[i]  + trans[i] + ref[i]
         
     return pop1,pop2,tbinsR,tbinsL,trans,ref,total

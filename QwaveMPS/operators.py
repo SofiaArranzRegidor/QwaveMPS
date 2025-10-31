@@ -180,7 +180,7 @@ class basic_operators:
     
     def e(self,d_sys=2):
         """
-        <Description>
+        |e⟩⟨e| operator for the TLS.
 
         Parameters
         ----------
@@ -222,8 +222,8 @@ class basic_operators:
         Examples
         -------- 
         """ 
-        sol= expm(-Hm)
-        return sol.reshape(d_sys,d_t*d_t,d_sys,d_t*d_t)
+        sol= expm(-1j*Hm)
+        return sol.reshape(d_sys,d_t,d_sys,d_t)
 
     def U_NM(self,Hm,d_t,d_sys):
         """
@@ -248,7 +248,7 @@ class basic_operators:
         Examples
         -------- 
         """         
-        sol = expm(-Hm)
+        sol = expm(-1j*Hm)
         return sol.reshape(d_sys,d_t,d_t,d_sys,d_t,d_t)
     
     def swap(self,dim1,dim2):
