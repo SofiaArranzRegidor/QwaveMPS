@@ -17,7 +17,9 @@ from ncon import ncon
 """
 This includes the basic boson and TLS operators used to build the Hamiltonian 
 """
-def sigmaplus(d_sys=2):  
+#def sigmaplus(d_sys: int=2) -> npt.NDArray[np.complex128]:  
+#def sigmaplus(d_sys: int=2) -> np.ndarray[Annotated[tuple[int,int],('n', 'n')], np.dtype[complex]]:  
+def sigmaplus(d_sys:int=2) -> np.ndarray:  
     """
     Raising operator for the Pauli spins.
 
@@ -33,7 +35,7 @@ def sigmaplus(d_sys=2):
     a[1,0]=1.       
     return a
 
-def sigmaminus(d_sys=2):  
+def sigmaminus(d_sys:int=2) -> np.ndarray:  
     """
     Lowering operator for the Pauli spins.
 
@@ -49,7 +51,7 @@ def sigmaminus(d_sys=2):
     a[0,1]=1.       
     return a
 
-def DeltaBdag(Deltat, d_t=2):  
+def DeltaBdag(Deltat:float, d_t:int=2) -> np.ndarray:  
     """
     Time bin noise creation (raising) operator.
 
@@ -71,7 +73,7 @@ def DeltaBdag(Deltat, d_t=2):
     """
     return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), -1) 
 
-def DeltaB(Deltat, d_t=2):  
+def DeltaB(Deltat:float, d_t:int=2) -> np.ndarray:  
     """
     Time bin noise annihilation (lowering) operator.
 
@@ -93,7 +95,7 @@ def DeltaB(Deltat, d_t=2):
     """      
     return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
 
-def DeltaBdagL(Deltat, d_t=2):  
+def DeltaBdagL(Deltat:float, d_t:int=2) -> np.ndarray:  
     """
     Left time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -115,7 +117,7 @@ def DeltaBdagL(Deltat, d_t=2):
     """ 
     return np.kron(DeltaBdag(Deltat, d_t),np.eye(d_t))     
 
-def DeltaBdagR(Deltat, d_t=2): 
+def DeltaBdagR(Deltat:float, d_t:int=2) -> np.ndarray: 
     """
     Right time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -137,7 +139,7 @@ def DeltaBdagR(Deltat, d_t=2):
     """ 
     return np.kron(np.eye(d_t), DeltaBdag(Deltat, d_t))     
 
-def DeltaBL(Deltat, d_t=2):  
+def DeltaBL(Deltat:float, d_t:int=2) -> np.ndarray:  
     """
     Left time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -159,7 +161,7 @@ def DeltaBL(Deltat, d_t=2):
     """ 
     return np.kron(DeltaB(Deltat, d_t),np.eye(d_t))     
 
-def DeltaBR(Deltat, d_t=2):  
+def DeltaBR(Deltat:float, d_t:int=2) -> np.ndarray:  
     """
     Right time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -178,7 +180,7 @@ def DeltaBR(Deltat, d_t=2):
     """ 
     return np.kron(np.eye(d_t),DeltaB(Deltat, d_t))       
 
-def e(d_sys=2):
+def e(d_sys:int=2) -> np.ndarray:
     """
     |e⟩⟨e| operator for the TLS.
 
@@ -199,9 +201,9 @@ def e(d_sys=2):
     exc[1,1]=1.      
     return exc
 
-def U(Hm,d_sys=2,d_t=2):
+def U(Hm:np.ndarray, d_sys:int=2, d_t:int=2, interacting_timebins_num:int=1) -> np.ndarray:
     """
-    Time evolution operator in the case of Markovian dynamics.
+    Creates a time evolution operator for a given Hamiltonian.
 
     Parameters
     ----------
@@ -214,44 +216,23 @@ def U(Hm,d_sys=2,d_t=2):
     d_t : int, default: 2
         Size of the truncated Hilbert space of the light field.
 
+    interacting_timebins_num : int, default: 1
+        Number of light channels/feedback loops involved in the Hamiltonian.
+
     Returns
     -------
     oper : ndarray
-        ndarray time evolution operator.
+        ndarray time evolution operator of shape ((d_sys,) + (d_t,)*interacting_timebins_num)*2.
     
     Examples
     -------- 
     """ 
     sol= expm(-1j*Hm)
-    return sol.reshape(d_sys,d_t,d_sys,d_t)
+    #shape = (((d_t,)*interacting_timebins_num) + (d_sys,) ) * 2
+    shape = ((d_sys,) + ((d_t,)*interacting_timebins_num)) * 2
+    return sol.reshape(shape)
 
-def U_NM(Hm,d_t,d_sys):
-    """
-    Time evolution operator in the case of non-Markovian dynamics.
-
-    Parameters
-    ----------
-    Hm : ndarray
-        Hamiltonian of the system.
-
-    d_sys : int, default: 2
-        Size of the Hilbert space of the matter system.
-    
-    d_t : int, default: 2
-        Size of the truncated Hilbert space of the light field.
-
-    Returns
-    -------
-    oper : ndarray
-        ndarray time evolution for non-Markovian operator.
-    
-    Examples
-    -------- 
-    """         
-    sol = expm(-1j*Hm)
-    return sol.reshape(d_sys,d_t,d_t,d_sys,d_t,d_t)
-
-def swap(dim1,dim2):
+def swap(dim1:int, dim2:int) -> np.ndarray:
     """
     Swap tensor to swap the contents of adjacent MPS bins.
 
@@ -280,7 +261,7 @@ def swap(dim1,dim2):
  
 # I think slightly less performant for small dims, but slightly faster for large dims, could just remove
 # Reduces to single explicit python loop
-def vectorizedswap(dim1,dim2):
+def vectorizedswap(dim1:int, dim2:int) -> np.ndarray:
     """
     Swap tensor to swap the contents of adjacent MPS bins.
 
@@ -307,7 +288,7 @@ def vectorizedswap(dim1,dim2):
     return swap.reshape(dim1,dim2,dim1,dim2)
 
 
-def expectation(AList, MPO):
+def expectation(AList:np.ndarray, MPO:np.ndarray) -> complex:
     """
     The expectation value of a MPS bin with a given operator.
 
@@ -321,7 +302,7 @@ def expectation(AList, MPO):
     
     Returns
     -------
-    expectation value : float
+    expectation value : complex
         The expectation value of the operator for the given state.
     
     Examples
@@ -338,14 +319,14 @@ def expectation(AList, MPO):
 #         operators = basic_operators()  
 #     self.op = operators
 
-def TLS_pop(d_sys=2):    
+def TLS_pop(d_sys:int=2) -> np.ndarray:    
     return (sigmaplus() @ sigmaminus())
     
-def a_R_pop(Deltat,d_t=2):
+def a_R_pop(Deltat:float, d_t:int=2) -> np.ndarray:
     return (DeltaBdagR(Deltat) @ DeltaBR(Deltat))/Deltat
 
-def a_L_pop(Deltat,d_t=2):  
+def a_L_pop(Deltat:float, d_t:int=2) -> np.ndarray:  
     return (DeltaBdagL(Deltat) @ DeltaBL(Deltat))/Deltat
 
-def a_pop(Deltat,d_t=2):  
+def a_pop(Deltat:float, d_t:int=2) -> np.ndarray:  
     return (DeltaBdag(Deltat) @ DeltaB(Deltat))/Deltat

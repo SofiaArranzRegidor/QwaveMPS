@@ -26,13 +26,13 @@ tau=0.5
 
 """ Choose the initial state and coupling"""
 
-i_s01=QM.initial_state.i_se()
-i_s02= QM.initial_state.i_sg()
+i_s01=QM.states.i_se()
+i_s02= QM.states.i_sg()
 
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
 i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
-i_n0=QM.initial_state.i_ng(d_t)
+i_n0=QM.states.i_ng(d_t)
 
 #Copuling is symmetric by default
 gammaL1,gammaR1=QM.coupling()

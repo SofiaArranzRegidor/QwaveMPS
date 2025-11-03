@@ -12,7 +12,7 @@ from .operators import *
 # op=basic_operators()
 
 
-def Hamiltonian_1TLS(Deltat,gammaL,gammaR,d_t=2,d_sys=2,Omega=0,Delta=0):
+def Hamiltonian_1TLS(Deltat:float, gammaL:float, gammaR:float, d_t:int=2, d_sys:int=2, Omega:float=0, Delta:float=0) -> np.ndarray:
     """
     Hamilltonian for 1 TLS in the waveguide
     
@@ -55,7 +55,7 @@ def Hamiltonian_1TLS(Deltat,gammaL,gammaR,d_t=2,d_sys=2,Omega=0,Delta=0):
     return M
 
     
-def Hamiltonian_1TLS_feedback(Deltat,gammaL,gammaR,phase,d_t,d_sys,Omega=0,Delta=0):
+def Hamiltonian_1TLS_feedback(Deltat:float, gammaL:float, gammaR:float, phase:float, d_t:int, d_sys:int, Omega:float=0, Delta:float=0) -> np.ndarray:
     """
     Hamilltonian for 1 TLS in a semi-infinite waveguide with a side mirror
     
@@ -102,7 +102,7 @@ def Hamiltonian_1TLS_feedback(Deltat,gammaL,gammaR,phase,d_t,d_sys,Omega=0,Delta
     return M
 
 
-def Hamiltonian_2TLS_NM(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
+def Hamiltonian_2TLS_NM(Deltat:float, gammaL1:float, gammaR1:float, gammaL2:float, gammaR2:float, phase:float, d_sys:int, d_t:int, Omega1:float=0, Delta1:float=0, Omega2:float=0, Delta2:float=0) -> np.ndarray:
     """
     Hamilltonian for 2 TLSs in an infinite waveguide.
     
@@ -181,7 +181,7 @@ def Hamiltonian_2TLS_NM(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,O
     M = (Msys1 + Msys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc)
     return M
 
-def Hamiltonian_2TLS_M(Deltat,gammaL1,gammaR1,gammaL2,gammaR2,phase,d_sys,d_t,Omega1=0,Delta1=0,Omega2=0,Delta2=0):
+def Hamiltonian_2TLS_M(Deltat:float, gammaL1:float, gammaR1:float, gammaL2:float, gammaR2:float, phase:float, d_sys:int, d_t:int, Omega1:float=0, Delta1:float=0, Omega2:float=0, Delta2:float=0) -> np.ndarray:
     """
     Hamilltonian for 2 TLSs in an infinite waveguide.
     
