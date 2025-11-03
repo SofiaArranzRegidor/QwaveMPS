@@ -15,7 +15,9 @@ It requires the module ncon (pip install --user ncon)
 import numpy as np
 from ncon import ncon
 from scipy.linalg import svd,norm
+from collections.abc import Iterator
 from .operators import * #basic_operators,observables
+from . import states as states
 
 # op=basic_operators()
 # obs=observables()
@@ -66,7 +68,7 @@ def _svd_tensors(tensor:np.ndarray, left_shape:int, right_shape:int, bond:int, d
     return u, s_norm, vt
 
 
-def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_M(H:np.ndarray, i_s0:np.ndarray, input_timebins:Iterator[np.ndarray], Deltat:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -75,7 +77,7 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
     i_s0 : ndarray
         Initial system bin
     
-    i_n0 : ndarray
+    input_timebins : Iterator[ndarray]
         Initial time bin
     
     Deltat : float
@@ -104,7 +106,7 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
     sbins=[] 
     sbins.append(i_s0)
     tbins=[]
-    tbins.append(i_n0)
+    tbins.append(states.i_ng(d_t))
 
     N=int(tmax/Deltat)
     t_k=0
@@ -113,7 +115,8 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
     evO=U(Ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
            
-    for k in range(1,N+1):      
+    for k in range(1,N+1):  
+        i_n0 = next(input_timebins)    
         phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + U operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1,d_sys*phi1.shape[0],d_t*phi1.shape[-1], bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
@@ -127,7 +130,7 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
     return sbins,tbins
 
 
-def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, input_timebins:Iterator[np.ndarray], tau:float, Deltat:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -136,7 +139,7 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
     i_s0 : ndarray
         Initial system bin
     
-    i_n0 : ndarray
+    input_timebins : Iterator[ndarray]
         Initial time bin
 
     tau : float
@@ -177,6 +180,7 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
     nbins=[]
     schmidt=[]
     sbins.append(i_s0)   
+    i_n0 = states.i_ng(d_t)
     tbins.append(i_n0)
     taubins.append(i_n0)
     
@@ -190,13 +194,15 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
     swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/Deltat,0)) #time steps between system and feedback
     
+    # Should there be flag for input field states to optionally, already be in feedback loop (that is, have non-vacuum feedback loop initial state)?
     while t_0 < tau:
         nbins.append(i_n0)
         t_0+=Deltat
     
     i_stemp=i_s0      
     
-    for k in range(N):   
+    for k in range(N):  
+        i_n0 = next(input_timebins) 
         #swap of the feedback until being next to the system
         i_tau= nbins[k] #starting from the feedback bin
         for i in range(k,k+l-1): 
@@ -304,10 +310,10 @@ def pop_dynamics_1TLS_NM(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins
 
     Parameters
     ----------
-    sbins : [ndarray] 
+    sbins : list[ndarray] 
         A list with the system bins.
 
-    tbins : [ndarray]
+    tbins : list[ndarray]
         A list with the time bins.
 
     Deltat : float

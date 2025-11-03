@@ -37,7 +37,7 @@ i_s02= QM.states.i_sg()
 
 i_s0=np.kron(i_s01,i_s02)
 
-i_n0=QM.states.i_ng(d_t)
+i_n0=QM.states.input_state_generator(d_t)
 
 
 

@@ -27,7 +27,7 @@ tau=0.5
 """ Choose the initial state and coupling"""
 
 i_s0=QM.states.i_se()
-i_n0=QM.states.i_ng(d_t)
+i_n0=QM.states.input_state_generator(d_t)
 
 #Copuling is symmetric by default
 gammaL,gammaR=QM.coupling()
