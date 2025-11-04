@@ -22,7 +22,7 @@ from .operators import * #basic_operators,observables
 
 #%%
 
-def _svd_tensors(tensor, left_shape, right_shape, bond, d_1, d_2):
+def _svd_tensors(tensor:np.ndarray, left_shape:int, right_shape:int, bond:int, d_1:int, d_2:int) -> np.ndarray:
     """
     Application of the SVD and reshaping of the tensors
 
@@ -66,7 +66,7 @@ def _svd_tensors(tensor, left_shape, right_shape, bond, d_1, d_2):
     return u, s_norm, vt
 
 
-def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
+def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -127,7 +127,7 @@ def t_evol_M(H,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t):
     return sbins,tbins
 
 
-def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
+def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -185,7 +185,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
     t_k=0
     t_0=0
     Ham=H
-    evO=U_NM(Ham,d_t,d_sys)
+    evO=U(Ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
     swap_t_t=swap(d_t,d_t)
     swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/Deltat,0)) #time steps between system and feedback
@@ -249,7 +249,7 @@ def t_evol_NM(H,i_s0,i_n0,tau,Deltat,tmax,bond,d_t,d_sys):
 
 
 
-def pop_dynamics(sbins,tbins,Deltat):
+def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float):
     """
     Calculates the main population dynamics
 
@@ -298,7 +298,7 @@ def pop_dynamics(sbins,tbins,Deltat):
     return pop,tbinsR,tbinsL,trans,ref,total
 
 
-def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
+def pop_dynamics_1TLS_NM(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, Deltat:float):
     """
     Calculates the main population dynamics
 
@@ -366,7 +366,7 @@ def pop_dynamics_1TLS_NM(sbins,tbins,taubins,tau,Deltat):
         # total[i]  = pop[i] + trans[i]*2
     return pop,tbins,trans,ph_loop,total
 
-def pop_dynamics_2TLS(sbins,tbins,Deltat,taubins=[],tau=0):
+def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float, taubins:list[np.ndarray]=[], tau:float=0):
     """
     Calculates the main population dynamics
 
