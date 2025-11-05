@@ -16,9 +16,9 @@ import QwaveMPS as QM
 
 "Choose the time step and end time"
 
-Deltat = 0.05
+delta_t = 0.05
 tmax = 8
-tlist=np.arange(0,tmax+Deltat,Deltat)
+tlist=np.arange(0,tmax+delta_t,delta_t)
 d_t=4
 d_sys=4
 
@@ -49,17 +49,17 @@ phase=np.pi
 
 """Choose the Hamiltonian"""
 
-Hm=QM.Hamiltonian_2TLS_M(Deltat, gammaL1, gammaR1, gammaL2, gammaR2,phase,d_t,d_sys)
+Hm=QM.hamiltonian_2TLS_M(delta_t, gammaL1, gammaR1, gammaL2, gammaR2,phase,d_t,d_sys)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_M(Hm,i_s0,i_n0,Deltat,tmax,bond,d_sys,d_t)
+sys_b,time_b = QM.t_evol_m(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
 
 
 """Calculate population dynamics"""
 
-pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,Deltat)
+pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,delta_t)
 
 
 #%%
@@ -67,7 +67,7 @@ pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,Deltat
 plt.figure(figsize=(4.5,4))
 plt.plot(tlist,np.real(pop1),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
 plt.plot(tlist,np.real(pop2),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-# plt.plot(tlist,np.real(tbinsR)/Deltat,linewidth = 3,color = 'r',linestyle='-',label=r'$n_R/dt$')
+# plt.plot(tlist,np.real(tbinsR)/delta_t,linewidth = 3,color = 'r',linestyle='-',label=r'$n_R/dt$')
 plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
 plt.plot(tlist,total,linewidth = 3,color = 'g',linestyle='-',label='Total')

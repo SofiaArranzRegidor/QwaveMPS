@@ -51,13 +51,13 @@ def sigmaminus(d_sys:int=2) -> np.ndarray:
     a[0,1]=1.       
     return a
 
-def DeltaBdag(Deltat:float, d_t:int=2) -> np.ndarray:  
+def delta_b_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Time bin noise creation (raising) operator.
 
     Parameters
     ----------
-    Deltat : float
+    delta_t : float
         Time step for system evolution.
 
     d_t : int, default: 2
@@ -71,15 +71,15 @@ def DeltaBdag(Deltat:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """
-    return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), -1) 
+    return np.sqrt(delta_t) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), -1) 
 
-def DeltaB(Deltat:float, d_t:int=2) -> np.ndarray:  
+def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Time bin noise annihilation (lowering) operator.
 
     Parameters
     ----------
-    Deltat : float
+    delta_t : float
         Time step for system evolution.
     
     d_t : int, default: 2
@@ -93,15 +93,15 @@ def DeltaB(Deltat:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """      
-    return np.sqrt(Deltat) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
+    return np.sqrt(delta_t) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
 
-def DeltaBdagL(Deltat:float, d_t:int=2) -> np.ndarray:  
+def delta_b_dagL(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Left time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
     Parameters
     ----------
-    Deltat : float
+    delta_t : float
         Time step for system evolution.
     
     d_t : int, default: 2
@@ -115,15 +115,15 @@ def DeltaBdagL(Deltat:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(DeltaBdag(Deltat, d_t),np.eye(d_t))     
+    return np.kron(delta_b_dag(delta_t, d_t),np.eye(d_t))     
 
-def DeltaBdagR(Deltat:float, d_t:int=2) -> np.ndarray: 
+def delta_b_dagR(delta_t:float, d_t:int=2) -> np.ndarray: 
     """
     Right time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
     Parameters
     ----------
-    Deltat : float
+    delta_t : float
         Time step for system evolution.
     
     d_t : int, default: 2
@@ -137,15 +137,15 @@ def DeltaBdagR(Deltat:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(np.eye(d_t), DeltaBdag(Deltat, d_t))     
+    return np.kron(np.eye(d_t), delta_b_dag(delta_t, d_t))     
 
-def DeltaBL(Deltat:float, d_t:int=2) -> np.ndarray:  
+def delta_bL(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Left time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
     Parameters
     ----------
-    Deltat : float
+    delta_t : float
         Time step for system evolution.
     
     d_t : int, default: 2
@@ -159,15 +159,15 @@ def DeltaBL(Deltat:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(DeltaB(Deltat, d_t),np.eye(d_t))     
+    return np.kron(delta_b(delta_t, d_t),np.eye(d_t))     
 
-def DeltaBR(Deltat:float, d_t:int=2) -> np.ndarray:  
+def delta_bR(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Right time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
     Parameters
     ----------
-    Deltat : float
+    delta_t : float
         Time step for system evolution.
 
     Returns
@@ -178,7 +178,7 @@ def DeltaBR(Deltat:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(np.eye(d_t),DeltaB(Deltat, d_t))       
+    return np.kron(np.eye(d_t),delta_b(delta_t, d_t))       
 
 def e(d_sys:int=2) -> np.ndarray:
     """
@@ -201,7 +201,7 @@ def e(d_sys:int=2) -> np.ndarray:
     exc[1,1]=1.      
     return exc
 
-def U(Hm:np.ndarray, d_sys:int=2, d_t:int=2, interacting_timebins_num:int=1) -> np.ndarray:
+def u(Hm:np.ndarray, d_sys:int=2, d_t:int=2, interacting_timebins_num:int=1) -> np.ndarray:
     """
     Creates a time evolution operator for a given Hamiltonian.
 
@@ -261,7 +261,7 @@ def swap(dim1:int, dim2:int) -> np.ndarray:
  
 # I think slightly less performant for small dims, but slightly faster for large dims, could just remove
 # Reduces to single explicit python loop
-def vectorizedswap(dim1:int, dim2:int) -> np.ndarray:
+def vectorized_swap(dim1:int, dim2:int) -> np.ndarray:
     """
     Swap tensor to swap the contents of adjacent MPS bins.
 
@@ -322,11 +322,11 @@ def expectation(AList:np.ndarray, MPO:np.ndarray) -> complex:
 def TLS_pop(d_sys:int=2) -> np.ndarray:    
     return (sigmaplus() @ sigmaminus())
     
-def a_R_pop(Deltat:float, d_t:int=2) -> np.ndarray:
-    return (DeltaBdagR(Deltat) @ DeltaBR(Deltat))/Deltat
+def a_R_pop(delta_t:float, d_t:int=2) -> np.ndarray:
+    return (delta_b_dagR(delta_t) @ delta_bR(delta_t))/delta_t
 
-def a_L_pop(Deltat:float, d_t:int=2) -> np.ndarray:  
-    return (DeltaBdagL(Deltat) @ DeltaBL(Deltat))/Deltat
+def a_L_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
+    return (delta_b_dagL(delta_t) @ delta_bL(delta_t))/delta_t
 
-def a_pop(Deltat:float, d_t:int=2) -> np.ndarray:  
-    return (DeltaBdag(Deltat) @ DeltaB(Deltat))/Deltat
+def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
+    return (delta_b_dag(delta_t) @ delta_b(delta_t))/delta_t

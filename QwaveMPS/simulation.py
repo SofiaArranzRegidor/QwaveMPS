@@ -66,7 +66,7 @@ def _svd_tensors(tensor:np.ndarray, left_shape:int, right_shape:int, bond:int, d
     return u, s_norm, vt
 
 
-def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_m(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -78,7 +78,7 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
     i_n0 : ndarray
         Initial time bin
     
-    Deltat : float
+    delta_t : float
         time step
 
     tmax : float
@@ -106,15 +106,15 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
     tbins=[]
     tbins.append(i_n0)
 
-    N=int(tmax/Deltat)
+    N=int(tmax/delta_t)
     t_k=0
     i_s=i_s0
     Ham=H
-    evO=U(Ham,d_sys,d_t)
+    evO=u(Ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
            
     for k in range(1,N+1):      
-        phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + U operator contraction  
+        phi1=ncon([i_s,i_n0,evO],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1,d_sys*phi1.shape[0],d_t*phi1.shape[-1], bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
         sbins.append(i_s)
@@ -123,11 +123,11 @@ def t_evol_M(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, Deltat:float, tmax:
         phi2=ncon([i_s,i_n,swap_sys_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #system bin, time bin + swap contraction
         i_n,stemp,i_st=_svd_tensors(phi2,d_t*phi2.shape[0],d_sys*phi2.shape[-1], bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_st   #OC system bin
-        t_k += Deltat
+        t_k += delta_t
     return sbins,tbins
 
 
-def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nm(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -142,7 +142,7 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
     tau : float
         Feedback time
     
-    Deltat : float
+    delta_t : float
         time step
 
     tmax : float
@@ -181,18 +181,18 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
     taubins.append(i_n0)
     
     
-    N=int(round(tmax/Deltat,0))
+    N=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
     Ham=H
-    evO=U(Ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
+    evO=u(Ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
     swap_t_t=swap(d_t,d_t)
     swap_sys_t=swap(d_sys,d_t)
-    l=int(round(tau/Deltat,0)) #time steps between system and feedback
+    l=int(round(tau/delta_t,0)) #time steps between system and feedback
     
     while t_0 < tau:
         nbins.append(i_n0)
-        t_0+=Deltat
+        t_0+=delta_t
     
     i_stemp=i_s0      
     
@@ -211,8 +211,8 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
         i_t,stemp,i_stemp=_svd_tensors(i_1,d_t*i_1.shape[0],d_sys*i_1.shape[-1], bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_stemp #OC system bin
         
-        #now contract the 3 bins and apply U, followed by 2 svd to recover the 3 bins                 
-        phi1=ncon([i_t,i_s,i_n0,evO],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + U operator contraction
+        #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins                 
+        phi1=ncon([i_t,i_s,i_n0,evO],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
         i_t,stemp,i_2=_svd_tensors(phi1,d_t*phi1.shape[0],d_t*d_sys*phi1.shape[-1], bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
         i_stemp,stemp,i_n=_svd_tensors(i_2,d_sys*i_2.shape[0],d_t*i_2.shape[-1], bond,d_sys,d_t)
@@ -233,7 +233,7 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
         taubins.append(i_tau) 
         nbins[k+l-1]=i_tau #update of the feedback bin
         nbins.append(i_n)         
-        t_k += Deltat
+        t_k += delta_t
         schmidt.append(stemp) #storing the Schmidt coeff for calculating the entanglement
 
         #swap back of the feedback bin      
@@ -249,7 +249,7 @@ def t_evol_NM(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, Deltat:
 
 
 
-def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float):
+def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float):
     """
     Calculates the main population dynamics
 
@@ -261,7 +261,7 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float):
     tbins : [ndarray]
         A list with the time bins.
 
-    Deltat : float
+    delta_t : float
         Time step size.
 
     Returns
@@ -286,8 +286,8 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float):
     to total # excitations.
     """
     pop=np.array([expectation(s, TLS_pop()) for s in sbins])
-    tbinsR=np.array([expectation(t, a_R_pop(Deltat)) for t in tbins])
-    tbinsL=np.array([expectation(t, a_L_pop(Deltat)) for t in tbins])
+    tbinsR=np.array([expectation(t, a_R_pop(delta_t)) for t in tbins])
+    tbinsL=np.array([expectation(t, a_L_pop(delta_t)) for t in tbins])
    
     # Cumulative sums
     trans = np.cumsum(tbinsR)
@@ -298,7 +298,7 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float):
     return pop,tbinsR,tbinsL,trans,ref,total
 
 
-def pop_dynamics_1TLS_NM(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, Deltat:float):
+def pop_dynamics_1TLS_nm(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, delta_t:float):
     """
     Calculates the main population dynamics
 
@@ -310,7 +310,7 @@ def pop_dynamics_1TLS_NM(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins
     tbins : [ndarray]
         A list with the time bins.
 
-    Deltat : float
+    delta_t : float
         Time step size.
 
     Returns
@@ -337,13 +337,13 @@ def pop_dynamics_1TLS_NM(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins
 
     N=len(sbins) 
     pop=np.array([expectation(s, TLS_pop()) for s in sbins])
-    tbins=np.array([expectation(t, a_pop(Deltat)) for t in tbins])
-    tbins2=np.real([expectation(taus, a_pop(Deltat)) for taus in taubins])
+    tbins=np.array([expectation(t, a_pop(delta_t)) for t in tbins])
+    tbins2=np.real([expectation(taus, a_pop(delta_t)) for taus in taubins])
     ph_loop=np.zeros(N,dtype=complex)
     trans=np.zeros(N,dtype=complex)
     total=np.zeros(N,dtype=complex)
     
-    l=int(round(tau/Deltat,0))
+    l=int(round(tau/delta_t,0))
     temp_out=0
     in_loop=0
     for i in range(N):
@@ -366,7 +366,7 @@ def pop_dynamics_1TLS_NM(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins
         # total[i]  = pop[i] + trans[i]*2
     return pop,tbins,trans,ph_loop,total
 
-def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:float, taubins:list[np.ndarray]=[], tau:float=0):
+def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, taubins:list[np.ndarray]=[], tau:float=0):
     """
     Calculates the main population dynamics
 
@@ -378,7 +378,7 @@ def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:flo
     tbins : [ndarray]
         A list with the time bins.
 
-    Deltat : float
+    delta_t : float
         Time step size.
 
     Returns
@@ -418,7 +418,7 @@ def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:flo
     temp_inL=0
     temp_outR=0
     temp_outL=0
-    l=int(round(tau/Deltat,0))
+    l=int(round(tau/delta_t,0))
     temp_trans=0
     temp_ref=0
     for i in range(N):
@@ -431,19 +431,19 @@ def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], Deltat:flo
         i_s2 = ncon([np.diag(sm),i_s2],[[-1,1],[1,-2,-3]]) 
         pop1[i]=expectation(i_s1, TLS_pop())
         pop2[i]=expectation(i_s2, TLS_pop())    
-        tbinsR[i]=np.real(expectation(tbins[i], a_R_pop(Deltat)))
-        tbinsL[i]=np.real(expectation(tbins[i], a_L_pop(Deltat)))
+        tbinsR[i]=np.real(expectation(tbins[i], a_R_pop(delta_t)))
+        tbinsL[i]=np.real(expectation(tbins[i], a_L_pop(delta_t)))
         if tau != 0:
-            tbinsR2[i]=np.real(expectation(taubins[i], a_R_pop(Deltat)))
-            tbinsL2[i]=np.real(expectation(taubins[i], a_L_pop(Deltat)))
+            tbinsR2[i]=np.real(expectation(taubins[i], a_R_pop(delta_t)))
+            tbinsL2[i]=np.real(expectation(taubins[i], a_L_pop(delta_t)))
             temp_outR+=tbinsR2[i]
             temp_outL+=tbinsL2[i]
             trans[i]=temp_outR
             ref[i]=temp_outL
             if i <=l:
-                temp_inR+=expectation(tbins[i], a_R_pop(Deltat))
+                temp_inR+=expectation(tbins[i], a_R_pop(delta_t))
                 in_R[i] = temp_inR
-                temp_inL+= expectation(tbins[i], a_L_pop(Deltat))
+                temp_inL+= expectation(tbins[i], a_L_pop(delta_t))
                 in_L[i] = temp_inL
                 total[i]  = pop1[i] + pop2[i]  + in_R[i] + in_L[i]  + trans[i] + ref[i]
             if i>l:
