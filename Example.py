@@ -12,6 +12,9 @@ import QwaveMPS as QM
 
 #%%
 
+"""Symmetrical Solution"""
+
+
 """Choose the simulation parameters"""
 
 "Choose the time step and end time"
@@ -68,3 +71,5 @@ plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
 plt.show()
+
+
