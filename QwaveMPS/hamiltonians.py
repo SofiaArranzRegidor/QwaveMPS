@@ -12,7 +12,7 @@ from .operators import *
 # op=basic_operators()
 
 
-def hamiltonian_1TLS(delta_t:float, gamma_l:float, gamma_r:float, d_t:int=2, d_sys:int=2, Omega:float=0, Delta:float=0) -> np.ndarray:
+def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_t:int=2, d_sys:int=2, Omega:float=0, Delta:float=0) -> np.ndarray:
     """
     Hamilltonian for 1 TLS in the waveguide
     
@@ -55,7 +55,7 @@ def hamiltonian_1TLS(delta_t:float, gamma_l:float, gamma_r:float, d_t:int=2, d_s
     return M
 
     
-def hamiltonian_1TLS_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase:float, d_t:int, d_sys:int, Omega:float=0, Delta:float=0) -> np.ndarray:
+def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase:float, d_t:int, d_sys:int, Omega:float=0, Delta:float=0) -> np.ndarray:
     """
     Hamilltonian for 1 TLS in a semi-infinite waveguide with a side mirror
     
@@ -102,7 +102,7 @@ def hamiltonian_1TLS_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
     return M
 
 
-def hamiltonian_2TLS_nm(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys:int, d_t:int, Omega1:float=0, Delta1:float=0, Omega2:float=0, Delta2:float=0) -> np.ndarray:
+def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys:int, d_t:int, Omega1:float=0, Delta1:float=0, Omega2:float=0, Delta2:float=0) -> np.ndarray:
     """
     Hamilltonian for 2 TLSs in an infinite waveguide.
     
@@ -181,7 +181,7 @@ def hamiltonian_2TLS_nm(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:
     M = (Msys1 + Msys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc)
     return M
 
-def hamiltonian_2TLS_m(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys:int, d_t:int, Omega1:float=0, Delta1:float=0, Omega2:float=0, Delta2:float=0) -> np.ndarray:
+def hamiltonian_2tls_mar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys:int, d_t:int, Omega1:float=0, Delta1:float=0, Omega2:float=0, Delta2:float=0) -> np.ndarray:
     """
     Hamilltonian for 2 TLSs in an infinite waveguide.
     

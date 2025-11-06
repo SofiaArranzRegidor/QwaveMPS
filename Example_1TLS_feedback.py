@@ -57,17 +57,17 @@ bond=16
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1TLS_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
+Hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nm(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1TLS_nm(sys_b,time_b,tau_b,tau,delta_t)
+pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t)
 
 
 #%%
@@ -82,6 +82,8 @@ plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 # plt.xlabel('Time, t$\gamma$')
 # plt.ylim([0.9,1.05])
 plt.xlim([0.,tmax])
+plt.xlabel('Time, $\gamma t$')
+plt.ylabel('Populations')
 # plt.xlim([0.,0.5])
 plt.tight_layout()
 plt.show()
@@ -97,17 +99,17 @@ phase=0
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1TLS_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
+Hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nm(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1TLS_nm(sys_b,time_b,tau_b,tau,delta_t)
+pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t)
 
 
 #%%
@@ -121,6 +123,8 @@ plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Tot
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 # plt.xlabel('Time, t$\gamma$')
 # plt.ylim([0.9,1.05])
+plt.xlabel('Time, $\gamma t$')
+plt.ylabel('Populations')
 plt.xlim([0.,tmax])
 # plt.xlim([0.,0.5])
 plt.tight_layout()

@@ -42,7 +42,7 @@ phase=np.pi
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_2TLS_nm(delta_t,gamma_l1,gamma_r1,gamma_l2,gamma_r2,phase,d_t,d_sys)
+Hm=QM.hamiltonian_2tls_nmar(delta_t,gamma_l1,gamma_r1,gamma_l2,gamma_r2,phase,d_t,d_sys)
 
 
 """ Choose max bond dimension"""
@@ -52,12 +52,12 @@ bond=8
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nm(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
 
 
 """ Calculate population dynamics"""
 
-pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,delta_t,tau_b,tau)
+pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t,tau_b,tau)
 
 
 #%%
@@ -70,7 +70,8 @@ plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label
 plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
 plt.plot(tlist,total,linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, t$\gamma$')
+plt.xlabel('Time, $\gamma t$')
+plt.ylabel('Populations')
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()

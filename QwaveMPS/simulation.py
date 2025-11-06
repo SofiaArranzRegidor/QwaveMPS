@@ -66,7 +66,7 @@ def _svd_tensors(tensor:np.ndarray, left_shape:int, right_shape:int, bond:int, d
     return u, s_norm, vt
 
 
-def t_evol_m(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -127,7 +127,7 @@ def t_evol_m(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax
     return sbins,tbins
 
 
-def t_evol_nm(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nmar(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -298,7 +298,7 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float):
     return pop,tbinsR,tbinsL,trans,ref,total
 
 
-def pop_dynamics_1TLS_nm(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, delta_t:float):
+def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, delta_t:float):
     """
     Calculates the main population dynamics
 
@@ -366,7 +366,7 @@ def pop_dynamics_1TLS_nm(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins
         # total[i]  = pop[i] + trans[i]*2
     return pop,tbins,trans,ph_loop,total
 
-def pop_dynamics_2TLS(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, taubins:list[np.ndarray]=[], tau:float=0):
+def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, taubins:list[np.ndarray]=[], tau:float=0):
     """
     Calculates the main population dynamics
 

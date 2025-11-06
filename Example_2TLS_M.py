@@ -49,17 +49,17 @@ phase=np.pi
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_2TLS_m(delta_t, gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_t,d_sys)
+Hm=QM.hamiltonian_2tls_mar(delta_t, gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_t,d_sys)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_m(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
+sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
 
 
 """Calculate population dynamics"""
 
-pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2TLS(sys_b,time_b,delta_t)
+pop1,pop2,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t)
 
 
 #%%
@@ -72,7 +72,8 @@ plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label
 plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
 plt.plot(tlist,total,linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, t$\gamma$')
+plt.xlabel('Time, $\gamma t$')
+plt.ylabel('Populations')
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()

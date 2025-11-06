@@ -43,12 +43,12 @@ gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1TLS(delta_t, gamma_l, gamma_r)
+Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_m(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
+sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
 
 
 """Calculate population dynamics"""
@@ -66,7 +66,7 @@ plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Tot
 # plt.plot(tlist,np.real(tbinsR)/delta_t,linewidth = 2,color = 'r',linestyle='--',label=r'$n_R/dt$')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
-plt.ylabel('Population')
+plt.ylabel('Populations')
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
@@ -88,12 +88,12 @@ gamma_l,gamma_r=QM.coupling('chiral_r',gamma=1)
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1TLS(delta_t, gamma_l, gamma_r)
+Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_m(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
+sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
 
 
 """Calculate population dynamics"""
@@ -111,7 +111,7 @@ plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Tot
 # plt.plot(tlist,np.real(tbinsR)/delta_t,linewidth = 2,color = 'r',linestyle='--',label=r'$n_R/dt$')
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
-plt.ylabel('Population')
+plt.ylabel('Populations')
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
