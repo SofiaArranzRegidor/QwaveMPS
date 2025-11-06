@@ -14,7 +14,7 @@ import QwaveMPS as QM
 
 """Choose the time step and end time"""
 
-delta_t = 0.02
+delta_t = 0.05
 tmax = 5
 tlist=np.arange(0,tmax+delta_t,delta_t)
 d_sys=4 #2 for each TLS
