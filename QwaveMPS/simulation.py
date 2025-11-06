@@ -190,7 +190,7 @@ def t_evol_nmar(H:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta
     swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/delta_t,0)) #time steps between system and feedback
     
-    while t_0 < tau:
+    for i in range(l):
         nbins.append(i_n0)
         t_0+=delta_t
     
