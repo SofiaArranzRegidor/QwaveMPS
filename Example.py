@@ -29,15 +29,18 @@ bond=8
 
 """ Choose the initial state and coupling"""
 
-i_s0=QM.initial_state.i_se()
-i_n0=QM.initial_state.i_ng(d_t)
+i_s0=QM.states.i_se()
+i_n0=QM.states.i_ng(d_t)
 
-gammaL,gammaR=QM.coupling()
-
+# gamma_l,gamma_r=QM.coupling('chiral_l',gamma=1)
+# gamma_l,gamma_r=QM.coupling('chiral_r',gamma=1)
+# gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
+# gamma_l,gamma_r=QM.coupling('other',gamma=1,gamma_l=0.6,gamma_r=0.4) #same as next line
+gamma_l,gamma_r=0.4,0.6
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1TLS(delta_t, gammaL, gammaR)
+Hm=QM.hamiltonian_1TLS(delta_t, gamma_l, gamma_r)
 
 
 """Calculate time evolution of the system"""

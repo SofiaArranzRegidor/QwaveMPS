@@ -30,14 +30,14 @@ i_s0=QM.states.i_se()
 i_n0=QM.states.i_ng(d_t)
 
 #Copuling is symmetric by default
-gammaL,gammaR=QM.coupling()
+gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
 
 
 phase=np.pi
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1TLS_feedback(delta_t,gammaL,gammaR,phase,d_t,d_sys)
+Hm=QM.hamiltonian_1TLS_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
 
 
 """ Choose max bond dimension"""
@@ -52,7 +52,7 @@ sys_b,time_b,tau_b = QM.t_evol_nm(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1TLS_NM(sys_b,time_b,tau_b,tau,delta_t)
+pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1TLS_nm(sys_b,time_b,tau_b,tau,delta_t)
 
 
 #%%

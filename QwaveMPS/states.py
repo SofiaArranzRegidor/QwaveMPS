@@ -80,13 +80,19 @@ def i_se(d_sys1:int=2, bond0:int=1) -> np.ndarray:
     i_s[:,1,:]=1.
     return i_s
 
-def coupling(coupl:str='symmetrical', gamma:float=1) -> tuple[float,float]:
+def coupling(coupl:str='symmetrical', gamma:float=1,gamma_r=None,gamma_l=None) -> tuple[float,float]:
     """ Coupling can be chiral or symmetrical.
     Symmetrical by default."""   
-    if coupl == 'chiral': 
-        gammaR=gamma
-        gammaL=gamma - gammaR
+    if coupl == 'chiral_r': 
+        gamma_r=gamma
+        gamma_l=gamma - gamma_r
+    if coupl == 'chiral_l': 
+        gamma_l=gamma
+        gamma_r=gamma - gamma_l
     if coupl == 'symmetrical':
-        gammaR=gamma/2.
-        gammaL=gamma - gammaR
-    return gammaL,gammaR       
+        gamma_r=gamma/2.
+        gamma_l=gamma - gamma_r
+    if coupl == 'other':
+        gamma_r=gamma_r
+        gamma_l=gamma_l
+    return gamma_l,gamma_r       

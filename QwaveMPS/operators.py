@@ -320,13 +320,13 @@ def expectation(AList:np.ndarray, MPO:np.ndarray) -> complex:
 #     self.op = operators
 
 def TLS_pop(d_sys:int=2) -> np.ndarray:    
-    return (sigmaplus() @ sigmaminus())
+    return np.real((sigmaplus() @ sigmaminus()))
     
 def a_R_pop(delta_t:float, d_t:int=2) -> np.ndarray:
-    return (delta_b_dagR(delta_t) @ delta_bR(delta_t))/delta_t
+    return np.real((delta_b_dagR(delta_t) @ delta_bR(delta_t))/delta_t)
 
 def a_L_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
-    return (delta_b_dagL(delta_t) @ delta_bL(delta_t))/delta_t
+    return np.real((delta_b_dagL(delta_t) @ delta_bL(delta_t))/delta_t)
 
 def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
-    return (delta_b_dag(delta_t) @ delta_b(delta_t))/delta_t
+    return np.real((delta_b_dag(delta_t) @ delta_b(delta_t))/delta_t)

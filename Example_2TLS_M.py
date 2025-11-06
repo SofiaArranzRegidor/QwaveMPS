@@ -41,15 +41,15 @@ i_n0=QM.states.i_ng(d_t)
 
 
 
-gammaL1,gammaR1=QM.coupling()
-gammaL2,gammaR2=QM.coupling()
+gamma_l1,gamma_r1=QM.coupling('symmetrical',gamma=1)
+gamma_l2,gamma_r2=QM.coupling('symmetrical',gamma=1)
 
 
 phase=np.pi
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_2TLS_M(delta_t, gammaL1, gammaR1, gammaL2, gammaR2,phase,d_t,d_sys)
+Hm=QM.hamiltonian_2TLS_m(delta_t, gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_t,d_sys)
 
 
 """Calculate time evolution of the system"""
