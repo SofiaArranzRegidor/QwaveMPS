@@ -4,6 +4,7 @@
 """
 
 This is a basic example of a single two-level system (TLS) decaying into the waveguide. 
+All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
 It covers two cases:
     
@@ -65,8 +66,21 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
 #%%
 
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 import QwaveMPS as QM
+
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
+
 
 #%%
 
@@ -116,17 +130,26 @@ pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
 
 #%%
 
-plt.figure(figsize=(4.5,4))
+fonts=15
+pic_style(fonts)
+
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, $\gamma t$')
-plt.ylabel('Populations')
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
+plt.xlabel('Time, $\gamma t$',fontsize=fonts)
+plt.ylabel('Populations',fontsize=fonts)
+plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+# plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -159,7 +182,11 @@ pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
 
 #%%
 
-plt.figure(figsize=(4.5,4))
+fonts=15
+pic_style(fonts)
+
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
@@ -167,8 +194,13 @@ plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Tot
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
+plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+# plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
