@@ -2,7 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-This is a basic example to check that the code is working.
+
+This is a basic example of a single TLS decaying into the waveguide. 
+It contains the solution for a TLS decaying symmetrically, 
+and a chiral case where the TLS is only coupled to the right channel of the waveguide.
+
+Requirements: ncon https://pypi.org/project/ncon/. 
+To install it, write the following on your console: 
+
+    pip install ncon 
 
 """
 
