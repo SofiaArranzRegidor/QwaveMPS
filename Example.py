@@ -3,16 +3,66 @@
 
 """
 
-This is a basic example of a single TLS decaying into the waveguide. 
-It contains the solution for a TLS decaying symmetrically, 
-and a chiral case where the TLS is only coupled to the right channel of the waveguide.
+This is a basic example of a single two-level system (TLS) decaying into the waveguide. 
 
-Requirements: ncon https://pypi.org/project/ncon/. 
-To install it, write the following on your console: 
+It covers two cases:
+    
+    1. Symmetrical coupling into the waveguide
+    2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
 
-    pip install ncon 
+Structure:    
+    
+    1. Setup of the simulation parameters.
+    
+        - Time step (delta_t)
+        - Maximum time (tmax)
+        - Size of time bin (d_t). This is the field Hilbert subspace at each time step.
+        (In this case we allow one photon per time step and per right and left channels.
+         Hence, the subspace is d_t=2*2=4)
+        - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
+        (for a single TLS, d_sys=2).
+        - Maximum bond dimension (bond). ADD MORE INFO      
+        
+    2. Initial state and coupling configuration. 
+    
+        - Choice the system initial state (i_s0). Here, initially excited, 
+            i_s0 = QM.states.i_se()
+        - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
+            i_n0 = QM.states.i_ng(d_t)
+        - Choice of coupling. Here, it is first calculated with symmetrical coupling,
+            gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)            
+          and the with chiral coupling,         
+            gamma_l,gamma_r=QM.coupling('chiral',gamma=1)
+            
+    3. Selection of the corresponding Hamiltonian.
+    
+    4. Time evolution calculation.
+    
+    5. Observables alculation (time dyanamics populations).
+    
+    6. Example plot containing,
+    
+        - Photons transmitted to the right channel
+        - Photons reflected to the left channel
+        - TLS population
+        - Conservation check (for one excitation it should be 1)
+    
+Repeat for both cases (symmetrical and chiral).
 
 """
+
+
+"""    
+
+Requirements: 
+    
+ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
+    
+    pip install ncon 
+    
+"""
+
+#%%
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,11 +117,10 @@ pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
 #%%
 
 plt.figure(figsize=(4.5,4))
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission')
-plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection')
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$')
-plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
-# plt.plot(tlist,np.real(tbinsR)/delta_t,linewidth = 2,color = 'r',linestyle='--',label=r'$n_R/dt$')
+plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
@@ -93,7 +142,6 @@ plt.show()
 gamma_l,gamma_r=QM.coupling('chiral_r',gamma=1)
 
 
-
 """Choose the Hamiltonian"""
 
 Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r)
@@ -112,11 +160,10 @@ pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
 #%%
 
 plt.figure(figsize=(4.5,4))
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission')
-plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection')
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$')
-plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
-# plt.plot(tlist,np.real(tbinsR)/delta_t,linewidth = 2,color = 'r',linestyle='--',label=r'$n_R/dt$')
+plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
