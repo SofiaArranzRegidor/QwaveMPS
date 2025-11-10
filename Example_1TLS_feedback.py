@@ -7,8 +7,21 @@ Created on Thu Oct  9 10:12:52 2025
 """
 
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 import QwaveMPS as QM
+
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
+
 
 #%%
 
@@ -72,19 +85,22 @@ pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,d
 
 #%%
 
-plt.figure(figsize=(4.5,4))
+fonts=15
+pic_style(fonts)
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(tbins)/delta_t,linewidth = 3,color = 'r',linestyle='-',label=r'$n_R/dt$')
 plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(ph_loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-# plt.xlabel('Time, t$\gamma$')
-# plt.ylim([0.9,1.05])
+plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
-# plt.xlim([0.,0.5])
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.tight_layout()
 plt.show()
 
@@ -99,12 +115,12 @@ phase=0
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
+hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
 
 
 """ Calculate population dynamics"""
@@ -114,18 +130,21 @@ pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,d
 
 #%%
 
-plt.figure(figsize=(4.5,4))
+fonts=15
+pic_style(fonts)
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(tbins)/delta_t,linewidth = 3,color = 'r',linestyle='-',label=r'$n_R/dt$')
 plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(ph_loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-# plt.xlabel('Time, t$\gamma$')
-# plt.ylim([0.9,1.05])
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
+plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
-# plt.xlim([0.,0.5])
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.tight_layout()
 plt.show()

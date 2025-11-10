@@ -82,11 +82,7 @@ def clean_ticks(x, pos):
     return f'{x:g}'
 
 
-#%%
-
-"""Symmetrical Solution"""
-
-#%%
+#%% Symmetrical Solution
 
 
 """"Choose the simulation parameters"""
@@ -125,10 +121,9 @@ sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
 
 """Calculate population dynamics"""
 
-pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
+pop,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
 
 
-#%%
 
 fonts=15
 pic_style(fonts)
@@ -153,11 +148,7 @@ ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 
-#%%
-
-"""Right chiral Solution"""
-
-#%%
+#%% Right chiral Solution
 
 
 """ Updated coupling"""
@@ -167,20 +158,19 @@ gamma_l,gamma_r=QM.coupling('chiral_r',gamma=1)
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r)
+hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
+sys_b,time_b = QM.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
 
 
 """Calculate population dynamics"""
 
-pop,tbinsR,tbinsL,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
+pop,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t)
 
 
-#%%
 
 fonts=15
 pic_style(fonts)
