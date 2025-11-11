@@ -95,7 +95,7 @@ def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:
     """      
     return np.sqrt(delta_t) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
 
-def delta_b_dagL(delta_t:float, d_t:int=2) -> np.ndarray:  
+def delta_b_dag_l(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Left time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -117,7 +117,7 @@ def delta_b_dagL(delta_t:float, d_t:int=2) -> np.ndarray:
     """ 
     return np.kron(delta_b_dag(delta_t, d_t),np.eye(d_t))     
 
-def delta_b_dagR(delta_t:float, d_t:int=2) -> np.ndarray: 
+def delta_b_dag_r(delta_t:float, d_t:int=2) -> np.ndarray: 
     """
     Right time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -139,7 +139,7 @@ def delta_b_dagR(delta_t:float, d_t:int=2) -> np.ndarray:
     """ 
     return np.kron(np.eye(d_t), delta_b_dag(delta_t, d_t))     
 
-def delta_bL(delta_t:float, d_t:int=2) -> np.ndarray:  
+def delta_b_l(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Left time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -161,7 +161,7 @@ def delta_bL(delta_t:float, d_t:int=2) -> np.ndarray:
     """ 
     return np.kron(delta_b(delta_t, d_t),np.eye(d_t))     
 
-def delta_bR(delta_t:float, d_t:int=2) -> np.ndarray:  
+def delta_b_r(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Right time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -288,7 +288,7 @@ def vectorized_swap(dim1:int, dim2:int) -> np.ndarray:
     return swap.reshape(dim1,dim2,dim1,dim2)
 
 
-def expectation(AList:np.ndarray, MPO:np.ndarray) -> complex:
+def expectation(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     """
     The expectation value of a MPS bin with a given operator.
 
@@ -308,7 +308,7 @@ def expectation(AList:np.ndarray, MPO:np.ndarray) -> complex:
     Examples
     -------- 
     """ 
-    sol = ncon([np.conj(AList),MPO,AList],[[1,2,4],[2,3],[1,3,4]])
+    sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,4],[2,3],[1,3,4]])
     return sol
 
 
@@ -319,14 +319,14 @@ def expectation(AList:np.ndarray, MPO:np.ndarray) -> complex:
 #         operators = basic_operators()  
 #     self.op = operators
 
-def TLS_pop(d_sys:int=2) -> np.ndarray:    
+def tls_pop(d_sys:int=2) -> np.ndarray:    
     return np.real((sigmaplus() @ sigmaminus()))
     
-def a_R_pop(delta_t:float, d_t:int=2) -> np.ndarray:
-    return np.real((delta_b_dagR(delta_t) @ delta_bR(delta_t))/delta_t)
+def a_r_pop(delta_t:float, d_t:int=2) -> np.ndarray:
+    return np.real((delta_b_dag_r(delta_t) @ delta_b_r(delta_t))/delta_t)
 
-def a_L_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
-    return np.real((delta_b_dagL(delta_t) @ delta_bL(delta_t))/delta_t)
+def a_l_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
+    return np.real((delta_b_dag_l(delta_t) @ delta_b_l(delta_t))/delta_t)
 
 def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
     return np.real((delta_b_dag(delta_t) @ delta_b(delta_t))/delta_t)
