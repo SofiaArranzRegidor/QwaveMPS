@@ -65,7 +65,7 @@ gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
 
 """ Choose max bond dimension"""
 
-bond=16
+bond=4
 
 
 """Choose the Hamiltonian"""

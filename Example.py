@@ -22,7 +22,8 @@ Structure:
          Hence, the subspace is d_t=2*2=4)
         - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
         (for a single TLS, d_sys=2).
-        - Maximum bond dimension (bond). ADD MORE INFO      
+        - Maximum bond dimension (bond). bond=2^(number of excitations).    
+        Starting with the TLS excited and field in vacuum, 1 excitation => bond=2
         
     2. Initial state and coupling configuration. 
     
@@ -97,7 +98,8 @@ d_sys=2
 
 "Choose max bond dimension"
 
-bond=8
+# bond = 2^(number of excitations)
+bond=2
 
 
 """ Choose the initial state and coupling"""

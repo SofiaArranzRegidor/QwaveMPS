@@ -35,7 +35,7 @@ d_sys=4
 
 "Choose max bond dimension"
 
-bond=8
+bond=2
 
 
 """ Choose the initial state and coupling"""
