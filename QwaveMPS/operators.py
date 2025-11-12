@@ -95,7 +95,7 @@ def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:
     """      
     return np.sqrt(delta_t) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
 
-def delta_b_dag_l(delta_t:float, d_t:int=2) -> np.ndarray:  
+def delta_b_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
     """
     Left time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -115,9 +115,11 @@ def delta_b_dag_l(delta_t:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(delta_b_dag(delta_t, d_t),np.eye(d_t))     
+    d_t_l=d_t_total[0]
+    d_t_r=d_t_total[1]
+    return np.kron(delta_b_dag(delta_t, d_t_l),np.eye(d_t_r))     
 
-def delta_b_dag_r(delta_t:float, d_t:int=2) -> np.ndarray: 
+def delta_b_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray: 
     """
     Right time bin noise creation (raising) operator for a system with two channels of light, left and right moving.
 
@@ -137,9 +139,11 @@ def delta_b_dag_r(delta_t:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(np.eye(d_t), delta_b_dag(delta_t, d_t))     
+    d_t_l=d_t_total[0]
+    d_t_r=d_t_total[1]
+    return np.kron(np.eye(d_t_l), delta_b_dag(delta_t, d_t_r))     
 
-def delta_b_l(delta_t:float, d_t:int=2) -> np.ndarray:  
+def delta_b_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
     """
     Left time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -159,9 +163,11 @@ def delta_b_l(delta_t:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(delta_b(delta_t, d_t),np.eye(d_t))     
+    d_t_l=d_t_total[0]
+    d_t_r=d_t_total[1]
+    return np.kron(delta_b(delta_t, d_t_l),np.eye(d_t_r))     
 
-def delta_b_r(delta_t:float, d_t:int=2) -> np.ndarray:  
+def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:  
     """
     Right time bin noise annihilation (lowering) operator for a system with two channels of light, left and right moving.
 
@@ -178,7 +184,9 @@ def delta_b_r(delta_t:float, d_t:int=2) -> np.ndarray:
     Examples
     -------- 
     """ 
-    return np.kron(np.eye(d_t),delta_b(delta_t, d_t))       
+    d_t_l=d_t_total[0]
+    d_t_r=d_t_total[1]
+    return np.kron(np.eye(d_t_l),delta_b(delta_t, d_t_r))       
 
 def e(d_sys:int=2) -> np.ndarray:
     """
@@ -201,7 +209,7 @@ def e(d_sys:int=2) -> np.ndarray:
     exc[1,1]=1.      
     return exc
 
-def u(Hm:np.ndarray, d_sys:int=2, d_t:int=2, interacting_timebins_num:int=1) -> np.ndarray:
+def u_evol(Hm:np.ndarray, d_sys_total:np.array, d_t_total:np.array, interacting_timebins_num:int=1) -> np.ndarray:
     """
     Creates a time evolution operator for a given Hamiltonian.
 
@@ -227,8 +235,10 @@ def u(Hm:np.ndarray, d_sys:int=2, d_t:int=2, interacting_timebins_num:int=1) -> 
     Examples
     -------- 
     """ 
+    d_t=np.prod(d_t_total)
+    d_sys=np.prod(d_sys_total)
+    
     sol= expm(-1j*Hm)
-    #shape = (((d_t,)*interacting_timebins_num) + (d_sys,) ) * 2
     shape = ((d_sys,) + ((d_t,)*interacting_timebins_num)) * 2
     return sol.reshape(shape)
 
@@ -312,21 +322,15 @@ def expectation(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     return sol
 
 
-# class observables:
-
-# def __init__(self, operators=None):
-#     if operators is None:
-#         operators = basic_operators()  
-#     self.op = operators
 
 def tls_pop(d_sys:int=2) -> np.ndarray:    
     return np.real((sigmaplus() @ sigmaminus()))
     
-def a_r_pop(delta_t:float, d_t:int=2) -> np.ndarray:
-    return np.real((delta_b_dag_r(delta_t) @ delta_b_r(delta_t))/delta_t)
+def a_r_pop(delta_t:float, d_t_total:np.array) -> np.ndarray:
+    return np.real((delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total))/delta_t)
 
-def a_l_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
-    return np.real((delta_b_dag_l(delta_t) @ delta_b_l(delta_t))/delta_t)
+def a_l_pop(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+    return np.real((delta_b_dag_l(delta_t,d_t_total) @ delta_b_l(delta_t,d_t_total))/delta_t)
 
 def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
-    return np.real((delta_b_dag(delta_t) @ delta_b(delta_t))/delta_t)
+    return np.real((delta_b_dag(delta_t,d_t) @ delta_b(delta_t,d_t))/delta_t)

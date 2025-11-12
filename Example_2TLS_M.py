@@ -30,8 +30,13 @@ def clean_ticks(x, pos):
 delta_t = 0.05
 tmax = 8
 tlist=np.arange(0,tmax+delta_t,delta_t)
-d_t=4
-d_sys=4
+d_t_l=2 #Time right channel bin dimension
+d_t_r=2 #Time left channel bin dimension
+d_t_total=np.array([d_t_l,d_t_r])
+
+d_sys1=2 # first tls bin dimension 
+d_sys2=2 # second tls bin dimension
+d_sys_total=np.array([d_sys1, d_sys2]) #total system bin dimension
 
 "Choose max bond dimension"
 
@@ -48,8 +53,9 @@ i_s02= QM.states.i_sg()
 
 i_s0=np.kron(i_s01,i_s02)
 
-i_n0=QM.states.i_ng(d_t)
-
+i_n01=QM.states.i_ng(d_t_l)
+i_n02=QM.states.i_ng(d_t_r)
+i_n0=np.kron(i_n01,i_n02)
 
 
 gamma_l1,gamma_r1=QM.coupling('symmetrical',gamma=1)
@@ -60,17 +66,17 @@ phase=np.pi
 
 """Choose the Hamiltonian"""
 
-hm=QM.hamiltonian_2tls_mar(delta_t, gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_t,d_sys)
+hm=QM.hamiltonian_2tls_mar(delta_t, gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_sys_total,d_t_total)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys,d_t)
+sys_b,time_b = QM.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
 
-pop1,pop2,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t)
+pop1,pop2,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 #%%

@@ -15,10 +15,8 @@ It requires the module ncon (pip install --user ncon)
 import numpy as np
 from ncon import ncon
 from scipy.linalg import svd,norm
-from .operators import * #basic_operators,observables
+from .operators import * 
 
-# op=basic_operators()
-# obs=observables()
 
 #%%
 
@@ -66,7 +64,7 @@ def _svd_tensors(tensor:np.ndarray, left_shape:int, right_shape:int, bond:int, d
     return u, s_norm, vt
 
 
-def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys:int, d_t:int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -105,11 +103,12 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     sbins.append(i_s0)
     tbins=[]
     tbins.append(i_n0)
-
+    d_t=np.prod(d_t_total)
+    d_sys=np.prod(d_sys_total)
     n=int(tmax/delta_t)
     t_k=0
     i_s=i_s0
-    evol=u(ham,d_sys,d_t)
+    evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
            
     for k in range(1,n+1):      
@@ -126,7 +125,7 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     return sbins,tbins
 
 
-def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_t:int, d_sys:int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -179,11 +178,13 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     tbins.append(i_n0)
     taubins.append(i_n0)
     
+    d_t=np.prod(d_t_total)
+    d_sys=np.prod(d_sys_total)
     
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
-    evol=u(ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
+    evol=u_evol(ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
     swap_t_t=swap(d_t,d_t)
     swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/delta_t,0)) #time steps between system and feedback
@@ -247,7 +248,7 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
 
 
 
-def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float):
+def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, d_sys_total:np.array,d_t_total:np.array):
     """
     Calculates the main population dynamics
 
@@ -283,9 +284,11 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float):
         1D array containig the total quanta leaving the system, must be equal 
     to total # excitations.
     """
-    pop=np.array([expectation(s, tls_pop()) for s in sbins])
-    tbinsR=np.array([expectation(t, a_r_pop(delta_t)) for t in tbins])
-    tbinsL=np.array([expectation(t, a_l_pop(delta_t)) for t in tbins])
+    
+    d_sys=np.prod(d_sys_total)
+    pop=np.array([expectation(s, tls_pop(d_sys)) for s in sbins])
+    tbinsR=np.array([expectation(t, a_r_pop(delta_t,d_t_total)) for t in tbins])
+    tbinsL=np.array([expectation(t, a_l_pop(delta_t,d_t_total)) for t in tbins])
    
     # Cumulative sums
     trans = np.cumsum(tbinsR)
@@ -296,7 +299,7 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float):
     return pop,tbinsR,tbinsL,trans,ref,total
 
 
-def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, delta_t:float):
+def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, delta_t:float, d_sys_total:np.array, d_t_total:np.array):
     """
     Calculates the main population dynamics
 
@@ -334,7 +337,8 @@ def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubi
     """
 
     n=len(sbins) 
-    pop=np.array([expectation(s, tls_pop()) for s in sbins])
+    d_sys=np.prod(d_sys_total)
+    pop=np.array([expectation(s, tls_pop(d_sys)) for s in sbins])
     tbins=np.array([expectation(t, a_pop(delta_t)) for t in tbins])
     tbins2=np.real([expectation(taus, a_pop(delta_t)) for taus in taubins])
     ph_loop=np.zeros(n,dtype=complex)
@@ -357,7 +361,7 @@ def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubi
             total[i]  = pop[i] +  trans[i] + ph_loop[i]
     return pop,tbins,trans,ph_loop,total
 
-def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, taubins:list[np.ndarray]=[], tau:float=0):
+def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float,d_sys_total:np.array,d_t_total:np.array, taubins:list[np.ndarray]=[], tau:float=0):
     """
     Calculates the main population dynamics
 
@@ -394,6 +398,9 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
     to total # excitations.
     """
     n=len(sbins)
+    d_sys1=d_sys_total[0]
+    d_sys2=d_sys_total[1]
+
     pop1=np.zeros(n,dtype=complex)
     pop2=np.zeros(n,dtype=complex)
     tbinsR=np.zeros(n,dtype=complex)
@@ -420,21 +427,21 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
         i_s1 = ncon([i_s1,np.diag(sm)],[[-1,-2,1],[1,-3]]) 
         i_s2 = vt[range(len(sm)),:].reshape(len(sm),2,i_s.shape[-1]) 
         i_s2 = ncon([np.diag(sm),i_s2],[[-1,1],[1,-2,-3]]) 
-        pop1[i]=expectation(i_s1, tls_pop())
-        pop2[i]=expectation(i_s2, tls_pop())    
-        tbinsR[i]=np.real(expectation(tbins[i], a_r_pop(delta_t)))
-        tbinsL[i]=np.real(expectation(tbins[i], a_l_pop(delta_t)))
+        pop1[i]=expectation(i_s1, tls_pop(d_sys1))
+        pop2[i]=expectation(i_s2, tls_pop(d_sys2))    
+        tbinsR[i]=np.real(expectation(tbins[i], a_r_pop(delta_t,d_t_total)))
+        tbinsL[i]=np.real(expectation(tbins[i], a_l_pop(delta_t,d_t_total)))
         if tau != 0:
-            tbinsR2[i]=np.real(expectation(taubins[i], a_r_pop(delta_t)))
-            tbinsL2[i]=np.real(expectation(taubins[i], a_l_pop(delta_t)))
+            tbinsR2[i]=np.real(expectation(taubins[i], a_r_pop(delta_t,d_t_total)))
+            tbinsL2[i]=np.real(expectation(taubins[i], a_l_pop(delta_t,d_t_total)))
             temp_outR+=tbinsR2[i]
             temp_outL+=tbinsL2[i]
             trans[i]=temp_outR
             ref[i]=temp_outL
             if i <=l:
-                temp_in_r+=expectation(tbins[i], a_r_pop(delta_t))
+                temp_in_r+=expectation(tbins[i], a_r_pop(delta_t,d_t_total))
                 in_r[i] = temp_in_r
-                temp_in_l+= expectation(tbins[i], a_l_pop(delta_t))
+                temp_in_l+= expectation(tbins[i], a_l_pop(delta_t,d_t_total))
                 in_l[i] = temp_in_l
                 total[i]  = pop1[i] + pop2[i]  + in_r[i] + in_l[i]  + trans[i] + ref[i]
             if i>l:
