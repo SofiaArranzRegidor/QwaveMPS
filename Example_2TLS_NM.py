@@ -29,8 +29,14 @@ def clean_ticks(x, pos):
 delta_t = 0.05
 tmax = 5
 tlist=np.arange(0,tmax+delta_t,delta_t)
-d_sys=4 #2 for each TLS
-d_t=4 #2 for each channel
+
+d_sys1=2 # first tls bin dimension 
+d_sys2=2 # second tls bin dimension
+d_sys_total=np.array([d_sys1, d_sys2]) #total system bin dimension
+
+d_t_l=2 #Time right channel bin dimension
+d_t_r=2 #Time left channel bin dimension
+d_t_total=np.array([d_t_l,d_t_r])
 
 """Choose the delay time"""
 
@@ -40,14 +46,16 @@ tau=0.5
 
 i_s01=QM.states.i_se()
 i_s02= QM.states.i_sg()
-
+i_s0=np.kron(i_s01,i_s02)
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
 # i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
 
-i_s0=np.kron(i_s01,i_s02)
 
-i_n0=QM.states.i_ng(d_t)
+
+i_n01=QM.states.i_ng(d_t_l)
+i_n02=QM.states.i_ng(d_t_r)
+i_n0=np.kron(i_n01,i_n02)
 
 #Copuling is symmetric by default
 gamma_l1,gamma_r1=QM.coupling('symmetrical',gamma=1)
@@ -57,7 +65,7 @@ phase=np.pi
 
 """Choose the Hamiltonian"""
 
-hm=QM.hamiltonian_2tls_nmar(delta_t,gamma_l1,gamma_r1,gamma_l2,gamma_r2,phase,d_t,d_sys)
+hm=QM.hamiltonian_2tls_nmar(delta_t,gamma_l1,gamma_r1,gamma_l2,gamma_r2,phase,d_sys_total,d_t_total)
 
 
 """ Choose max bond dimension"""
@@ -67,12 +75,12 @@ bond=8
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
 
-pop1,pop2,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t,tau_b,tau)
+pop1,pop2,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total,tau_b,tau)
 
 
 #%%

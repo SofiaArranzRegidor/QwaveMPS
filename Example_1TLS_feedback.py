@@ -49,8 +49,13 @@ phase=np.pi
 delta_t = 0.03
 tmax = 5
 tlist=np.arange(0,tmax+delta_t,delta_t)
-d_sys=2
-d_t=2
+
+d_sys1=2 # tls bin dimension
+d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
+
+d_t=2 #time bin dimension of one channel
+d_t_total=np.array([d_t]) #single channel for mirror case
+
 
 
 
@@ -70,17 +75,17 @@ bond=4
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
+Hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t)
+pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
 
 
 #%%
@@ -115,17 +120,17 @@ phase=0
 
 """Choose the Hamiltonian"""
 
-hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_t,d_sys)
+hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_t,d_sys)
+sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t)
+pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
 
 
 #%%
