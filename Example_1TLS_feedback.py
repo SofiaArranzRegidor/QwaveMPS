@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
-import QwaveMPS as QM
+import QwaveMPS as qmps
 
 
 #Parameters for plots style
@@ -61,11 +61,11 @@ d_t_total=np.array([d_t]) #single channel for mirror case
 
 """ Choose the initial state and coupling"""
 
-i_s0=QM.states.i_se()
-i_n0=QM.states.i_ng(d_t)
+i_s0=qmps.states.i_se()
+i_n0=qmps.states.i_ng(d_t)
 
 #Copuling is symmetric by default
-gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
 
 """ Choose max bond dimension"""
@@ -75,17 +75,17 @@ bond=4
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
+Hm=qmps.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,tau_b = qmps.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
+pop,tbins,trans,ph_loop,total=qmps.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
 
 
 #%%
@@ -120,17 +120,17 @@ phase=0
 
 """Choose the Hamiltonian"""
 
-hm=QM.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
+hm=qmps.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,tau_b = qmps.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=QM.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
+pop,tbins,trans,ph_loop,total=qmps.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
 
 
 #%%
