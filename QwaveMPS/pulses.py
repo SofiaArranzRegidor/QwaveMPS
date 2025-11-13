@@ -261,8 +261,7 @@ def fock_pulse(pulse_time:float, delta_t:float, d_t_total:int, bond:int, pulse_e
     pulse_envs[1] = np.append(pulse_envs[1], [0] * (m-len(pulse_envs[1])))
 
     pulse_envs = list(zip(pulse_envs[0], pulse_envs[1]))
-    print(pulse_envs)
-    
+
     ap1=np.zeros([bond0,time_bin_dim,dt],dtype=complex)
     apm=np.zeros([dt,time_bin_dim,bond0],dtype=complex)
 

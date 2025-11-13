@@ -166,6 +166,7 @@ plt.show()
 tmax = 12
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
+pulse_time = tmax
 photon_num = 2
 gaussian_mean = 4
 gaussian_variance = 1
@@ -173,7 +174,7 @@ gaussian_variance = 1
 
 i_s0=QM.states.i_sg()
 
-pulse_envelope = QM.pulses.gaussian_envelope(tmax, delta_t, gaussian_variance, gaussian_mean)
+pulse_envelope = QM.pulses.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
 input_field = QM.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num,pulse_env_r=pulse_envelope)
 input_field = QM.states.input_state_generator(d_t_total, input_field)
 
@@ -210,4 +211,3 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 # plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
-
