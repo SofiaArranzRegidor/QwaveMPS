@@ -314,15 +314,15 @@ def fock_pulse(pulse_time:float, delta_t:float, d_t_total:int, bond:int, pulse_e
     apk_c=ncon([calc_ak(dt, time_bin_dim, pulse_envs[m-2], m-1), apm],[[-1,-2,1],[1,-3,-4]])            
     
     for k in range(m-1,1,-1):
-        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, apk_c.shape[0]*time_bin_dim, apk_c.shape[-1]*time_bin_dim, bond, time_bin_dim, time_bin_dim)
+        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
         apk_c = stemp[None,None,:] * apk_c
         apk_c = ncon([calc_ak(dt, time_bin_dim, pulse_envs[k-1], k),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
         apk_can.append(i_n_r)        
     
-    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, apk_c.shape[0]*time_bin_dim, apk_c.shape[-1]*time_bin_dim, bond, time_bin_dim, time_bin_dim)
+    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
     apk_c = stemp[None,None,:] * apk_c
     apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
-    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, apk_c.shape[0]*time_bin_dim, apk_c.shape[-1]*time_bin_dim, bond, time_bin_dim, time_bin_dim)
+    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
     i_n_l = stemp[None,None,:] * i_n_l
     apk_can.append(i_n_r)
     apk_can.append(i_n_l)
