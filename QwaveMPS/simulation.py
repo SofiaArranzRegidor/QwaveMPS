@@ -85,11 +85,11 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     bond : int
         max bond dimension
     
-    d_sys : int, default: 2
-        system bin dimension
+    d_sys_total : ndarray
+        List of sizes of system Hilbert spaces.
 
-    d_t : int, default: 2
-        time bin dimension
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     Returns
     -------
@@ -149,11 +149,11 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     bond : int
         max bond dimension
     
-    d_sys : int, default: 2
-        system bin dimension
+    d_sys_total : ndarray
+        List of sizes of system Hilbert spaces.
 
-    d_t : int, default: 2
-        time bin dimension
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     Returns
     -------

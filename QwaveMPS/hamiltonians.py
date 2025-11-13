@@ -27,11 +27,11 @@ def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np
     gamma_r : float
         Right decay rate.
 
-    d_sys : int, default: 2
-        TLS bin dimension
+    d_sys_total : ndarray
+        List of sizes of system Hilbert spaces.
 
-    d_t : int, default: 2, default: 2
-        Time bin dimension
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     omega : float, default: 0
         Classical pump
@@ -75,11 +75,11 @@ def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
     phase : float
         Feedback phase between the TLS and the mirror.
 
-    d_sys : int, default: 2
-        TLS bin dimension
+    d_sys_total : ndarray
+        List of sizes of system Hilbert spaces.
 
-    d_t : int, default: 2, default: 2
-        Time bin dimension
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     omega : float, default: 0
         Classical pump
@@ -130,11 +130,11 @@ def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l
     phase : float
         Feedback phase between the TLSs.
 
-    d_sys : int, default: 2
-        TLS bin dimension
+    d_sys_total : ndarray
+        List of sizes of system Hilbert spaces.
 
-    d_t : int, default: 2, default: 2
-        Time bin dimension
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     omega1 : float, default: 0
         Classical pump for the first TLS.
@@ -211,11 +211,11 @@ def hamiltonian_2tls_mar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2
     phase : float
         Feedback phase between the TLSs.
 
-    d_sys : int, default: 2
-        TLS bin dimension
+    d_sys_total : ndarray
+        List of sizes of system Hilbert spaces.
 
-    d_t : int, default: 2, default: 2
-        Time bin dimension
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     omega1 : float, default: 0
         Classical pump for the first TLS.

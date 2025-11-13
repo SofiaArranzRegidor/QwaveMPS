@@ -104,8 +104,8 @@ def delta_b_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
     delta_t : float
         Time step for system evolution.
     
-    d_t : int, default: 2
-        Size of the truncated field Hilbert space
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     Returns
     -------
@@ -128,8 +128,8 @@ def delta_b_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     delta_t : float
         Time step for system evolution.
     
-    d_t : int, default: 2
-        Size of the truncated field Hilbert space
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     Returns
     -------
@@ -152,8 +152,8 @@ def delta_b_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
     delta_t : float
         Time step for system evolution.
     
-    d_t : int, default: 2
-        Size of the truncated field Hilbert space
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     Returns
     -------
@@ -173,8 +173,8 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     Returns
     -------
@@ -221,8 +221,8 @@ def u_evol(Hm:np.ndarray, d_sys_total:np.array, d_t_total:np.array, interacting_
     d_sys : int, default: 2
         Size of the Hilbert space of the matter system.
     
-    d_t : int, default: 2
-        Size of the truncated Hilbert space of the light field.
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
 
     interacting_timebins_num : int, default: 1
         Number of light channels/feedback loops involved in the Hamiltonian.
