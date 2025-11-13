@@ -110,7 +110,9 @@ bond=2
 
 i_s0=QM.states.i_se()
 
-i_n0=QM.states.input_state_generator(d_t_total)
+i_n01=QM.states.i_ng(d_t_l)
+i_n02=QM.states.i_ng(d_t_r)
+i_n0=np.kron(i_n01,i_n02)
 
 gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
 
