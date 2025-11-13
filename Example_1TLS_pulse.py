@@ -83,7 +83,7 @@ def clean_ticks(x, pos):
     return f'{x:g}'
 
 
-#%% Symmetrical Solution
+#%% 1 photon Tophat Pulse
 
 
 """"Choose the simulation parameters"""
@@ -93,8 +93,8 @@ def clean_ticks(x, pos):
 delta_t = 0.05
 tmax = 8
 tlist=np.arange(0,tmax+delta_t,delta_t)
-d_t_l=2 #Time right channel bin dimension
-d_t_r=2 #Time left channel bin dimension
+d_t_l=3 #Time right channel bin dimension
+d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
 
 d_sys1=2 # tls bin dimension
@@ -103,14 +103,19 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 "Choose max bond dimension"
 
 # bond = 2^(number of excitations)
-bond=2
+bond=4
 
 
 """ Choose the initial state and coupling"""
+# Pulse parameters
+pulse_time = 2
+photon_num = 1
 
-i_s0=QM.states.i_se()
 
-i_n0=QM.states.input_state_generator(d_t_total)
+i_s0=QM.states.i_sg()
+
+input_field = QM.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
+input_field = QM.states.input_state_generator(d_t_total, input_field)
 
 gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
 
@@ -122,7 +127,7 @@ Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = QM.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
@@ -154,22 +159,28 @@ ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 
-#%% Right chiral Solution
+#%% 2 photon Gaussian pulse
 
 
-""" Updated coupling"""
+""" Updated input field and simulation length"""
+tmax = 12
+tlist=np.arange(0,tmax+delta_t,delta_t)
 
-gamma_l,gamma_r=QM.coupling('chiral_r',gamma=1)
+photon_num = 2
+gaussian_mean = 4
+gaussian_variance = 1
 
 
-"""Choose the Hamiltonian"""
+i_s0=QM.states.i_sg()
 
-hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
+pulse_envelope = QM.pulses.gaussian_envelope(tmax, delta_t, gaussian_variance, gaussian_mean)
+input_field = QM.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num,pulse_env_r=pulse_envelope)
+input_field = QM.states.input_state_generator(d_t_total, input_field)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = QM.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
@@ -191,7 +202,7 @@ plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.ylim([0.,1.05])
+plt.ylim([0.,2.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)

@@ -16,6 +16,8 @@ import numpy as np
 from ncon import ncon
 from scipy.linalg import svd,norm
 from .operators import * 
+from . import states as states
+from collections.abc import Iterator
 
 
 #%%
@@ -64,17 +66,17 @@ def _svd_tensors(tensor:np.ndarray, left_shape:int, right_shape:int, bond:int, d
     return u, s_norm, vt
 
 
-def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, input_field:Iterator, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
     Parameters
     ----------
     i_s0 : ndarray
-        Initial system bin
+        Initial system bin.
     
-    i_n0 : ndarray
-        Initial time bin
+    input_field : Iterator
+        Generator of time bins incident the system.
     
     delta_t : float
         time step
@@ -99,19 +101,20 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     tbins : [ndarray]
         A list with the time bins.
     """
-    sbins=[] 
-    sbins.append(i_s0)
-    tbins=[]
-    tbins.append(i_n0)
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
     n=int(tmax/delta_t)
     t_k=0
     i_s=i_s0
+    sbins=[] 
+    sbins.append(i_s0)
+    tbins=[]
+    tbins.append(states.i_ng(d_t))
     evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
            
-    for k in range(1,n+1):      
+    for k in range(1,n+1):   
+        i_n0 = next(input_field)   
         phi1=ncon([i_s,i_n0,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1,d_sys*phi1.shape[0],d_t*phi1.shape[-1], bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
@@ -125,7 +128,8 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     return sbins,tbins
 
 
-def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+# Can consider to have flag to have input field used to populate the feedback channel
+def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, input_field:Iterator, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -134,8 +138,8 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     i_s0 : ndarray
         Initial system bin
     
-    i_n0 : ndarray
-        Initial time bin
+    input_field : Iterator
+        Generator of time bins incident the system.
 
     tau : float
         Feedback time
@@ -169,17 +173,17 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     schmidt : [ndarray]
         A list of the Schmidt coefficients
     """
+    d_t=np.prod(d_t_total)
+    d_sys=np.prod(d_sys_total)
     sbins=[] 
     tbins=[]
     taubins=[]
     nbins=[]
     schmidt=[]
     sbins.append(i_s0)   
-    tbins.append(i_n0)
-    taubins.append(i_n0)
+    tbins.append(states.i_ng(d_t))
+    taubins.append(states.i_ng(d_t))
     
-    d_t=np.prod(d_t_total)
-    d_sys=np.prod(d_sys_total)
     
     n=int(round(tmax/delta_t,0))
     t_k=0
@@ -190,7 +194,7 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     l=int(round(tau/delta_t,0)) #time steps between system and feedback
     
     for i in range(l):
-        nbins.append(i_n0)
+        nbins.append(states.i_ng(d_t))
         t_0+=delta_t
     
     i_stemp=i_s0      
@@ -210,7 +214,8 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
         i_t,stemp,i_stemp=_svd_tensors(i_1,d_t*i_1.shape[0],d_sys*i_1.shape[-1], bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_stemp #OC system bin
         
-        #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins                 
+        #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
+        i_n0 = next(input_field)                
         phi1=ncon([i_t,i_s,i_n0,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
         i_t,stemp,i_2=_svd_tensors(phi1,d_t*phi1.shape[0],d_t*d_sys*phi1.shape[-1], bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
@@ -245,6 +250,27 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
         if k<(n-1):         
             nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
     return sbins,tbins,taubins#,schmidt
+
+
+def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]):
+    """
+    Takes the expectation values of several operators of a list of normalized bins. 
+
+    Parameters
+    ----------
+    normalized_bins : list[ndarray]
+        List of OC normalized bins in order of time to have localized expectation values taken.
+
+    ops_list : list[ndarray]
+        List of operators to take expectation values.
+    
+    Returns
+    -------
+    u : list[np.ndarray]
+        List of time dependent expectation values for the different observables. Indexed first with operator number, second with time.
+    """
+
+    return np.array([[expectation(bin, op) for bin in normalized_bins] for op in ops_list])
 
 
 
