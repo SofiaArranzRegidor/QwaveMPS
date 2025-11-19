@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
-import QwaveMPS as QM
+import QwaveMPS as qmps
 
 #Parameters for plots style
 
@@ -44,8 +44,8 @@ tau=0.5
 
 """ Choose the initial state and coupling"""
 
-i_s01=QM.states.i_se()
-i_s02= QM.states.i_sg()
+i_s01=qmps.states.i_se()
+i_s02= qmps.states.i_sg()
 i_s0=np.kron(i_s01,i_s02)
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
@@ -53,17 +53,17 @@ i_s0=np.kron(i_s01,i_s02)
 
 
 
-i_n0=QM.states.input_state_generator(d_t_total)
+i_n0=qmps.states.input_state_generator(d_t_total)
 
 #Copuling is symmetric by default
-gamma_l1,gamma_r1=QM.coupling('symmetrical',gamma=1)
-gamma_l2,gamma_r2=QM.coupling('symmetrical',gamma=1)
+gamma_l1,gamma_r1=qmps.coupling('symmetrical',gamma=1)
+gamma_l2,gamma_r2=qmps.coupling('symmetrical',gamma=1)
 
 phase=np.pi
 
 """Choose the Hamiltonian"""
 
-hm=QM.hamiltonian_2tls_nmar(delta_t,gamma_l1,gamma_r1,gamma_l2,gamma_r2,phase,d_sys_total,d_t_total)
+hm=qmps.hamiltonian_2tls_nmar(delta_t,gamma_l1,gamma_r1,gamma_l2,gamma_r2,phase,d_sys_total,d_t_total)
 
 
 """ Choose max bond dimension"""
@@ -73,12 +73,12 @@ bond=8
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b = QM.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,tau_b = qmps.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
 
-pop1,pop2,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total,tau_b,tau)
+pop1,pop2,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total,tau_b,tau)
 
 
 #%%

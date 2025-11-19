@@ -70,7 +70,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
-import QwaveMPS as QM
+import QwaveMPS as qmps
 
 
 #Parameters for plots style
@@ -112,27 +112,27 @@ pulse_time = 2
 photon_num = 1
 
 
-i_s0=QM.states.i_sg()
+i_s0=qmps.states.i_sg()
 
-input_field = QM.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-input_field = QM.states.input_state_generator(d_t_total, input_field)
+input_field = qmps.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
+input_field = qmps.states.input_state_generator(d_t_total, input_field)
 
-gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
+Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 
@@ -172,21 +172,21 @@ gaussian_mean = 4
 gaussian_variance = 1
 
 
-i_s0=QM.states.i_sg()
+i_s0=qmps.states.i_sg()
 
-pulse_envelope = QM.pulses.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
-input_field = QM.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num,pulse_env_r=pulse_envelope)
-input_field = QM.states.input_state_generator(d_t_total, input_field)
+pulse_envelope = qmps.pulses.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
+input_field = qmps.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num,pulse_env_r=pulse_envelope)
+input_field = qmps.states.input_state_generator(d_t_total, input_field)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 

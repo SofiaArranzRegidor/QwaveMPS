@@ -70,7 +70,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
-import QwaveMPS as QM
+import QwaveMPS as qmps
 
 
 #Parameters for plots style
@@ -108,26 +108,26 @@ bond=2
 
 """ Choose the initial state and coupling"""
 
-i_s0=QM.states.i_se()
+i_s0=qmps.states.i_se()
 
-i_n0=QM.states.input_state_generator(d_t_total)
+i_n0=qmps.states.input_state_generator(d_t_total)
 
-gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
 
 """Choose the Hamiltonian"""
 
-Hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
+Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 
@@ -159,22 +159,22 @@ plt.show()
 
 """ Updated coupling"""
 
-gamma_l,gamma_r=QM.coupling('chiral_r',gamma=1)
+gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 
 
 """Choose the Hamiltonian"""
 
-hm=QM.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
+hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = QM.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,trans,ref,total=QM.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 
