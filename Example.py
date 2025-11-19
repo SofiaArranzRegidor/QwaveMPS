@@ -17,12 +17,12 @@ Structure:
     
         - Time step (delta_t)
         - Maximum time (tmax)
-        - Size of time bin (d_t). This is the field Hilbert subspace at each time step.
-        (In this case we allow one photon per time step and per right and left channels.
-         Hence, the subspace is d_t=2*2=4)
+        - Size of time bin (d_t_total). This is the field Hilbert subspace at each time step.
+        (In this case we allow one photon per time step and per right (d_t_r) and left (d_t_l) channels.
+         Hence, the subspace is d_t_total=2*2=4)
         - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
         (for a single TLS, d_sys=2).
-        - Maximum bond dimension (bond). bond=2^(number of excitations).    
+        - Maximum bond dimension (bond). bond=d_t_total^(number of excitations).    
         Starting with the TLS excited and field in vacuum, 1 excitation => bond=2
         
     2. Initial state and coupling configuration. 
@@ -30,7 +30,7 @@ Structure:
         - Choice the system initial state (i_s0). Here, initially excited, 
             i_s0 = qmps.states.i_se()
         - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
-            i_n0 = qmps.states.i_ng(d_t)
+            i_n0 = qmps.states.i_ng(d_t_total)
         - Choice of coupling. Here, it is first calculated with symmetrical coupling,
             gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
           and the with chiral coupling,         
@@ -102,15 +102,16 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 "Choose max bond dimension"
 
-# bond = 2^(number of excitations)
-bond=2
+# bond = d_t_total^(number of excitations)
+bond=4
 
 
 """ Choose the initial state and coupling"""
 
 i_s0=qmps.states.i_se()
 
-i_n0=qmps.states.input_state_generator(d_t_total)
+i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
+
 
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 

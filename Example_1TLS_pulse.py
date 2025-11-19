@@ -114,8 +114,9 @@ photon_num = 1
 
 i_s0=qmps.states.i_sg()
 
-input_field = qmps.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-input_field = qmps.states.input_state_generator(d_t_total, input_field)
+pulse_env=qmps.states.tophat_envelope(pulse_time, delta_t)
+i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
+# input_field = qmps.states.input_state_generator(d_t_total, input_field)
 
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
@@ -127,7 +128,7 @@ Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
@@ -175,13 +176,13 @@ gaussian_variance = 1
 i_s0=qmps.states.i_sg()
 
 pulse_envelope = qmps.pulses.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
-input_field = qmps.pulses.fock_pulse(pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num,pulse_env_r=pulse_envelope)
-input_field = qmps.states.input_state_generator(d_t_total, input_field)
+i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
+# input_field = qmps.states.input_state_generator(d_t_total, input_field)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,input_field,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""

@@ -47,13 +47,14 @@ tau=0.5
 i_s01=qmps.states.i_se()
 i_s02= qmps.states.i_sg()
 i_s0=np.kron(i_s01,i_s02)
+
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
 # i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
 
 
 
-i_n0=qmps.states.input_state_generator(d_t_total)
+i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
 
 #Copuling is symmetric by default
 gamma_l1,gamma_r1=qmps.coupling('symmetrical',gamma=1)

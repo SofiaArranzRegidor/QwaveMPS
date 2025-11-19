@@ -331,7 +331,7 @@ def fock_pulse(pulse_time:float, delta_t:float, d_t_total:int, bond:int, pulse_e
     return apk_can
 
 
-def vacuum_pulse(time_length:float, delta_t:float, d_t:int, bond0:int=1) -> np.ndarray:
+def vacuum(time_length:float, delta_t:float, d_t_total:int) -> np.ndarray:
     """
     Produces a pulse of vacuum time bins for an interval of length time_length.
 
@@ -347,9 +347,6 @@ def vacuum_pulse(time_length:float, delta_t:float, d_t:int, bond0:int=1) -> np.n
     d_t : int
         Size of the truncated Hilbert space of the light field.
 
-    bond0 : int, default: 1
-        Size of the bond dimension.
-    
     Returns
     -------
     state : ndarray
@@ -358,7 +355,10 @@ def vacuum_pulse(time_length:float, delta_t:float, d_t:int, bond0:int=1) -> np.n
     Examples
     -------- 
     """ 
+    bond0=1
     l = int(round(time_length/delta_t, 0))
-
+    d_t=np.prod(d_t_total)
+    
+    
     return [states.i_ng(d_t, bond0) for i in range(l)]
 
