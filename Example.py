@@ -28,13 +28,13 @@ Structure:
     2. Initial state and coupling configuration. 
     
         - Choice the system initial state (i_s0). Here, initially excited, 
-            i_s0 = QM.states.i_se()
+            i_s0 = qmps.states.i_se()
         - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
-            i_n0 = QM.states.i_ng(d_t)
+            i_n0 = qmps.states.i_ng(d_t)
         - Choice of coupling. Here, it is first calculated with symmetrical coupling,
-            gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)            
+            gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
           and the with chiral coupling,         
-            gamma_l,gamma_r=QM.coupling('chiral',gamma=1)
+            gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
             
     3. Selection of the corresponding Hamiltonian.
     
