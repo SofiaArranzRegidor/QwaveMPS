@@ -53,9 +53,7 @@ i_s0=np.kron(i_s01,i_s02)
 
 
 
-i_n01=qmps.states.i_ng(d_t_l)
-i_n02=qmps.states.i_ng(d_t_r)
-i_n0=np.kron(i_n01,i_n02)
+i_n0=qmps.states.input_state_generator(d_t_total)
 
 #Copuling is symmetric by default
 gamma_l1,gamma_r1=qmps.coupling('symmetrical',gamma=1)

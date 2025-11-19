@@ -62,7 +62,8 @@ d_t_total=np.array([d_t]) #single channel for mirror case
 """ Choose the initial state and coupling"""
 
 i_s0=qmps.states.i_se()
-i_n0=qmps.states.i_ng(d_t)
+i_n0=qmps.states.input_state_generator(d_t_total)
+
 
 #Copuling is symmetric by default
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
