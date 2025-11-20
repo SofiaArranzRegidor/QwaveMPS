@@ -16,7 +16,7 @@ $M = U S V^\dagger,$
 
 where $S$ is a diagonal matrix containing the Schmidt coefficients in descending order, $U$ is a left-normalized tensor, and $V$ is a right-normalized one. Afterwards, one of the side tensors can be multiplied by the one containing the Schmidt coefficients. This receives the name of the orthogonality center (OC), and it will carry the information of the system. Thus, we end up with 2 new tensors written as a tensor product. 
 
-![Diagram of the SVD](../images/OC.pdf)
+![Diagram of the SVD](../images/OC.png)
 
 By iterating this process, we can decompose the Hilbert space into a tensor product of smaller subspaces until getting the following general MPS expression for a waveguide QED system,
 
