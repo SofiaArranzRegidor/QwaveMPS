@@ -10,7 +10,18 @@ However, to solve these complex problems, many theories make use of approximatio
 
 ## Matrix Product States
 
-Introduce Matrix Product States (MPS) and their relevance to this project.
+The quantum state for a 1D spin-chain, with $N$ spins, is given by \cite{woolfe_matrix_2015},
+\begin{equation}
+    \ket{\psi}= \sum_{i_1,...,i_N}^{d} c_{i_1,...,i_N} \ket{i_1,...,i_N},
+    \label{eq:psi}
+\end{equation}
+%
+where $i_k$ (with $k \ \in \ \{1,...N\}$) represents each state with a dimension of $d$, and $c_i$ are the coefficients of the corresponding state. 
+
+The MPS algorithm relies on the Schmidt decomposition of a quantum system, which considers  
+the bipartition state of the system 
+as 
+ a tensor product
 
 ## References
 
