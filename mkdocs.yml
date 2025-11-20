@@ -8,4 +8,13 @@ nav:
   - Examples: examples.md
   - Contributing: contributing.md
   - References: references.md
+
 theme: readthedocs
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      inline_wrap: "$"
+      generic: true
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js
