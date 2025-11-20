@@ -14,6 +14,7 @@ theme: readthedocs
 markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
+  - md_in_html
 
 extra_javascript:
   - "https://polyfill.io/v3/polyfill.min.js?features=es6"
