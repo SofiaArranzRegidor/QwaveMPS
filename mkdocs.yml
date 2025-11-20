@@ -12,9 +12,8 @@ nav:
 theme: readthedocs
 
 markdown_extensions:
-  - pymdownx.arithmatex:
-      inline_wrap: "$"
-      generic: true
+  - pymdownx.arithmatex
 
 extra_javascript:
-  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js
+  - "https://polyfill.io/v3/polyfill.min.js?features=es6"
+  - "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
