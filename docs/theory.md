@@ -14,18 +14,21 @@ Matrix product states is an approach based on one-dimensional tensor network the
 
 $M = U S V^\dagger,$
 
-where $S$ is a diagonal matrix containing the Schmidt coefficients in descending order, $U$ is a left-normalized tensor, and $V$ is a right-normalized one. Afterwards, one of the side tensors can be multiplied by the one containing the Schmidt coefficients. This receives the name of the orthogonality center (OC), and it will carry the information of the system. Thus, we end up with 2 new tensors written as a tensor product. 
+where $S$ is a diagonal matrix containing the Schmidt coefficients in descending order, $U$ is a left-normalized tensor, and $V$ is a right-normalized one. Afterwards, one of the side tensors can be contracted with the tensor containing the Schmidt coefficients. This receives the name of the orthogonality center (OC) and carries the system's information. Thus, we end up with 2 new tensors written as a tensor product. To better understand the process, this can be represented diagrammatically,
 
 <p align="center">
-  <img src="/images/OC.png" alt="OC Image" width="30%">
+  <img src="./images/OC.png" alt="OC Image" width="30%">
 </p>
 
-By iterating this process, we can decompose the Hilbert space into a tensor product of smaller subspaces until getting the following general MPS expression for a waveguide QED system,
+By iterating this process, we can decompose the Hilbert space into a tensor product of smaller subspaces until we get the following general MPS expression for a waveguide QED system,
 
 $\ket{\psi}=\sum_{i_s i_1...i_N} A_{a_1}^{i_s}A_{a_1,a_2}^{i_1} ... A_{a_{N-1},a_{N}}^{i_{N-1}}A_{a_{N}}^{i_{N}}\ket{i_s, i_1,...,i_N},$
 
 where the first term represents the system (or quantum emitter) part, and the remaining $N$ terms represent the discretized waveguide, representing the possibility of at least $N$ photons in the waveguide.
 
+<p align="center">
+  <img src="./images/initial_state.png" alt="OC Image" width="50%">
+</p>
 
 ## References
 
