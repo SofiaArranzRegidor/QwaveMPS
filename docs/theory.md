@@ -18,7 +18,7 @@ $$M = U S V^\dagger,$$
 where $S$ is a diagonal matrix containing the Schmidt coefficients in descending order, $U$ is a left-normalized tensor, and $V$ is a right-normalized one. Afterwards, one of the side tensors can be contracted with the tensor containing the Schmidt coefficients. This receives the name of the orthogonality center (OC) and carries the system's information. Thus, we end up with 2 new tensors written as a tensor product. To better understand the process, this can be represented diagrammatically,
 
 <p align="center">
-  <img src="./images/OC.png" alt="OC Image" width="30%">
+  <img src="/images/OC.png" alt="OC Image" width="30%">
 </p>
 
 ### Matrix product states
@@ -30,7 +30,7 @@ $$\ket{\psi}=\sum_{i_s i_1...i_N} A_{a_1}^{i_s}A_{a_1,a_2}^{i_1} ... A_{a_{N-1},
 where the first term represents the system (or quantum emitter) part, and the remaining $N$ terms represent the waveguide discretized in time. Here, each tensor can be represented as a 'bin' which corresponds to the boxes in the diagrammatic representation. This gives the possibility of at least $N$ photons in the waveguide.
 
 <p align="center">
-  <img src="./images/initial_state.png" alt="OC Image" width="50%">
+  <img src="/images/initial_state.png" alt="OC Image" width="50%">
 </p>
 
 For example, if our system contains a single TLS that starts excited, the TLS bin is represented by,  
