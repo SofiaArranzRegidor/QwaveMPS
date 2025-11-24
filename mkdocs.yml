@@ -2,9 +2,9 @@ site_name: QwaveMPS Documentation
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Usage: usage.md
   - Theory: theory.md
   - Modules: modules.md
+  - Usage: usage.md
   - Examples: examples.md
   - Contributing: contributing.md
   - References: references.md
