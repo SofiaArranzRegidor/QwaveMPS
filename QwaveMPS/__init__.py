@@ -10,7 +10,6 @@ from .hamiltonians import *
 from .operators import *
 from .states import *
 from .simulation import *
-from .pulses import *
 
 def cite():
     """Print BibTeX citation for the `QwaveMPS' package."""
