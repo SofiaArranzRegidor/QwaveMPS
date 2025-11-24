@@ -14,7 +14,7 @@ from .operators import *
 
 def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np.array, d_t_total:np.array, omega:float=0, delta:float=0) -> np.ndarray:
     """
-    Hamilltonian for 1 TLS in the waveguide
+    Hamiltonian for 1 TLS in the waveguide
     
     Parameters
     ----------
