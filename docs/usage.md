@@ -1,5 +1,8 @@
 # Usage
 
+This section introduces the basic structure of QwaveMPS and its functionalities. 
+
+![Diagram of the code workflow](./images/diagram.png)
 
 ## Input Parameters
 
