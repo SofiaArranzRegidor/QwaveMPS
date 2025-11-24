@@ -30,7 +30,7 @@ $$\ket{\psi}=\sum_{i_s i_1...i_N} A_{a_1}^{i_s}A_{a_1,a_2}^{i_1} ... A_{a_{N-1},
 where the first term represents the system (or quantum emitter) part, and the remaining $N$ terms represent the waveguide discretized in time. Here, each tensor can be represented as a 'bin' which corresponds to the boxes in the diagrammatic representation. This gives the possibility of at least $N$ photons in the waveguide.
 
 <p align="center">
-  <img src="/images/initial_state.png" alt="OC Image" width="50%">
+  <img src="./images/initial_state.png" alt="state Image" width="50%">
 </p>
 
 For example, if our system contains a single TLS that starts excited, the TLS bin is represented by,  
@@ -52,6 +52,10 @@ def i_ng(d_t:int, bond0:int=1) -> np.ndarray:
 with the total field being a tensor product of these time bins.
 
 ### Matrix product operators
+
+<p align="center">
+  <img src="./images/mpo.png" alt="mpo Image" width="15%">
+</p>
 
 ## References
 
