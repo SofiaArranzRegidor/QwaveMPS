@@ -4,8 +4,10 @@
 
 Describe the main modules and scripts in this repository.
 
-- `module1.py`: Brief description
-- `module2.py`: Brief description
+- `hamiltonians.py`: Brief description
+- `operators.py`: Brief description
+- `simulation.py`: description
+- `states.py`: description
 
 ## Key Classes and Functions
 
