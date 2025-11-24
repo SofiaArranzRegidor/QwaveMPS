@@ -1,12 +1,5 @@
 # Usage
 
-## Running Examples
-
-To run an example:
-
-```bash
-python examples/example1.py
-```
 
 ## Input Parameters
 
