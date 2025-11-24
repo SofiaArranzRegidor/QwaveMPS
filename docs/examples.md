@@ -1,5 +1,13 @@
 # Examples
 
+## Running Examples
+
+To run an example:
+
+```bash
+python examples/example1.py
+```
+
 ## Example 1
 
 Explain what this example demonstrates, including code snippets and expected results.
