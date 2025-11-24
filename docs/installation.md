@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- Python (version ...)
-- Required packages (list them here, e.g. numpy, scipy, ...)
+- Python >=3.6
+- Required packages: numpy, scipy, ncon.
 
 ## Steps
 
