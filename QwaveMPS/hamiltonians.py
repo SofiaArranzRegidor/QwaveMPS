@@ -59,7 +59,7 @@ def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np
     
 def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase:float,d_sys_total:np.array, d_t_total:np.array,omega:float=0, delta:float=0) -> np.ndarray:
     """
-    Hamilltonian for 1 TLS in a semi-infinite waveguide with a side mirror
+    Hamiltonian for 1 TLS in a semi-infinite waveguide with a side mirror
     
     Parameters
     ----------
@@ -89,7 +89,7 @@ def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
 
     Returns
     -------
-    Hamiltonian : ndarray
+    Hamiltonian: ndarray
         Hamiltonian coupling a single TLS pumped by a classical field to the semi-infinite waveguide.
 
     Examples
@@ -108,7 +108,7 @@ def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
 
 def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys_total:np.array, d_t_total:np.array, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
     """
-    Hamilltonian for 2 TLSs in an infinite waveguide.
+    Hamiltonian for 2 TLSs in an infinite waveguide.
     
     Parameters
     ----------
@@ -189,7 +189,7 @@ def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l
 
 def hamiltonian_2tls_mar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys_total:np.array, d_t_total:np.array, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
     """
-    Hamilltonian for 2 TLSs in an infinite waveguide.
+    Hamiltonian for 2 TLSs in an infinite waveguide.
     
     Parameters
     ----------
