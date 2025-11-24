@@ -102,6 +102,14 @@ def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:
 ```
 where $d_t$ is 2 by default to allow one photon per time bin.
 
+### Time evolution
+
+The evolution of the system is performed by applying the time evolution operator on the relevant parts of the MPS at each time step. In the Markovian regime, this is usually on the system bin and the present time bin. For example, at a time $t_k,
+
+
+
+
+
 ## References
 
 List important papers or resources for readers interested in the theory.
