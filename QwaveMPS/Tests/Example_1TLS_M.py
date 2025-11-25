@@ -17,24 +17,24 @@ Structure:
     
         - Time step (delta_t)
         - Maximum time (tmax)
-        - Size of time bin (d_t). This is the field Hilbert subspace at each time step.
-        (In this case we allow one photon per time step and per right and left channels.
-         Hence, the subspace is d_t=2*2=4)
+        - Size of time bin (d_t_total). This is the field Hilbert subspace at each time step.
+        (In this case we allow one photon per time step and per right (d_t_r) and left (d_t_l) channels.
+         Hence, the subspace is d_t_total=2*2=4)
         - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
         (for a single TLS, d_sys=2).
-        - Maximum bond dimension (bond). bond=d_t*(number of excitations).    
+        - Maximum bond dimension (bond). bond=d_t_total^(number of excitations).    
         Starting with the TLS excited and field in vacuum, 1 excitation => bond=2
         
     2. Initial state and coupling configuration. 
     
         - Choice the system initial state (i_s0). Here, initially excited, 
-            i_s0 = QM.states.i_se()
+            i_s0 = qmps.states.i_se()
         - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
-            i_n0 = QM.states.i_ng(d_t)
+            i_n0 = qmps.states.i_ng(d_t_total)
         - Choice of coupling. Here, it is first calculated with symmetrical coupling,
-            gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)            
+            gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
           and the with chiral coupling,         
-            gamma_l,gamma_r=QM.coupling('chiral',gamma=1)
+            gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
             
     3. Selection of the corresponding Hamiltonian.
     
@@ -72,7 +72,6 @@ from matplotlib.ticker import FuncFormatter
 import numpy as np
 import QwaveMPS as qmps
 
-
 #Parameters for plots style
 
 def pic_style(fontsize):
@@ -83,7 +82,7 @@ def clean_ticks(x, pos):
     return f'{x:g}'
 
 
-#%% 1 photon Tophat Pulse
+#%% Symmetrical Solution
 
 
 """"Choose the simulation parameters"""
@@ -93,8 +92,8 @@ def clean_ticks(x, pos):
 delta_t = 0.05
 tmax = 8
 tlist=np.arange(0,tmax+delta_t,delta_t)
-d_t_l=3 #Time right channel bin dimension
-d_t_r=3 #Time left channel bin dimension
+d_t_l=2 #Time right channel bin dimension
+d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
 
 d_sys1=2 # tls bin dimension
@@ -102,21 +101,16 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 "Choose max bond dimension"
 
-# bond = d_t_total*(number of excitations)
+# bond = d_t_total^(number of excitations)
 bond=4
 
 
 """ Choose the initial state and coupling"""
-# Pulse parameters
-pulse_time = 2
-photon_num = 1
 
+i_s0=qmps.states.i_se()
 
-i_s0=qmps.states.i_sg()
+i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
 
-pulse_env=qmps.states.tophat_envelope(pulse_time, delta_t)
-i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-# input_field = qmps.states.input_state_generator(d_t_total, input_field)
 
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
@@ -160,31 +154,22 @@ ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 
-#%% 2 photon Gaussian pulse
+#%% Right chiral Solution
 
 
-""" Updated input field and simulation length"""
-tmax = 12
-tlist=np.arange(0,tmax+delta_t,delta_t)
+""" Updated coupling"""
 
-pulse_time = tmax
-photon_num = 2
-gaussian_mean = 4
-gaussian_variance = 1
+gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 
 
-bond=8
+"""Choose the Hamiltonian"""
 
-i_s0=qmps.states.i_sg()
-
-pulse_envelope = qmps.pulses.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
-i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-# input_field = qmps.states.input_state_generator(d_t_total, input_field)
+hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
@@ -206,7 +191,7 @@ plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.ylim([0.,2.05])
+plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
@@ -214,3 +199,4 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 # plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
+
