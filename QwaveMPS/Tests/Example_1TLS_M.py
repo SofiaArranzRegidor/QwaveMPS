@@ -70,7 +70,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
-import QwaveMPS as qmps
+import QwaveMPS.src as qmps
 
 #Parameters for plots style
 
