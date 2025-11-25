@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
+
+import sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 
 #Parameters for plots style
