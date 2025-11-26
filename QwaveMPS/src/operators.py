@@ -209,6 +209,7 @@ def e(d_sys:int=2) -> np.ndarray:
     exc[1,1]=1.      
     return exc
 
+
 def u_evol(Hm:np.ndarray, d_sys_total:np.array, d_t_total:np.array, interacting_timebins_num:int=1) -> np.ndarray:
     """
     Creates a time evolution operator for a given Hamiltonian.
@@ -321,7 +322,28 @@ def expectation(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,4],[2,3],[1,3,4]])
     return sol
 
+def expectation_2(a_list:np.ndarray, mpo:np.ndarray) -> complex:
+    """
+    The expectation value of a 2-bin MPS with a given operator.
 
+    Parameters
+    ----------
+    AList : ndarray
+        MPS bin defining the state having an expectation taken with respect to some operator.
+
+    MPO : ndarray
+        Operator whose expectation value is being taken.
+    
+    Returns
+    -------
+    expectation value : complex
+        The expectation value of the operator for the given state.
+    
+    Examples
+    -------- 
+    """ 
+    sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,5,4],[2,3,5,6],[1,3,6,4]])
+    return sol
 
 def tls_pop(d_sys:int=2) -> np.ndarray:    
     return np.real((sigmaplus() @ sigmaminus()))
@@ -334,3 +356,32 @@ def a_l_pop(delta_t:float, d_t_total:np.array) -> np.ndarray:
 
 def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
     return np.real((delta_b_dag(delta_t,d_t) @ delta_b(delta_t,d_t))/delta_t)
+
+def g1_rr(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_r(delta_t,d_t_total),delta_b_r(delta_t,d_t_total))
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g1_rl(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_r(delta_t,d_t_total),delta_b_l(delta_t,d_t_total))
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g1_lr(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_l(delta_t,d_t_total),delta_b_r(delta_t,d_t_total))
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g1_ll(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_l(delta_t,d_t_total),delta_b_l(delta_t,d_t_total))
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g2_r(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total) ,delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total)) 
+    # b=b.reshape(d_time,d_time,d_time,d_time)
+    return b
