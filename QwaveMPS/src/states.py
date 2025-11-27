@@ -398,27 +398,25 @@ def fock_pulse(pulse_env_r:list[float],pulse_time:float, delta_t:float, d_t_tota
 
     # Evaluate the first and last matrices (each iteration for L and R respectively)
     for i in range(channel_num):
-        if photon_nums[i] > 0:
-            ap1[:,indices[i],dt_indices[i]] = np.sqrt(photon_nums[i]) * pulse_envs[0][i]**np.arange(photon_num_dims[i])
-            ap1[:,indices[i][0],dt_indices[i][0]] = 1
+        ap1[:,indices[i],dt_indices[i]] = np.sqrt(photon_nums[i]) * pulse_envs[0][i]**np.arange(photon_num_dims[i])
+        ap1[:,indices[i][0],dt_indices[i][0]] = 1
 
-            combinatorialFactors = sci.special.comb(photon_nums[i],np.arange(photon_num_dims[i]))
-            apmVals = np.sqrt(combinatorialFactors)* pulse_envs[-1][i]**np.arange(photon_num_dims[i])
-            apm[dt_indices[i][::-1], indices[i],:] = apmVals[:,None]
-            #ApM[dTimeIndices[-1], indices[0],:] = 1
-            apm[dt_indices[i][0], indices[i][-1],:] = np.sqrt(photon_nums[i]) * pulse_envs[-1][i]**photon_nums[i]
+        combinatorialFactors = sci.special.comb(photon_nums[i],np.arange(photon_num_dims[i]))
+        apmVals = np.sqrt(combinatorialFactors)* pulse_envs[-1][i]**np.arange(photon_num_dims[i])
+        apm[dt_indices[i][::-1], indices[i],:] = apmVals[:,None]
+        #ApM[dTimeIndices[-1], indices[0],:] = 1
+        apm[dt_indices[i][0], indices[i][-1],:] = np.sqrt(photon_nums[i]) * pulse_envs[-1][i]**photon_nums[i]
 
 
     # Internal function to evaluate the k^th matrix
     def calc_ak(dt, d_total, pulse_envs_k, k):
         ak=np.zeros([dt,d_total,dt],dtype=complex)
         for j in range(channel_num):
-            if photon_nums[j] > 0:
-                for i in range(photon_num_dims[j]):
-                    #Ak[i, indices[: photonNumDims-i], dTimeIndices[i:]] = fkVal
-                    ak[dt_indices[j][:photon_num_dims[j]-i], indices[j][i], dt_indices[j][i:]] = np.sqrt(sci.special.comb(dt_indices[j][i:],i)) * pulse_envs_k[j]**i
-                ak[0, indices[j], dt_indices[j]] = np.sqrt(photon_nums[j]) * pulse_envs_k[j]**np.arange(photon_num_dims[j])
-                ak[dt_indices[j],0,dt_indices[j]] = 1
+            for i in range(photon_num_dims[j]):
+                #Ak[i, indices[: photonNumDims-i], dTimeIndices[i:]] = fkVal
+                ak[dt_indices[j][:photon_num_dims[j]-i], indices[j][i], dt_indices[j][i:]] = np.sqrt(sci.special.comb(dt_indices[j][i:],i)) * pulse_envs_k[j]**i
+            ak[0, indices[j], dt_indices[j]] = np.sqrt(photon_nums[j]) * pulse_envs_k[j]**np.arange(photon_num_dims[j])
+            ak[dt_indices[j],0,dt_indices[j]] = 1
         return ak
 
     '''
@@ -446,17 +444,18 @@ def fock_pulse(pulse_env_r:list[float],pulse_time:float, delta_t:float, d_t_tota
     # Entanglement/normalization process
     apk_c=ncon([calc_ak(dt, time_bin_dim, pulse_envs[m-2], m-1), apm],[[-1,-2,1],[1,-3,-4]])            
     
-    for k in range(m-1,1,-1):
+    for k in range(m-2,1,-1):
         apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
         apk_c = stemp[None,None,:] * apk_c
         apk_c = ncon([calc_ak(dt, time_bin_dim, pulse_envs[k-1], k),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
         apk_can.append(i_n_r)        
     
     apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
-    apk_c = stemp[None,None,:] * apk_c
+    apk_can.append(i_n_r)
+    apk_c = apk_c * stemp[None,None,:]
     apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
     i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
-    i_n_l = stemp[None,None,:] * i_n_l
+    i_n_l = i_n_l * stemp[None,None,:]
     apk_can.append(i_n_r)
     apk_can.append(i_n_l)
     
