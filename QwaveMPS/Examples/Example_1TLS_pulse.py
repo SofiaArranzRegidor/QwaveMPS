@@ -95,8 +95,8 @@ def clean_ticks(x, pos):
 
 "Choose the time step and end time"
 
-delta_t = 0.05
-tmax = 8
+delta_t = 0.1
+tmax = 5
 tlist=np.arange(0,tmax+delta_t,delta_t)
 d_t_l=3 #Time right channel bin dimension
 d_t_r=3 #Time left channel bin dimension
@@ -113,15 +113,16 @@ bond=4
 
 """ Choose the initial state and coupling"""
 # Pulse parameters
-pulse_time = 2
+pulse_time = 1
 photon_num = 1
 
 
 i_s0=qmps.states.i_sg()
 
+
 pulse_env=qmps.states.tophat_envelope(pulse_time, delta_t)
+
 i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-# input_field = qmps.states.input_state_generator(d_t_total, input_field)
 
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
@@ -133,7 +134,7 @@ Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,cor_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
@@ -141,7 +142,9 @@ sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_to
 pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
+# g1_rr_matrix,g1_ll_matrix=qmps.first_order_correlation(cor_b, delta_t,d_t_total,bond)
 
+#%%
 fonts=15
 pic_style(fonts)
 
@@ -165,6 +168,7 @@ ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 
+
 #%% 2 photon Gaussian pulse
 
 
@@ -184,12 +188,12 @@ i_s0=qmps.states.i_sg()
 
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
 i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-# input_field = qmps.states.input_state_generator(d_t_total, input_field)
+
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,cor_list = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""

@@ -71,6 +71,8 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     
     input_field : Iterator
         Generator of time bins incident the system.
+        
+    i_n0: ndarray
     
     delta_t : float
         time step
@@ -107,9 +109,10 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
     input_field=states.input_state_generator(d_t_total, i_n0)
-       
+    cor_list=[]
     for k in range(1,n+1):   
         i_nk = next(input_field)   
+        
         phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1, bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
@@ -120,10 +123,16 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
         i_n,stemp,i_st=_svd_tensors(phi2, bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_st   #OC system bin
         t_k += delta_t
-    return sbins,tbins
+        
+        if k < n:
+            cor_list.append(i_n)
+        if k == n:
+            cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
+        
+    return sbins,tbins,cor_list
 
 
-# Can consider to have flag to have input field used to populate the feedback channel
+
 def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
@@ -268,7 +277,6 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
     return np.array([[expectation(bin, op) for bin in normalized_bins] for op in ops_list])
 
 
-
 def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, d_sys_total:np.array,d_t_total:np.array):
     """
     Calculates the main population dynamics
@@ -382,6 +390,7 @@ def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubi
             total[i]  = pop[i] +  trans[i] + ph_loop[i]
     return pop,tbins,trans,ph_loop,total
 
+
 def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float,d_sys_total:np.array,d_t_total:np.array, taubins:list[np.ndarray]=[], tau:float=0):
     """
     Calculates the main population dynamics
@@ -479,3 +488,83 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
             total[i]  = pop1[i] + pop2[i]  + trans[i] + ref[i]
         
     return pop1,pop2,tbinsR,tbinsL,trans,ref,total
+
+
+def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np.array,bond:int):
+    """
+    Calculates the first order correlation function of the right moving photons
+
+    Parameters
+    ----------
+
+    cor_bins : [ndarray]
+        A list with the time bins involved in the correlation.
+
+    delta_t : float
+        Time step size.
+
+    Returns
+    -------
+    Expectation value of g1_r
+    """
+    cor_list2 =  cor_list1
+    g1_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    g1_ll_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    g1_rl_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    g1_lr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+   
+    d_t=np.prod(d_t_total)
+    swap_t_t=swap(d_t,d_t)
+    
+    #Bring the OC to the first bin
+    for i in range(len(cor_list2)-1,0,-1):
+        # print('iteration', i)
+        two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
+        cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
+        cor_list2[i]=cor_l2
+        cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
+    
+    for j in range(len(cor_list1)-1):            
+        
+        i_1=cor_list2[0]
+        i_2=cor_list2[1]     
+        
+        g1_rr_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**2)    
+        g1_ll_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**2)  
+        g1_rl_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**2) 
+        g1_lr_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**2) 
+        
+        for i in range(len(cor_list2)-1):  
+            # print('iteration', i)
+            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+            
+            g1_rr_matrix[i+1,j]=expectation_2(state, g1_rr(delta_t,d_t_total))/(delta_t**2) 
+            g1_ll_matrix[i+1,j]=expectation_2(state, g1_ll(delta_t,d_t_total))/(delta_t**2) 
+            
+            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
+            i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
+            i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
+            
+            if i < (len(cor_list2)-2):                
+                i_2=cor_list2[i+2] #next time bin for the next correlation
+                cor_list2[i]=i_t2 #update of the increasing bin
+            if i == len(cor_list2)-2:
+                cor_list2[i]=i_t2
+                cor_list2[i+1]=i_1
+                
+        for i in range(len(cor_list2)-1,0,-1):            
+            two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
+            cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
+            if i>1:
+                cor_list2[i] = cor_l2  
+                cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
+            if i == 1:
+               cor_l = cor_l2
+               cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
+        cor_list2=cor_list2[1:]   
+    return g1_rr_matrix,g1_ll_matrix    
+
+
+
+
+
