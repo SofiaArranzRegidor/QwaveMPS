@@ -110,7 +110,7 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     swap_sys_t=swap(d_sys,d_t)
     input_field=states.input_state_generator(d_t_total, i_n0)
     cor_list=[]
-    for k in range(1,n+1):   
+    for k in range(n):   
         i_nk = next(input_field)   
         
         phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
@@ -124,9 +124,9 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
         i_s=stemp[:,None,None]*i_st   #OC system bin
         t_k += delta_t
         
-        if k < n:
+        if k < (n-1):
             cor_list.append(i_n)
-        if k == n:
+        if k == n-1:
             cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
         
     return sbins,tbins,cor_list
@@ -187,7 +187,7 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     sbins.append(i_s0)   
     tbins.append(states.i_ng(d_t))
     taubins.append(states.i_ng(d_t))
-    
+    cor_list=[]
     input_field=states.input_state_generator(d_t_total, i_n0)
     n=int(round(tmax/delta_t,0))
     t_k=0
@@ -253,7 +253,13 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
             nbins[i]=i_n2    #update nbins            
         if k<(n-1):         
             nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
-    return sbins,tbins,taubins#,schmidt
+        
+        if k < (n-1):
+            cor_list.append(i_n)
+        if k == n-1:
+            cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
+            
+    return sbins,tbins,taubins,cor_list#,schmidt
 
 
 def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]):

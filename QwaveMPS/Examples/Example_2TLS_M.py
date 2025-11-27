@@ -75,7 +75,7 @@ hm=qmps.hamiltonian_2tls_mar(delta_t, gamma_l1, gamma_r1, gamma_l2, gamma_r2,pha
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,cor_b = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """Calculate population dynamics"""
