@@ -108,25 +108,21 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 "Choose max bond dimension"
 
 # bond = d_t_total*(number of excitations)
-bond=9
+bond=4
 
 
 """ Choose the initial state and coupling"""
 # Pulse parameters
 pulse_time = 1
-photon_num = 2
+photon_num = 1
 
-
-#Here you can switch between the pulse case and just the TLS decay to see the correlation results.
 
 i_s0=qmps.states.i_sg()
-# i_s0=qmps.states.i_se()
 
 
 pulse_env=qmps.states.tophat_envelope(pulse_time, delta_t)
 
 i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-# i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
 
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
@@ -146,7 +142,7 @@ sys_b,time_b,cor_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,
 pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
-g1_rr_matrix,g1_ll_matrix=qmps.first_order_correlation(cor_b, delta_t,d_t_total,bond)
+# g1_rr_matrix,g1_ll_matrix=qmps.first_order_correlation(cor_b, delta_t,d_t_total,bond)
 
 #%%
 fonts=15
@@ -162,7 +158,7 @@ plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.ylim([0.,2.05])
+plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
@@ -171,65 +167,59 @@ ax.yaxis.set_major_formatter(formatter)
 # plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
-#%%
 
-# Here I am plotting only the first row to compare results (in your function my row is your column)
-
-plt.figure()
-plt.plot(tlist[1:],g1_rr_matrix[0],'b',linestyle='-',label=r'$G_R^{(1)}$') 
-plt.show()
 
 #%% 2 photon Gaussian pulse
 
 
-# """ Updated input field and simulation length"""
-# tmax = 12
-# tlist=np.arange(0,tmax+delta_t,delta_t)
+""" Updated input field and simulation length"""
+tmax = 12
+tlist=np.arange(0,tmax+delta_t,delta_t)
 
-# pulse_time = tmax
-# photon_num = 2
-# gaussian_mean = 4
-# gaussian_variance = 1
-
-
-# bond=8
-
-# i_s0=qmps.states.i_sg()
-
-# pulse_envelope = qmps.states.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
-# i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
-# # input_field = qmps.states.input_state_generator(d_t_total, input_field)
+pulse_time = tmax
+photon_num = 2
+gaussian_mean = 4
+gaussian_variance = 1
 
 
-# """Calculate time evolution of the system"""
+bond=8
 
-# sys_b,time_b,cor_list = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+i_s0=qmps.states.i_sg()
 
-
-# """Calculate population dynamics"""
-
-# pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pulse_envelope = qmps.states.gaussian_envelope(pulse_time, delta_t, gaussian_variance, gaussian_mean)
+i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, delta_t, d_t_total, bond, photon_num_r=photon_num)
 
 
 
-# fonts=15
-# pic_style(fonts)
+"""Calculate time evolution of the system"""
+
+sys_b,time_b,cor_list = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
-# fig, ax = plt.subplots(figsize=(4.5, 4))
-# plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-# plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-# plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-# plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-# plt.legend(loc='center right')
-# plt.xlabel('Time, $\gamma t$')
-# plt.ylabel('Populations')
-# plt.grid(True, linestyle='--', alpha=0.6)
-# plt.ylim([0.,2.05])
-# plt.xlim([0.,tmax])
-# plt.tight_layout()
-# formatter = FuncFormatter(clean_ticks)
-# ax.xaxis.set_major_formatter(formatter)
-# ax.yaxis.set_major_formatter(formatter)
-# # plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
-# plt.show()
+"""Calculate population dynamics"""
+
+pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+
+
+
+fonts=15
+pic_style(fonts)
+
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
+plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.legend(loc='center right')
+plt.xlabel('Time, $\gamma t$')
+plt.ylabel('Populations')
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.ylim([0.,2.05])
+plt.xlim([0.,tmax])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+# plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
+plt.show()
