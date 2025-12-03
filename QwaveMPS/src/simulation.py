@@ -106,6 +106,8 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     sbins.append(i_s0)
     tbins=[]
     tbins.append(states.i_ng(d_t))
+    schmidt=[]
+    schmidt.append(np.zeros(1))
     evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
     input_field=states.input_state_generator(d_t_total, i_n0)
@@ -124,12 +126,14 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
         i_s=stemp[:,None,None]*i_st   #OC system bin
         t_k += delta_t
         
+        schmidt.append(stemp)
+        
         if k < (n-1):
             cor_list.append(i_n)
         if k == n-1:
             cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
         
-    return sbins,tbins,cor_list
+    return sbins,tbins,cor_list,schmidt
 
 
 
@@ -183,11 +187,14 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
     tbins=[]
     taubins=[]
     nbins=[]
+    cor_list=[]
     schmidt=[]
+    schmidt_tau=[]
     sbins.append(i_s0)   
     tbins.append(states.i_ng(d_t))
     taubins.append(states.i_ng(d_t))
-    cor_list=[]
+    schmidt.append(np.zeros(1))
+    schmidt_tau.append(np.zeros(1))
     input_field=states.input_state_generator(d_t_total, i_n0)
     n=int(round(tmax/delta_t,0))
     t_k=0
@@ -250,16 +257,15 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
             swaps=ncon([i_n,i_tau,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
             i_t,stemp,i_n2=_svd_tensors(swaps, bond,d_t,d_t)   
             i_tau = i_t*stemp[None,None,:] #OC tau bin         
-            nbins[i]=i_n2    #update nbins            
+            nbins[i]=i_n2    #update nbins  
+        schmidt_tau.append(stemp)  
         if k<(n-1):         
             nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
-        
-        if k < (n-1):
             cor_list.append(i_n)
         if k == n-1:
             cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
             
-    return sbins,tbins,taubins,cor_list#,schmidt
+    return sbins,tbins,taubins,cor_list,schmidt,schmidt_tau
 
 
 def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]):

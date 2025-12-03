@@ -86,7 +86,7 @@ Hm=qmps.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b,cor_b = qmps.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,tau_b,cor_b,schmidt,schmidt_tau = qmps.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""
@@ -131,7 +131,7 @@ hm=qmps.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b,cor_b = qmps.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+sys_b,time_b,tau_b,cor_b,schmidt,schmidt_tau = qmps.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
 
 
 """ Calculate population dynamics"""

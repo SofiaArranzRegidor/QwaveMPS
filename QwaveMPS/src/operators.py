@@ -404,3 +404,11 @@ def g2_lr(delta_t:float,d_t_total:np.array):
     d_t=np.prod(d_t_total)
     b=b.reshape(d_t,d_t,d_t,d_t)
     return b
+
+def entanglement(sch):
+    a=sch**2   
+    a=np.trim_zeros(a) 
+    b=np.log2(a)
+    c=a*b
+    ent=-sum(c)
+    return ent
