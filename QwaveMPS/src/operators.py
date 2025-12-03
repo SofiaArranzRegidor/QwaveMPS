@@ -381,7 +381,26 @@ def g1_ll(delta_t:float,d_t_total:np.array):
     b=b.reshape(d_t,d_t,d_t,d_t)
     return b
 
-def g2_r(delta_t:float,d_t_total:np.array):
+def g2_rr(delta_t:float,d_t_total:np.array):
     b = np.kron(delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total) ,delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total)) 
-    # b=b.reshape(d_time,d_time,d_time,d_time)
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g2_ll(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_l(delta_t,d_t_total) @ delta_b_l(delta_t,d_t_total) ,delta_b_dag_l(delta_t,d_t_total) @ delta_b_l(delta_t,d_t_total)) 
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g2_rl(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total) ,delta_b_dag_l(delta_t,d_t_total) @ delta_b_l(delta_t,d_t_total)) 
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g2_lr(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag_l(delta_t,d_t_total) @ delta_b_l(delta_t,d_t_total) ,delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total)) 
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
     return b

@@ -142,7 +142,7 @@ sys_b,time_b,cor_b = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,
 pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
-# g1_rr_matrix,g1_ll_matrix=qmps.first_order_correlation(cor_b, delta_t,d_t_total,bond)
+g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix=qmps.first_order_correlation(cor_b, delta_t,d_t_total,bond)
 
 #%%
 fonts=15

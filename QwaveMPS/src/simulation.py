@@ -546,6 +546,8 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
             
             g1_rr_matrix[i+1,j]=expectation_2(state, g1_rr(delta_t,d_t_total))/(delta_t**2) 
             g1_ll_matrix[i+1,j]=expectation_2(state, g1_ll(delta_t,d_t_total))/(delta_t**2) 
+            g1_rl_matrix[i+1,j]=expectation_2(state, g1_rl(delta_t,d_t_total))/(delta_t**2) 
+            g1_lr_matrix[i+1,j]=expectation_2(state, g1_lr(delta_t,d_t_total))/(delta_t**2) 
             
             swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
             i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
@@ -568,9 +570,156 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
                cor_l = cor_l2
                cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
         cor_list2=cor_list2[1:]   
-    return g1_rr_matrix,g1_ll_matrix    
+    return g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix    
 
 
+def second_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np.array,bond:int):
+    """
+    Calculates the first order correlation function of the right moving photons
+
+    Parameters
+    ----------
+
+    cor_bins : [ndarray]
+        A list with the time bins involved in the correlation.
+
+    delta_t : float
+        Time step size.
+
+    Returns
+    -------
+    Expectation value of g1_r
+    """
+    cor_list2 =  cor_list1
+    g2_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    g2_ll_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    g2_rl_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    g2_lr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+   
+    d_t=np.prod(d_t_total)
+    swap_t_t=swap(d_t,d_t)
+    
+    #Bring the OC to the first bin
+    for i in range(len(cor_list2)-1,0,-1):
+        # print('iteration', i)
+        two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
+        cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
+        cor_list2[i]=cor_l2
+        cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
+    
+    for j in range(len(cor_list1)-1):            
+        
+        i_1=cor_list2[0]
+        i_2=cor_list2[1]     
+        
+        #delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total) ,delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total
+        
+        g2_rr_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total) 
+                                             @ delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**4)    
+        g2_ll_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)
+                                              @ delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**4)  
+        g2_rl_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)
+                                             @ delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**4) 
+        g2_lr_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)
+                                              @ delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**4) 
+        
+        for i in range(len(cor_list2)-1):  
+            # print('iteration', i)
+            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+            
+            g2_rr_matrix[i+1,j]=expectation_2(state, g2_rr(delta_t,d_t_total))/(delta_t**4) 
+            g2_ll_matrix[i+1,j]=expectation_2(state, g2_ll(delta_t,d_t_total))/(delta_t**4) 
+            g2_rl_matrix[i+1,j]=expectation_2(state, g2_rl(delta_t,d_t_total))/(delta_t**4) 
+            g2_lr_matrix[i+1,j]=expectation_2(state, g2_lr(delta_t,d_t_total))/(delta_t**4) 
+            
+            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
+            i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
+            i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
+            
+            if i < (len(cor_list2)-2):                
+                i_2=cor_list2[i+2] #next time bin for the next correlation
+                cor_list2[i]=i_t2 #update of the increasing bin
+            if i == len(cor_list2)-2:
+                cor_list2[i]=i_t2
+                cor_list2[i+1]=i_1
+                
+        for i in range(len(cor_list2)-1,0,-1):            
+            two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
+            cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
+            if i>1:
+                cor_list2[i] = cor_l2  
+                cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
+            if i == 1:
+               cor_l = cor_l2
+               cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
+        cor_list2=cor_list2[1:]   
+    return g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix    
 
 
+def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,operator2:np.ndarray, delta_t:float,d_t_total:np.array,bond:int):
+    """
+    Calculates the first order correlation function of the right moving photons
 
+    Parameters
+    ----------
+
+    cor_bins : [ndarray]
+        A list with the time bins involved in the correlation.
+
+    delta_t : float
+        Time step size.
+
+    Returns
+    -------
+    Expectation value of g1_r
+    """
+    cor_list2 =  cor_list1
+    cor_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
+    d_t=np.prod(d_t_total)
+    swap_t_t=swap(d_t,d_t)
+    
+    operator12 = np.kron(operator1,operator2).reshape(d_t,d_t,d_t,d_t)
+    
+    #Bring the OC to the first bin
+    for i in range(len(cor_list2)-1,0,-1):
+        # print('iteration', i)
+        two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
+        cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
+        cor_list2[i]=cor_l2
+        cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
+    
+    for j in range(len(cor_list1)-1):            
+        
+        i_1=cor_list2[0]
+        i_2=cor_list2[1]     
+        
+        cor_matrix[0,j] = expectation(i_1,(operator1 @ operator2)) 
+        
+        for i in range(len(cor_list2)-1):  
+            # print('iteration', i)
+            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+            
+            cor_matrix[i+1,j]=expectation_2(state, operator12)
+            
+            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
+            i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
+            i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
+            
+            if i < (len(cor_list2)-2):                
+                i_2=cor_list2[i+2] #next time bin for the next correlation
+                cor_list2[i]=i_t2 #update of the increasing bin
+            if i == len(cor_list2)-2:
+                cor_list2[i]=i_t2
+                cor_list2[i+1]=i_1
+                
+        for i in range(len(cor_list2)-1,0,-1):            
+            two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
+            cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
+            if i>1:
+                cor_list2[i] = cor_l2  
+                cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
+            if i == 1:
+               cor_l = cor_l2
+               cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
+        cor_list2=cor_list2[1:]   
+    return cor_matrix 
