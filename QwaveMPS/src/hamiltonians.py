@@ -12,7 +12,7 @@ from .operators import *
 # op=basic_operators()
 
 
-def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np.array, d_t_total:np.array, omega:float=0, delta:float=0) -> np.ndarray:
+def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np.array, d_t_total:np.array, omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
     """
     Hamiltonian for 1 TLS in the waveguide
     
@@ -50,14 +50,20 @@ def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
     d_sys=np.prod(d_sys_total)
-    hm_sys=omega*delta_t*(np.kron(sigmaplus(d_sys),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(d_sys),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
     t1= np.sqrt(gamma_l)*(np.kron(sigmaplus(d_sys),delta_b_l(delta_t,d_t_total)) + np.kron(sigmaminus(d_sys),delta_b_dag_l(delta_t,d_t_total))) 
     t2= np.sqrt(gamma_r)*(np.kron(sigmaplus(d_sys),delta_b_r(delta_t,d_t_total)) + np.kron(sigmaminus(d_sys),delta_b_dag_r(delta_t,d_t_total))) 
-    hm_total=hm_sys+t1+t2
+    if isinstance(omega, np.ndarray):
+        hm_total=[]
+        for om in omega:    
+            hm_sys=om*delta_t*(np.kron(sigmaplus(d_sys),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(d_sys),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
+            hm_total.append(hm_sys+t1+t2)  
+    else:
+        hm_sys=omega*delta_t*(np.kron(sigmaplus(d_sys),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(d_sys),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
+        hm_total=hm_sys+t1+t2
     return hm_total
 
     
-def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase:float,d_sys_total:np.array, d_t_total:np.array,omega:float=0, delta:float=0) -> np.ndarray:
+def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase:float,d_sys_total:np.array, d_t_total:np.array,omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
     """
     Hamiltonian for 1 TLS in a semi-infinite waveguide with a side mirror
     
@@ -97,12 +103,18 @@ def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
     """
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    hm_sys=omega*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),np.eye(d_t)))
     t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t)*np.exp(-1j*phase),sigmaplus(d_sys)),np.eye(d_t))
     t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),delta_b(delta_t))
     t3=np.sqrt(gamma_l)*np.kron(np.kron(delta_b_dag(delta_t)*np.exp(1j*phase),sigmaminus()),np.eye(d_t))
     t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),delta_b_dag(delta_t))   
-    hm_total = hm_sys + t1 + t2 + t3 + t4
+    if isinstance(omega, np.ndarray):
+        hm_total=[]
+        for om in omega:  
+            hm_sys=om*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),np.eye(d_t)))
+            hm_total.append(hm_sys + t1 + t2 + t3 + t4)
+    else:        
+        hm_sys=omega*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),np.eye(d_t)))
+        hm_total = hm_sys + t1 + t2 + t3 + t4
     return hm_total
 
 

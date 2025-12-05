@@ -210,7 +210,7 @@ def e(d_sys:int=2) -> np.ndarray:
     return exc
 
 
-def u_evol(Hm:np.ndarray, d_sys_total:np.array, d_t_total:np.array, interacting_timebins_num:int=1) -> np.ndarray:
+def u_evol(Hm:np.ndarray|list, d_sys_total:np.array, d_t_total:np.array, interacting_timebins_num:int=1) -> np.ndarray|list:
     """
     Creates a time evolution operator for a given Hamiltonian.
 
@@ -238,10 +238,15 @@ def u_evol(Hm:np.ndarray, d_sys_total:np.array, d_t_total:np.array, interacting_
     """ 
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    
-    sol= expm(-1j*Hm)
     shape = ((d_sys,) + ((d_t,)*interacting_timebins_num)) * 2
-    return sol.reshape(shape)
+    #For the time dependent hamiltonian
+    if isinstance(Hm, list):
+        sol=[]
+        for h_i in Hm:
+           sol.append(expm(-1j*h_i).reshape(shape)) 
+    else:
+        sol= expm(-1j*Hm).reshape(shape)
+    return sol
 
 def swap(dim1:int, dim2:int) -> np.ndarray:
     """
@@ -406,9 +411,13 @@ def g2_lr(delta_t:float,d_t_total:np.array):
     return b
 
 def entanglement(sch):
-    a=sch**2   
-    a=np.trim_zeros(a) 
-    b=np.log2(a)
-    c=a*b
-    ent=-sum(c)
-    return ent
+    ent_list=[]
+    for s in sch:
+        a=s**2   
+        a=np.trim_zeros(a) 
+        b=np.log2(a)
+        c=a*b
+        ent=-sum(c)
+        ent_list.append(ent)
+    return ent_list
+

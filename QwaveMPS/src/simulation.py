@@ -60,7 +60,7 @@ def _svd_tensors(tensor:np.ndarray, bond:int, d_1:int, d_2:int) -> np.ndarray:
     return u, s_norm, vt
 
 
-def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -114,8 +114,10 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
     cor_list=[]
     for k in range(n):   
         i_nk = next(input_field)   
-        
-        phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
+        if isinstance(evol, list):
+            phi1=ncon([i_s,i_nk,evol[k]],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
+        else:
+            phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1, bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
         sbins.append(i_s)
@@ -137,7 +139,7 @@ def t_evol_mar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, 
 
 
 
-def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -227,7 +229,10 @@ def t_evol_nmar(ham:np.ndarray, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, del
         
         #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
         i_nk = next(input_field)                
-        phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
+        if isinstance(evol, list):
+            phi1=ncon([i_t,i_s,i_nk,evol[k]],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
+        else:    
+            phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
         i_t,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
         i_stemp,stemp,i_n=_svd_tensors(i_2, bond,d_sys,d_t)
@@ -499,7 +504,7 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
             ref[i] = temp_ref
             total[i]  = pop1[i] + pop2[i]  + trans[i] + ref[i]
         
-    return pop1,pop2,tbinsR,tbinsL,trans,ref,total
+    return pop1,pop2,tbinsR,tbinsL,trans,ref,in_r,in_l,total
 
 
 def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np.array,bond:int):
