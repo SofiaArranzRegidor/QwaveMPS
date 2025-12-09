@@ -421,3 +421,10 @@ def entanglement(sch):
         ent_list.append(ent)
     return ent_list
 
+
+def spectrum_w(delta_t,g1_list):
+    #Fourier Transform
+    s_w = np.fft.fftshift(np.fft.fft(g1_list))
+    n=s_w.size
+    wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
+    return s_w,wlist
