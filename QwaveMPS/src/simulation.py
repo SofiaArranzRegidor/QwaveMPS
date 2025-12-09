@@ -265,10 +265,10 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, tau:float
             nbins[i]=i_n2    #update nbins  
         schmidt_tau.append(stemp)  
         if k<(n-1):         
-            nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step
-            cor_list.append(i_n)
+            nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step       
+            cor_list.append(i_t)
         if k == n-1:
-            cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
+            cor_list.append(i_t*stemp[None,None,:])   
             
     return sbins,tbins,taubins,cor_list,schmidt,schmidt_tau
 
@@ -524,6 +524,9 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
     -------
     Expectation value of g1_r
     """
+    
+    import time as t
+    
     cor_list2 =  cor_list1
     g1_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
     g1_ll_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
@@ -533,6 +536,7 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
     d_t=np.prod(d_t_total)
     swap_t_t=swap(d_t,d_t)
     
+    start_time_c = t.time()
     #Bring the OC to the first bin
     for i in range(len(cor_list2)-1,0,-1):
         # print('iteration', i)
@@ -581,6 +585,8 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
                cor_l = cor_l2
                cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
         cor_list2=cor_list2[1:]   
+    t_c=t.time() - start_time_c    
+    print("--- %s seconds correlation---" %(t_c)) 
     return g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix    
 
 
@@ -601,6 +607,10 @@ def second_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:n
     -------
     Expectation value of g1_r
     """
+    
+    import time as t
+    
+    start_time_c = t.time()
     cor_list2 =  cor_list1
     g2_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
     g2_ll_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
@@ -664,6 +674,8 @@ def second_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:n
                cor_l = cor_l2
                cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
         cor_list2=cor_list2[1:]   
+    t_c=t.time() - start_time_c    
+    print("--- %s seconds correlation---" %(t_c)) 
     return g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix    
 
 
@@ -734,3 +746,80 @@ def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,oper
                cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
         cor_list2=cor_list2[1:]   
     return cor_matrix 
+
+def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
+    #For faster calculations when we have a CW classical pump
+    
+    #First check convergence:
+    conv_index =  steady_state_index(pop,10)  
+    print(conv_index)
+    # cor_list1=cor_list
+    cor_list1=cor_list[conv_index:]
+    t_cor=[0]
+    i_1=cor_list1[-2]
+    i_2=cor_list1[-1] #OC is in here
+    p=0
+    d_t=np.prod(d_t_total)
+    swap_t_t=swap(d_t,d_t)
+    
+    if d_t==2:
+        exp_0=expectation(i_2,delta_b_dag(delta_t, d_t_total))
+        exp2_0=expectation(i_2, delta_b(delta_t, d_t_total))
+        c1=[expectation(i_2, delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))]
+        c2=[expectation(i_2, delta_b_dag(delta_t, d_t_total) @ delta_b_dag(delta_t, d_t_total) @ delta_b(delta_t, d_t_total) @delta_b(delta_t, d_t_total))]
+        coher_list=[exp_0*exp2_0]
+        denom=expectation(i_2,  delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))
+        
+        for i in range(len(cor_list1)-2,0,-1):
+            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+            # Separating between left and right spectra
+            c1.append(expectation_2(state, g1(delta_t,d_t_total))) #for calculating the total spectra
+            c2.append(expectation_2(state, g2(delta_t,d_t_total)))
+            coher_list.append(exp_0*expectation(i_2, delta_b(delta_t, d_t_total))) #for calculating the coherent spectra           
+            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
+            i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
+            i_2 = ncon([i_t1,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin
+            i_1=cor_list1[i-1] #next past bin for the next time step
+            p+=1    
+            t_cor.append(p*delta_t)       
+        g1_list=c1/denom
+        g2_list=c2/denom**2
+        return t_cor,g1_list,g2_list,c1,c2,coher_list
+
+    else:
+        exp_0l=expectation(i_2,delta_b_dag_l(delta_t, d_t_total))
+        exp2_0l=expectation(i_2, delta_b_l(delta_t, d_t_total))
+        exp_0r=expectation(i_2, delta_b_dag_r(delta_t, d_t_total))
+        exp2_0r=expectation(i_2, delta_b_r(delta_t, d_t_total))
+        c1_l=[expectation(i_2, delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))]
+        c1_r=[expectation(i_2, delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total))]
+        c2_l=[expectation(i_2, delta_b_dag_l(delta_t, d_t_total) @ delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total) @delta_b_l(delta_t, d_t_total))]
+        c2_r=[expectation(i_2,  delta_b_dag_r(delta_t, d_t_total) @ delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total) @delta_b_r(delta_t, d_t_total))]
+        coher_listl=[exp_0l*exp2_0l]
+        coher_listr=[exp_0r*exp2_0r]    
+        denoml=expectation(i_2,  delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))
+        denomr = expectation(i_2,  delta_b_dag_r(delta_t, d_t_total)@ delta_b_r(delta_t, d_t_total))
+        
+        for i in range(len(cor_list1)-2,0,-1):
+            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+            # Separating between left and right spectra
+            c1_l.append(expectation_2(state, g1_ll(delta_t,d_t_total))) #for calculating the total spectra
+            c1_r.append(expectation_2(state, g1_rr(delta_t,d_t_total)))
+            c2_l.append(expectation_2(state, g2_ll(delta_t,d_t_total)))
+            c2_r.append(expectation_2(state, g2_rr(delta_t,d_t_total)))
+            coher_listl.append(exp_0l*expectation(i_2, delta_b_l(delta_t, d_t_total))) #for calculating the coherent spectra
+            coher_listr.append(exp_0r*expectation(i_2, delta_b_r(delta_t, d_t_total)))
+            
+            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
+            i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
+            i_2 = ncon([i_t1,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin
+            i_1=cor_list1[i-1] #next past bin for the next time step
+            p+=1    
+            t_cor.append(p*delta_t)
+        
+        g1_listl=c1_l/denoml
+        g2_listl=c2_l/denoml**2
+        g1_listr=c1_r/denomr
+        g2_listr=c2_r/denomr**2
+        
+        return t_cor,g1_listl,g1_listr,g2_listl,g2_listr,c1_l,c1_r,c2_l,c2_r,coher_listl,coher_listr

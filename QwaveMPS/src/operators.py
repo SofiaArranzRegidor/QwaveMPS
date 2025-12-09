@@ -410,6 +410,18 @@ def g2_lr(delta_t:float,d_t_total:np.array):
     b=b.reshape(d_t,d_t,d_t,d_t)
     return b
 
+def g1(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag(delta_t,d_t_total),delta_b(delta_t,d_t_total))
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
+def g2(delta_t:float,d_t_total:np.array):
+    b = np.kron(delta_b_dag(delta_t,d_t_total) @ delta_b(delta_t,d_t_total) ,delta_b_dag(delta_t,d_t_total) @ delta_b(delta_t,d_t_total)) 
+    d_t=np.prod(d_t_total)
+    b=b.reshape(d_t,d_t,d_t,d_t)
+    return b
+
 def entanglement(sch):
     ent_list=[]
     for s in sch:
@@ -421,10 +433,26 @@ def entanglement(sch):
         ent_list.append(ent)
     return ent_list
 
-
 def spectrum_w(delta_t,g1_list):
     #Fourier Transform
     s_w = np.fft.fftshift(np.fft.fft(g1_list))
     n=s_w.size
     wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
     return s_w,wlist
+
+def steady_state_index(pop,window=10, tol=1e-5):
+    """
+    pop : list or array of population values
+    window : number of recent points to analyze
+    tol : maximum deviation allowed in the final window
+    """
+    pop = np.asarray(pop)
+    for i in range(window, len(pop)):
+        tail = pop[i-window:i]
+        if tail.max() - tail.min() > tol:
+            continue
+        if np.max(np.abs(np.diff(tail))) > tol:
+            continue
+        return i - window
+
+    return None
