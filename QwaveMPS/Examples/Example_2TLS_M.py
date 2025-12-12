@@ -106,3 +106,34 @@ plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
 plt.show()
+
+#%%
+
+"""Calculate entanglement entropy"""
+ent_s=qmps.entanglement(schmidt)
+
+"""Calculate single time  correlation"""
+#Define the operator we want to calculate,
+#in this case the single time first order correlation function
+single_t_g1=qmps.delta_b_dag_r(delta_t,d_t_total) @ qmps.delta_b_r(delta_t,d_t_total)
+
+#Use the general one time expectation function to get the observable
+#Note here that noise operators are not normalized so /delta_t**2 is required
+g1=[qmps.expectation(time_b_i,single_t_g1/delta_t**2) for time_b_i in time_b]
+
+#%%
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
+plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm sys}$')
+plt.plot(tlist,np.real(g1),linewidth = 3,color = 'lime',linestyle='-',label=r'$G^{(1)}_{t,R/L}$') # Photons reflected to the left channel
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
+plt.xlabel('Time, $\gamma t$')
+plt.grid(True, linestyle='--', alpha=0.6)
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+plt.ylim([0.,1.05])
+plt.xlim([0.,tmax])
+plt.tight_layout()
+plt.show()
+

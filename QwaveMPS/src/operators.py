@@ -429,6 +429,8 @@ def steady_state_index(pop,window=10, tol=1e-5):
     window : number of recent points to analyze
     tol : maximum deviation allowed in the final window
     """
+    # import warnings
+
     pop = np.asarray(pop)
     for i in range(window, len(pop)):
         tail = pop[i-window:i]
@@ -437,5 +439,5 @@ def steady_state_index(pop,window=10, tol=1e-5):
         if np.max(np.abs(np.diff(tail))) > tol:
             continue
         return i - window
-
+    # warnings.warn("tmax not long enough for steady state")
     return None

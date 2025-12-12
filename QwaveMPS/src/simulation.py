@@ -842,7 +842,8 @@ def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
 
     #First check convergence:
     conv_index =  steady_state_index(pop,10)  
-    print(conv_index)
+    if conv_index is None:
+        raise ValueError("tmax not long enough for steady state")
     # cor_list1=cor_list
     cor_list1=cor_list[conv_index:]
     t_cor=[0]
@@ -912,7 +913,7 @@ def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
         g1_listr=c1_r/denomr
         g2_listr=c2_r/denomr**2
         
-        return t_cor,g1_listl,g1_listr,g2_listl,g2_listr,c1_l,c1_r,c2_l,c2_r,coher_listl,coher_listr
+        return t_cor,g1_listl,g1_listr,g2_listl,g2_listr,c1_l,c1_r,c2_l,c2_r
     
 def entanglement(sch):
     ent_list=[]
