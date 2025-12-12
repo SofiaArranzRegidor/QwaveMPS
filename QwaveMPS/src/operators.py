@@ -422,23 +422,6 @@ def g2(delta_t:float,d_t_total:np.array):
     b=b.reshape(d_t,d_t,d_t,d_t)
     return b
 
-def entanglement(sch):
-    ent_list=[]
-    for s in sch:
-        a=s**2   
-        a=np.trim_zeros(a) 
-        b=np.log2(a)
-        c=a*b
-        ent=-sum(c)
-        ent_list.append(ent)
-    return ent_list
-
-def spectrum_w(delta_t,g1_list):
-    #Fourier Transform
-    s_w = np.fft.fftshift(np.fft.fft(g1_list))
-    n=s_w.size
-    wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
-    return s_w,wlist
 
 def steady_state_index(pop,window=10, tol=1e-5):
     """

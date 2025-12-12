@@ -823,3 +823,21 @@ def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
         g2_listr=c2_r/denomr**2
         
         return t_cor,g1_listl,g1_listr,g2_listl,g2_listr,c1_l,c1_r,c2_l,c2_r,coher_listl,coher_listr
+    
+def entanglement(sch):
+    ent_list=[]
+    for s in sch:
+        a=s**2   
+        a=np.trim_zeros(a) 
+        b=np.log2(a)
+        c=a*b
+        ent=-sum(c)
+        ent_list.append(ent)
+    return ent_list
+
+def spectrum_w(delta_t,g1_list):
+    #Fourier Transform
+    s_w = np.fft.fftshift(np.fft.fft(g1_list))
+    n=s_w.size
+    wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
+    return s_w,wlist
