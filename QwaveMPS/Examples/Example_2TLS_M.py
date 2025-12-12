@@ -80,7 +80,7 @@ sys_b,time_b,cor_b,schmidt = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sy
 
 """Calculate population dynamics"""
 
-pop1,pop2,tbins_r,tbins_l,trans,ref,in_r,in_l,total=qmps.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop1,pop2,tbins_r,tbins_l,int_n_r,int_n_l,in_r,in_l,total=qmps.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 #%%
@@ -92,8 +92,8 @@ pic_style(fonts)
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(pop1),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
 plt.plot(tlist,np.real(pop2),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
+plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label='R')
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')

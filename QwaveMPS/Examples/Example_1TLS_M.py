@@ -44,8 +44,8 @@ Structure:
     
     6. Example plot containing,
     
-        - Photons transmitted to the right channel
-        - Photons reflected to the left channel
+        - Integrated photon flux transmitted to the right channel
+        - Integrated photon flux reflected to the left channel
         - TLS population
         - Conservation check (for one excitation it should be 1)
     
@@ -132,7 +132,7 @@ sys_b,time_b,cor_b,schmidt = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sy
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 
@@ -141,8 +141,8 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
@@ -179,7 +179,7 @@ sys_b,time_b,cor_b,schmidt = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sy
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
 
 
 
@@ -188,8 +188,8 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')

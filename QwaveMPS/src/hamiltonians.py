@@ -188,9 +188,7 @@ def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l
     t12hc = +np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_l(delta_t,d_t_total)*np.exp(-1j*phase),sigmaplus1),np.eye(d_t))
     t22 = np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t),sigmaminus1),delta_b_dag_r(delta_t,d_t_total))
     t22hc = +np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t),sigmaplus1),delta_b_r(delta_t,d_t_total))
- 
-    hm_total = (hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc)
-    
+     
     if isinstance(omega1, np.ndarray) and isinstance(omega2, np.ndarray):
         hm_total=[]
         for om1,om2 in zip(omega1,omega2):
