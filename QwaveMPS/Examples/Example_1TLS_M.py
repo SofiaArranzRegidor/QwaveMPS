@@ -141,8 +141,8 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
 plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
