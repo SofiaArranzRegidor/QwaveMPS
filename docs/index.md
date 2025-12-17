@@ -10,19 +10,27 @@ QwaveMPS is an open-source Python library for simulating one-dimensional quantum
 
 Explore the sections below to get started, understand the theory, and use the code.
 
+## Features
+
+- **Nonlinear non-Markovian waveguide-QED problems:** Solve problems involving multiphoton and multiatom systems with time-delayed feedback.
+- **Matrix product states (MPS):** Based on MPS theory for efficient numerical exact results that do not rely on Monte Carlo simulations.
+- **Open-source Python package:** Python library with minimal dependencies on external packages.
+- **User-friendly framework:** Designed to be accessible for researchers and students.
+- **Comprehensive Resources:** Documentation and examples provided to support learning and usage.
+
 ## Download and installation
 
 The source repository is [available for download](https://github.com/SofiaArranzRegidor/QwaveMPS) on GitHub. The installation instructions are given [here](installation.md). 
 
 ## Usage
 
-Add a more detailed explanation on the repo and how to use it. We can also add here a link to readthedocs if we decide to create one
+The following diagram summarizes the Qwavwmps framework, showing the main input and output parameters. For detailed usage information, see our [documentation](usage.md).
 
 ![Diagram of the code workflow](./images/diagram.png)
 
-## Features
-
 ## Contributing
+
+Check our [contributing guidelines](contributing.md) for details on how to contribute to QwaveMPS.
 
 ## Citing
 
