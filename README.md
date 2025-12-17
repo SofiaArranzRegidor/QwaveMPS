@@ -29,9 +29,11 @@ To be able to use the first option, we need to first publish it in PyPI. -->
 
 ## Features
 
-- Solve Waveguide-QED problems in the nonlinear non-Markovian regime! Multiphoton and multiatom systems are easily accessible.
-- Open-source Python package with minimal external package requirements.
-- Based on matrix product states (MPS) theory: Efficient numerical exact results that do not depend on Montecarlo simulations.
+- **Nonlinear non-Markovian waveguide-QED problems:** Solve problems involving multiphoton and multiatom systems with time-delayed feedback.
+- **Matrix product states (MPS):** Based on MPS theory for efficient numerical exact results that do not rely on Monte Carlo simulations.
+- **Open-source Python package:** Python library with minimal dependencies on external packages.
+- **User-friendly framework:** Designed to be accessible for researchers and students.
+- **Comprehensive Resources:** Documentation and examples provided to support learning and usage.
   
 ## Usage
 
