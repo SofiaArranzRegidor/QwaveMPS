@@ -70,6 +70,9 @@ pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_bins,time_bins,d
 Plot of population dynamics:
 
 
+<p align="center">
+  <img src="docs/images/TLS_sym_decay.png" alt="state Image" width="40%">
+</p>
 
 ## Contributing
 Check our [contributing guidelines](docs/contributing.md) for details on how to contribute to QwaveMPS.
