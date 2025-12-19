@@ -77,6 +77,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 
+
 #Parameters for plots style
 
 def pic_style(fontsize):
@@ -92,11 +93,7 @@ def clean_ticks(x, pos):
 
 """"Choose the simulation parameters"""
 
-"Choose the time step and end time"
-
-delta_t = 0.05
-tmax = 8
-tlist=np.arange(0,tmax+delta_t,delta_t)
+#Choose the bins:
 d_t_l=2 #Time right channel bin dimension
 d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -104,47 +101,61 @@ d_t_total=np.array([d_t_l,d_t_r])
 d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
-"Choose max bond dimension"
-
-# bond = d_t_total^(number of excitations)
-bond=4
-
-
-""" Choose the initial state and coupling"""
-
-i_s0=qmps.states.i_se()
-
-i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
-
-
+#Choose the coupling:
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+
+#Define input parameters
+input_params = qmps.parameters.InputParams(
+    delta_t=0.05,
+    tmax = 8,
+    d_sys_total=d_sys_total,
+    d_t_total=d_t_total,
+    gamma_l=gamma_l,
+    gamma_r = gamma_r,  
+    bond=4
+)
+
+#Make a tlist for plots:
+tmax=input_params.tmax
+delta_t=input_params.delta_t
+tlist=np.arange(0,tmax+delta_t,delta_t)
+
+
+""" Choose the initial state"""
+
+i_s0=qmps.states.i_se() #TLS initially excited
+
+i_n0 = qmps.states.vacuum(tmax,input_params) #waveguide in vacuum
+
 
 
 """Choose the Hamiltonian"""
 
-Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
+Hm=qmps.hamiltonian_1tls(input_params)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b,cor_b,schmidt = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop = qmps.pop_dynamics(bins,input_params)
 
 
+
+"""Plotting the results"""
 
 fonts=15
 pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
+plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -166,32 +177,30 @@ plt.show()
 
 gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 
+input_params.gamma_l=gamma_l
+input_params.gamma_r=gamma_r
 
 """Choose the Hamiltonian"""
 
-hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
-
+hm=qmps.hamiltonian_1tls(input_params)
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b,cor_b,schmidt = qmps.t_evol_mar(hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop_ch=qmps.pop_dynamics(bins,input_params)
 
 
-
-fonts=15
-pic_style(fonts)
-
+"""Plotting the results"""
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(pop_ch.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(pop_ch.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(pop_ch.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(pop_ch.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')

@@ -7,12 +7,11 @@ This module contains the hamiltonians for different cases
 """
 
 import numpy as np
-from .operators import *
+from QwaveMPS.src.operators import *
+from QwaveMPS.src.parameters import InputParams
 
-# op=basic_operators()
 
-
-def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np.array, d_t_total:np.array, omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
+def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
     """
     Hamiltonian for 1 TLS in the waveguide
     
@@ -47,6 +46,12 @@ def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np
     Examples
     -------- 
     """
+    delta_t = params.delta_t
+    d_t_total = params.d_t_total
+    d_sys_total = params.d_sys_total
+    gamma_l = params.gamma_l
+    gamma_r = params.gamma_r
+    
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
     d_sys=np.prod(d_sys_total)
@@ -63,7 +68,7 @@ def hamiltonian_1tls(delta_t:float, gamma_l:float, gamma_r:float, d_sys_total:np
     return hm_total
 
     
-def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase:float,d_sys_total:np.array, d_t_total:np.array,omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
+def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
     """
     Hamiltonian for 1 TLS in a semi-infinite waveguide with a side mirror
     
@@ -101,6 +106,13 @@ def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
     Examples
     -------- 
     """
+    delta_t = params.delta_t
+    d_t_total = params.d_t_total
+    d_sys_total = params.d_sys_total
+    gamma_l = params.gamma_l
+    gamma_r = params.gamma_r
+    phase = params.phase
+    
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
     t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t)*np.exp(-1j*phase),sigmaplus(d_sys)),np.eye(d_t))
@@ -118,7 +130,7 @@ def hamiltonian_1tls_feedback(delta_t:float, gamma_l:float, gamma_r:float, phase
     return hm_total
 
 
-def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys_total:np.array, d_t_total:np.array, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
+def hamiltonian_2tls_nmar(params:InputParams,omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
     """
     Hamiltonian for 2 TLSs in an infinite waveguide.
     
@@ -168,6 +180,10 @@ def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l
     Examples
     -------- 
     """
+    delta_t,gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_sys_total, d_t_total \
+    =params.delta_t,params.gamma_l, params.gamma_r,params.gamma_l2,params.gamma_r2,params.phase,params.d_sys_total,params.d_t_total
+    
+    
     d_sys1=d_sys_total[0]
     d_sys2=d_sys_total[1]
     d_t=np.prod(d_t_total)
@@ -230,7 +246,8 @@ def hamiltonian_2tls_nmar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l
         hm_total=hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
     return hm_total
 
-def hamiltonian_2tls_mar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2:float, gamma_r2:float, phase:float, d_sys_total:np.array, d_t_total:np.array, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
+
+def hamiltonian_2tls_mar(params:InputParams, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
     """
     Hamiltonian for 2 TLSs in an infinite waveguide.
     
@@ -280,6 +297,10 @@ def hamiltonian_2tls_mar(delta_t:float, gamma_l1:float, gamma_r1:float, gamma_l2
     Examples
     -------- 
     """
+    delta_t,gamma_l1, gamma_r1, gamma_l2, gamma_r2,phase,d_sys_total, d_t_total \
+    =params.delta_t,params.gamma_l, params.gamma_r,params.gamma_l2,params.gamma_r2,params.phase,params.d_sys_total,params.d_t_total
+    
+    
     d_sys1=d_sys_total[0]
     d_sys2=d_sys_total[1]
     d_t=np.prod(d_t_total)

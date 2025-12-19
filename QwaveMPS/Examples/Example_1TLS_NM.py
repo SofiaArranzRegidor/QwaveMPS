@@ -17,7 +17,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 
-
 #Parameters for plots style
 
 def pic_style(fontsize):
@@ -36,62 +35,59 @@ In this case it is the roundtrip time of the feedback loop (back and forth from 
 
 """
 
-tau=0.5
-
-
-#%%
-
 """ Example with constructive feedback:
 
 Choose a constructive feedback phase"""
 
-phase=np.pi
-
-#%%
-
-"""Choose the time step and end time"""
-
-delta_t = 0.03
-tmax = 5
-tlist=np.arange(0,tmax+delta_t,delta_t)
-
+#Choose the bins:
 d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 d_t=2 #time bin dimension of one channel
 d_t_total=np.array([d_t]) #single channel for mirror case
 
-
-
-
-""" Choose the initial state and coupling"""
-
-i_s0=qmps.states.i_se()
-i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
-
-
 #Copuling is symmetric by default
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
+#Define input parameters
+input_params = qmps.parameters.InputParams(
+    delta_t=0.03,
+    tmax = 5,
+    d_sys_total=d_sys_total,
+    d_t_total=d_t_total,
+    gamma_l=gamma_l,
+    gamma_r = gamma_r,  
+    bond=4,
+    tau=0.5,
+    phase=np.pi
+)
 
-""" Choose max bond dimension"""
 
-bond=4
+#Make a tlist for plots:
+tmax=input_params.tmax
+delta_t=input_params.delta_t
+tlist=np.arange(0,tmax+delta_t,delta_t)
+
+
+""" Choose the initial state"""
+
+i_s0=qmps.states.i_se()
+i_n0 = qmps.states.vacuum(tmax,input_params)
 
 
 """Choose the Hamiltonian"""
 
-Hm=qmps.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
+Hm=qmps.hamiltonian_1tls_feedback(input_params)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b,cor_b,schmidt,schmidt_tau = qmps.t_evol_nmar(Hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=qmps.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
+pop=qmps.pop_dynamics_1tls_nmar(bins,input_params)
 
 
 #%%
@@ -100,10 +96,10 @@ fonts=15
 pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(ph_loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
-plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
+plt.plot(tlist,np.real(pop.trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(pop.loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
@@ -122,21 +118,21 @@ plt.show()
 
 Choose a destructive feedback phase"""
 
-phase=0
+input_params.phase=0
 
 """Choose the Hamiltonian"""
 
-hm=qmps.hamiltonian_1tls_feedback(delta_t,gamma_l,gamma_r,phase,d_sys_total,d_t_total)
+hm=qmps.hamiltonian_1tls_feedback(input_params)
 
 
 """ Time evolution of the system"""
 
-sys_b,time_b,tau_b,cor_b,schmidt,schmidt_tau = qmps.t_evol_nmar(hm,i_s0,i_n0,tau,delta_t,tmax,bond,d_sys_total,d_t_total)
+bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 
 
 """ Calculate population dynamics"""
 
-pop,tbins,trans,ph_loop,total=qmps.pop_dynamics_1tls_nmar(sys_b,time_b,tau_b,tau,delta_t,d_sys_total,d_t_total)
+pop_d = qmps.pop_dynamics_1tls_nmar(bins,input_params)
 
 
 #%%
@@ -145,10 +141,10 @@ fonts=15
 pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(ph_loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
-plt.plot(tlist,np.real(total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(pop_d.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
+plt.plot(tlist,np.real(pop_d.trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(pop_d.loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(pop_d.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')

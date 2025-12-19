@@ -11,6 +11,7 @@ import scipy as sci
 from ncon import ncon
 from collections.abc import Iterator
 from . import simulation as sim
+from QwaveMPS.src.parameters import InputParams
 
 def i_ng(d_t:int, bond0:int=1) -> np.ndarray:
     """
@@ -145,7 +146,7 @@ def coupling(coupl:str='symmetrical', gamma:float=1,gamma_r=None,gamma_l=None) -
     return gamma_l,gamma_r       
 
 #%% Pulse Envelopes
-def tophat_envelope(pulse_time:float, delta_t:float)->np.ndarray:
+def tophat_envelope(pulse_time:float, params:InputParams)->np.ndarray:
     """
     Create a pulse envelope given by the sum of gaussians with given means and variances.
 
@@ -165,11 +166,11 @@ def tophat_envelope(pulse_time:float, delta_t:float)->np.ndarray:
     Examples
     -------- 
     """ 
-
+    delta_t=params.delta_t
     m = int(round(pulse_time/delta_t))
     return np.ones(m)
 
-def gaussian_envelope(pulse_time:float, delta_t:float, gaussian_width:float, gaussian_center:float, initial_time:int=0)->np.ndarray:
+def gaussian_envelope(pulse_time:float, params:InputParams, gaussian_width:float, gaussian_center:float, initial_time:int=0)->np.ndarray:
     """
     Create a pulse envelope given by the sum of gaussians with given means and variances.
 
@@ -198,7 +199,8 @@ def gaussian_envelope(pulse_time:float, delta_t:float, gaussian_width:float, gau
     Examples
     -------- 
     """ 
-
+    delta_t=params.delta_t
+    
     m = int(round(pulse_time/delta_t,0))
     times = np.arange(initial_time, initial_time + m*delta_t, delta_t)
     diffs = times - gaussian_center
@@ -208,7 +210,7 @@ def gaussian_envelope(pulse_time:float, delta_t:float, gaussian_width:float, gau
     return pulse_envelope
 
 
-def multiple_gaussian_envelope(pulse_time:float, delta_t:float, gaussian_widths:list[float], gaussian_centers:list[float], initial_time:int=0)->np.ndarray:
+def multiple_gaussian_envelope(pulse_time:float, params:InputParams, gaussian_widths:list[float], gaussian_centers:list[float], initial_time:int=0)->np.ndarray:
     """
     Create a pulse envelope given by the sum of gaussians with given means and variances.
 
@@ -237,7 +239,7 @@ def multiple_gaussian_envelope(pulse_time:float, delta_t:float, gaussian_widths:
     Examples
     -------- 
     """ 
-
+    delta_t=params.delta_t
     m = int(round(pulse_time/delta_t,0))
     indices = np.arange(initial_time, initial_time + m*delta_t, delta_t)
     
@@ -253,7 +255,7 @@ def multiple_gaussian_envelope(pulse_time:float, delta_t:float, gaussian_widths:
     pulse_envelope = gaussian_values(indices, gaussian_widths, gaussian_centers)         
     return pulse_envelope
 
-def exp_decay_envelope(pulse_time:float, delta_t:float, decay_rate:float, decay_center:float=0)->np.ndarray:
+def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, decay_center:float=0)->np.ndarray:
     """
     Create a pulse envelope given by the sum of gaussians with given means and variances.
 
@@ -279,6 +281,7 @@ def exp_decay_envelope(pulse_time:float, delta_t:float, decay_rate:float, decay_
     Examples
     -------- 
     """ 
+    delta_t=params.delta_t
     m = int(round(pulse_time/delta_t, 0))
     times = np.arange(0, m*delta_t, delta_t)
         
@@ -320,7 +323,7 @@ def normalize_pulse_envelope(delta_t:float, pulse_env:list[float])->np.ndarray:
 # May try to generalize it later so can use same function for one time bin space...
 # Will have to do a few tests to be certain things are right, this is extension of function I usually use that does same thing but ONLY for L OR R channel
 # Can always just make a wrapper function for this that only allows for one or the other if we want.
-def fock_pulse(pulse_env_r:list[float],pulse_time:float, delta_t:float, d_t_total:int, bond:int, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:
+def fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:
     """
     Creates an Fock pulse input field state with a normalized pulse envelope
 
@@ -361,6 +364,11 @@ def fock_pulse(pulse_env_r:list[float],pulse_time:float, delta_t:float, d_t_tota
     Examples
     -------- 
     """ 
+    
+    delta_t = params.delta_t
+    d_t_total = params.d_t_total
+    bond = params.bond
+    
     m = int(round(pulse_time/delta_t,0))
     time_bin_dim = np.prod(d_t_total)
     dt = d_t_total[0]
@@ -463,7 +471,7 @@ def fock_pulse(pulse_env_r:list[float],pulse_time:float, delta_t:float, d_t_tota
     return apk_can
 
 
-def vacuum(time_length:float, delta_t:float, d_t_total:int) -> np.ndarray:
+def vacuum(time_length:float, params:InputParams) -> np.ndarray:
     """
     Produces a pulse of vacuum time bins for an interval of length time_length.
 
@@ -487,6 +495,9 @@ def vacuum(time_length:float, delta_t:float, d_t_total:int) -> np.ndarray:
     Examples
     -------- 
     """ 
+    delta_t = params.delta_t
+    d_t_total = params.d_t_total
+    
     bond0=1
     l = int(round(time_length/delta_t, 0))
     d_t=np.prod(d_t_total)

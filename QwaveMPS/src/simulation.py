@@ -18,7 +18,7 @@ from scipy.linalg import svd,norm
 from .operators import * 
 from . import states as states
 from collections.abc import Iterator
-
+from QwaveMPS.src.parameters import *
 
 #%%
 
@@ -60,7 +60,7 @@ def _svd_tensors(tensor:np.ndarray, bond:int, d_1:int, d_2:int) -> np.ndarray:
     return u, s_norm, vt
 
 
-def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times
     
@@ -97,6 +97,14 @@ def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:fl
     tbins : [ndarray]
         A list with the time bins.
     """
+    
+    delta_t = params.delta_t
+    tmax=params.tmax
+    bond=params.bond
+    d_t_total = params.d_t_total
+    d_sys_total = params.d_sys_total
+
+    
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
     n=int(tmax/delta_t)
@@ -135,11 +143,11 @@ def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, delta_t:fl
         if k == n-1:
             cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
         
-    return sbins,tbins,cor_list,schmidt
+    return Bins(sys_b=sbins,time_b=tbins,cor_b=cor_list,schmidt=schmidt)
 
 
 
-def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, tau:float, delta_t:float, tmax:float, bond:int, d_sys_total:np.array, d_t_total:np.array) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with delay times
     
@@ -183,6 +191,13 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, tau:float
     schmidt : [ndarray]
         A list of the Schmidt coefficients
     """
+    delta_t = params.delta_t
+    tmax=params.tmax
+    bond=params.bond
+    d_t_total = params.d_t_total
+    d_sys_total = params.d_sys_total
+    tau=params.tau
+    
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
     sbins=[] 
@@ -270,7 +285,8 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, tau:float
         if k == n-1:
             cor_list.append(i_t*stemp[None,None,:])   
             
-    return sbins,tbins,taubins,cor_list,schmidt,schmidt_tau
+    # return sbins,tbins,taubins,cor_list,schmidt,schmidt_tau
+    return Bins(sys_b=sbins,time_b=tbins,tau_b=taubins,cor_b=cor_list,schmidt=schmidt,schmidt_tau=schmidt_tau)
 
 
 def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]):
@@ -294,7 +310,7 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
     return np.array([[expectation(bin, op) for bin in normalized_bins] for op in ops_list])
 
 
-def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, d_sys_total:np.array,d_t_total:np.array):
+def pop_dynamics(bins:Bins, params:InputParams):
     """
     Calculates the main population dynamics
 
@@ -330,6 +346,11 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, 
         1D array containig the total quanta leaving the system, must be equal 
     to total # excitations.
     """
+    delta_t = params.delta_t
+    d_t_total = params.d_t_total
+    d_sys_total = params.d_sys_total
+    sbins=bins.sys_b
+    tbins=bins.time_b
     
     d_sys=np.prod(d_sys_total)
     pop=np.array([expectation(s, tls_pop(d_sys)) for s in sbins])
@@ -342,10 +363,10 @@ def pop_dynamics(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float, 
     total = trans + ref + pop
 
         
-    return pop,tbinsR,tbinsL,trans,ref,total
+    return Pop1TLS(pop=pop,tbins_r=tbinsR,tbins_l=tbinsL,int_n_r=trans,int_n_l=ref,total=total)
 
 
-def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubins:list[np.ndarray], tau:float, delta_t:float, d_sys_total:np.array, d_t_total:np.array):
+def pop_dynamics_1tls_nmar(bins:Bins, params:InputParams):
     """
     Calculates the main population dynamics
 
@@ -381,7 +402,13 @@ def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubi
         1D array containig the total quanta leaving the system, must be equal 
     to total # excitations.
     """
-
+    delta_t = params.delta_t
+    d_sys_total = params.d_sys_total
+    tau = params.tau
+    sbins=bins.sys_b
+    tbins=bins.time_b
+    taubins=bins.tau_b
+    
     n=len(sbins) 
     d_sys=np.prod(d_sys_total)
     pop=np.array([expectation(s, tls_pop(d_sys)) for s in sbins])
@@ -405,10 +432,11 @@ def pop_dynamics_1tls_nmar(sbins:list[np.ndarray], tbins:list[np.ndarray], taubi
             in_loop=np.sum(tbins[i-l+1:i+1]) 
             ph_loop[i]=in_loop
             total[i]  = pop[i] +  trans[i] + ph_loop[i]
-    return pop,tbins,trans,ph_loop,total
+    return Pop1Channel(pop=pop,tbins=tbins,trans=trans,loop=ph_loop,total=total)
 
 
-def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:float,d_sys_total:np.array,d_t_total:np.array, taubins:list[np.ndarray]=[], tau:float=0):
+def pop_dynamics_2tls(bins:Bins,params:InputParams):
+                      #delta_t:float,d_sys_total:np.array,d_t_total:np.array, tau:float=0):
     """
     Calculates the main population dynamics
 
@@ -428,10 +456,10 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
     pop : ndarray
         1D array containing TLS population.
 
-    tbinsR : ndarray
+    tbins_r : ndarray
         1D array containing the right photon flux.
 
-    tbinsL : ndarray
+    tbins_l : ndarray
         1D array containing the left photon flux.
 
     trans : ndarray
@@ -444,20 +472,26 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
         1D array containig the total quanta leaving the system, must be equal 
     to total # excitations.
     """
+    
+    sbins=bins.sys_b
+    tbins=bins.time_b
+    taubins=bins.tau_b
+    delta_t,d_sys_total,d_t_total,tau = params.delta_t,params.d_sys_total,params.d_t_total,params.tau 
+    
     n=len(sbins)
     d_sys1=d_sys_total[0]
     d_sys2=d_sys_total[1]
 
     pop1=np.zeros(n,dtype=complex)
     pop2=np.zeros(n,dtype=complex)
-    tbinsR=np.zeros(n,dtype=complex)
-    tbinsL=np.zeros(n,dtype=complex)
-    tbinsR2=np.zeros(n,dtype=complex)
-    tbinsL2=np.zeros(n,dtype=complex)
+    tbins_r=np.zeros(n,dtype=complex)
+    tbins_l=np.zeros(n,dtype=complex)
+    tbins_r2=np.zeros(n,dtype=complex)
+    tbins_l2=np.zeros(n,dtype=complex)
     in_r=np.zeros(n,dtype=complex)
     in_l=np.zeros(n,dtype=complex)
-    trans=np.zeros(n,dtype=complex)
-    ref=np.zeros(n,dtype=complex)
+    int_n_r=np.zeros(n,dtype=complex)
+    int_n_l=np.zeros(n,dtype=complex)
     total=np.zeros(n,dtype=complex)
     temp_in_r=0
     temp_in_l=0
@@ -476,38 +510,38 @@ def pop_dynamics_2tls(sbins:list[np.ndarray], tbins:list[np.ndarray], delta_t:fl
         i_s2 = ncon([np.diag(sm),i_s2],[[-1,1],[1,-2,-3]]) 
         pop1[i]=expectation(i_s1, tls_pop(d_sys1))
         pop2[i]=expectation(i_s2, tls_pop(d_sys2))    
-        tbinsR[i]=np.real(expectation(tbins[i], a_r_pop(delta_t,d_t_total)))
-        tbinsL[i]=np.real(expectation(tbins[i], a_l_pop(delta_t,d_t_total)))
+        tbins_r[i]=np.real(expectation(tbins[i], a_r_pop(delta_t,d_t_total)))
+        tbins_l[i]=np.real(expectation(tbins[i], a_l_pop(delta_t,d_t_total)))
         if tau != 0:
-            tbinsR2[i]=np.real(expectation(taubins[i], a_r_pop(delta_t,d_t_total)))
-            tbinsL2[i]=np.real(expectation(taubins[i], a_l_pop(delta_t,d_t_total)))
-            temp_outR+=tbinsR2[i]
-            temp_outL+=tbinsL2[i]
-            trans[i]=temp_outR
-            ref[i]=temp_outL
+            tbins_r2[i]=np.real(expectation(taubins[i], a_r_pop(delta_t,d_t_total)))
+            tbins_l2[i]=np.real(expectation(taubins[i], a_l_pop(delta_t,d_t_total)))
+            temp_outR+=tbins_r2[i]
+            temp_outL+=tbins_l2[i]
+            int_n_r[i]=temp_outR
+            int_n_l[i]=temp_outL
             if i <=l:
                 temp_in_r+=expectation(tbins[i], a_r_pop(delta_t,d_t_total))
                 in_r[i] = temp_in_r
                 temp_in_l+= expectation(tbins[i], a_l_pop(delta_t,d_t_total))
                 in_l[i] = temp_in_l
-                total[i]  = pop1[i] + pop2[i]  + in_r[i] + in_l[i]  + trans[i] + ref[i]
+                total[i]  = pop1[i] + pop2[i]  + in_r[i] + in_l[i]  + int_n_r[i] + int_n_l[i]
             if i>l:
-                temp_in_r=np.sum(tbinsR[i-l+1:i+1]) 
-                temp_in_l=np.sum(tbinsL[i-l+1:i+1])
-                total[i]  = pop1[i] + pop2[i]  + temp_in_r + temp_in_l + trans[i] + ref[i]
+                temp_in_r=np.sum(tbins_r[i-l+1:i+1]) 
+                temp_in_l=np.sum(tbins_l[i-l+1:i+1])
+                total[i]  = pop1[i] + pop2[i]  + temp_in_r + temp_in_l + int_n_r[i] + int_n_l[i]
                 in_r[i] = temp_in_r
                 in_l[i] = temp_in_l
         if tau==0:
-            temp_trans+= tbinsR[i]
-            trans[i] = temp_trans
-            temp_ref += tbinsL[i]
-            ref[i] = temp_ref
-            total[i]  = pop1[i] + pop2[i]  + trans[i] + ref[i]
+            temp_trans+= tbins_r[i]
+            int_n_r[i] = temp_trans
+            temp_ref += tbins_l[i]
+            int_n_l[i] = temp_ref
+            total[i]  = pop1[i] + pop2[i]  + int_n_r[i] + int_n_l[i]
         
-    return pop1,pop2,tbinsR,tbinsL,trans,ref,in_r,in_l,total
+    return Pop2TLS(pop1,pop2,tbins_r,tbins_l,tbins_r2,tbins_l2,int_n_r,int_n_l,in_r,in_l,total)
 
 
-def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np.array,bond:int,single_channel=False):
+def first_order_correlation(bins:Bins, params:InputParams,single_channel=False):
     """
     Calculates the first order correlation function of the right moving photons
 
@@ -526,6 +560,11 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
     """
     
     import time as t
+    
+    d_t_total=params.d_t_total
+    bond=params.bond
+    delta_t=params.delta_t
+    cor_list1 = bins.cor_b
     
     cor_list2 =  cor_list1
     d_t=np.prod(d_t_total)
@@ -637,10 +676,10 @@ def first_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np
             cor_list2=cor_list2[1:]   
         t_c=t.time() - start_time_c    
         print("--- %s seconds correlation---" %(t_c)) 
-        return g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix    
+        return G1Correl(g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix)    
 
 
-def second_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:np.array,bond:int,single_channel=False):
+def second_order_correlation(bins:Bins,params:InputParams,single_channel=False):
     """
     Calculates the first order correlation function of the right moving photons
 
@@ -659,6 +698,11 @@ def second_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:n
     """
     
     import time as t
+    
+    d_t_total=params.d_t_total
+    bond=params.bond
+    delta_t=params.delta_t
+    cor_list1 = bins.cor_b
     
     start_time_c = t.time()
     cor_list2 =  cor_list1
@@ -767,7 +811,7 @@ def second_order_correlation(cor_list1:list[np.array], delta_t:float,d_t_total:n
                    cor_l = cor_l2
                    cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
             cor_list2=cor_list2[1:]   
-        return g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix  
+        return G2Correl(g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix)   
 
 def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,operator2:np.ndarray, delta_t:float,d_t_total:np.array,bond:int):
     """
@@ -837,9 +881,12 @@ def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,oper
         cor_list2=cor_list2[1:]   
     return cor_matrix 
 
-def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
+def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams):
     """For faster calculations when we have a CW classical pump"""
-
+    
+    pop=pop.pop
+    cor_list=bins.cor_b
+    delta_t, d_t_total,bond=params.delta_t,params.d_t_total,params.bond
     #First check convergence:
     conv_index =  steady_state_index(pop,10)  
     if conv_index is None:
@@ -875,7 +922,7 @@ def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
             t_cor.append(p*delta_t)       
         g1_list=c1/denom
         g2_list=c2/denom**2
-        return t_cor,g1_list,g2_list,c1,c2,coher_list
+        return SSCorrel1Channel(t_cor=t_cor,g1_list=g1_list,g2_list=g2_list,c1=c1,c2=c2)
 
     else:
         exp_0l=expectation(i_2,delta_b_dag_l(delta_t, d_t_total))
@@ -913,7 +960,7 @@ def steady_state_correlations(cor_list,pop,delta_t,d_t_total,bond):
         g1_listr=c1_r/denomr
         g2_listr=c2_r/denomr**2
         
-        return t_cor,g1_listl,g1_listr,g2_listl,g2_listr,c1_l,c1_r,c2_l,c2_r
+        return SSCorrel(t_cor=t_cor,g1_listl=g1_listl,g1_listr=g1_listr,g2_listl=g2_listl,g2_listr=g2_listr,c1_l=c1_l,c1_r=c1_r,c2_l=c2_l,c2_r=c2_r)
     
 def entanglement(sch):
     ent_list=[]

@@ -28,13 +28,10 @@ def clean_ticks(x, pos):
 
 #%%
 
+
 """"Choose the simulation parameters"""
 
-"Choose the time step and end time"
-
-delta_t = 0.02
-tmax = 25
-tlist=np.arange(0,tmax+delta_t,delta_t)
+#Choose the bins:
 d_t_l=2 #Time right channel bin dimension
 d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -42,20 +39,31 @@ d_t_total=np.array([d_t_l,d_t_r])
 d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
-"Choose max bond dimension"
+#Choose the coupling:
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
-# bond = d_t_total^(number of excitations)
-bond=18
+#Define input parameters
+input_params = qmps.parameters.InputParams(
+    delta_t=0.02,
+    tmax = 25,
+    d_sys_total=d_sys_total,
+    d_t_total=d_t_total,
+    gamma_l=gamma_l,
+    gamma_r = gamma_r,  
+    bond=18
+)
+
+#Make a tlist for plots:
+tmax=input_params.tmax
+delta_t=input_params.delta_t
+tlist=np.arange(0,tmax+delta_t,delta_t)
 
 
 """ Choose the initial state and coupling"""
 
 i_s0=qmps.states.i_se()
 
-i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total)
-
-
-gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+i_n0 = qmps.states.vacuum(tmax,input_params)
 
 
 """Choose the Hamiltonian"""
@@ -63,26 +71,26 @@ gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 #CW Drive
 cw_pump=2*np.pi
 
-Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total,cw_pump)
+Hm=qmps.hamiltonian_1tls(input_params,cw_pump)
 
 
 """Calculate time evolution of the system"""
 
-sys_b,time_b,cor_b,schmidt = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 
 """Calculate population dynamics"""
 
-pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_b,time_b,delta_t,d_sys_total,d_t_total)
+pop=qmps.pop_dynamics(bins,input_params)
 
 
 """Calculate steady state correlations"""
-t_cor,g1_listl,g1_listr,g2_listl,g2_listr,c1_l,c1_r,c2_l,c2_r=qmps.steady_state_correlations(cor_b,pop,delta_t,d_t_total,bond)
+ss_correl=qmps.steady_state_correlations(bins,pop,input_params)
 
 
 """Calculate the spectrum"""
 
-spect,w_list=qmps.spectrum_w(delta_t,c1_r)
+spect,w_list=qmps.spectrum_w(delta_t,ss_correl.c1_r)
 
 #%% Population dynamics
 
@@ -91,7 +99,7 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -108,8 +116,8 @@ plt.show()
 #%% Steady state correlation dynamics
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(t_cor,np.real(g2_listr),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_R$') 
-plt.plot(t_cor,np.real(g1_listr),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_R$') 
+plt.plot(ss_correl.t_cor,np.real(ss_correl.g2_listr),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_R$') 
+plt.plot(ss_correl.t_cor,np.real(ss_correl.g1_listr),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_R$') 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Correlations',fontsize=fonts)
