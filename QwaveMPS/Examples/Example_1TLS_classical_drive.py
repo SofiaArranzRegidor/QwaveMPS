@@ -16,6 +16,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
+import time as t
+
 
 #Parameters for plots style
 
@@ -65,6 +67,7 @@ i_s0=qmps.states.i_se()
 
 i_n0 = qmps.states.vacuum(tmax,input_params)
 
+start_time=t.time()
 
 """Choose the Hamiltonian"""
 
@@ -83,14 +86,25 @@ bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 pop=qmps.pop_dynamics(bins,input_params)
 
+print("--- %s seconds ---" %(t.time() - start_time))
+
 
 """Calculate steady state correlations"""
+
+start_time=t.time()
+
 ss_correl=qmps.steady_state_correlations(bins,pop,input_params)
+
+print("ss correl --- %s seconds ---" %(t.time() - start_time))
 
 
 """Calculate the spectrum"""
 
+start_time=t.time()
+
 spect,w_list=qmps.spectrum_w(delta_t,ss_correl.c1_r)
+
+print("spectrum --- %s seconds ---" %(t.time() - start_time))
 
 #%% Population dynamics
 

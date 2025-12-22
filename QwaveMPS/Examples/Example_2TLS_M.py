@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
+import time as t
 
 #Parameters for plots style
 
@@ -27,12 +28,6 @@ def clean_ticks(x, pos):
     return f'{x:g}'
 
 #%%
-
-"""Choose the simulation parameters"""
-
-
-
-
 
 """"Choose the simulation parameters"""
 
@@ -80,7 +75,7 @@ i_s0=np.kron(i_s01,i_s02)
 
 i_n0 = qmps.states.vacuum(tmax, input_params)
 
-
+start_time=t.time()
 
 """Choose the Hamiltonian"""
 
@@ -96,6 +91,8 @@ bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
 
 pop=qmps.pop_dynamics_2tls(bins,input_params)
 
+
+print("--- %s seconds ---" %(t.time() - start_time))
 
 #%%
 
@@ -123,10 +120,17 @@ plt.show()
 
 #%%
 
+start_time=t.time()
+
 """Calculate entanglement entropy"""
 ent_s=qmps.entanglement(bins.schmidt)
 
+print("Entanglement--- %s seconds ---" %(t.time() - start_time))
+
 """Calculate single time  correlation"""
+
+start_time=t.time()
+
 #Define the operator we want to calculate,
 #in this case the single time first order correlation function
 single_t_g1=qmps.delta_b_dag_r(delta_t,d_t_total) @ qmps.delta_b_r(delta_t,d_t_total)
@@ -134,6 +138,8 @@ single_t_g1=qmps.delta_b_dag_r(delta_t,d_t_total) @ qmps.delta_b_r(delta_t,d_t_t
 #Use the general one time expectation function to get the observable
 #Note here that noise operators are not normalized so /delta_t**2 is required
 g1=[qmps.expectation(time_b_i,single_t_g1/delta_t**2) for time_b_i in bins.time_b]
+
+print("single time g1--- %s seconds ---" %(t.time() - start_time))
 
 #%%
 

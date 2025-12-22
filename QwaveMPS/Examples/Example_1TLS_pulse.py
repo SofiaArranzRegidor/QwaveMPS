@@ -76,7 +76,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
-
+import time as t
 
 #Parameters for plots style
 
@@ -135,7 +135,7 @@ pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
 i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params, photon_num_r=photon_num)
 
-
+start_time=t.time()
 
 """Choose the Hamiltonian"""
 
@@ -151,8 +151,24 @@ bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 pop=qmps.pop_dynamics(bins,input_params)
 
+print("--- %s seconds ---" %(t.time() - start_time))
+
+
+
+start_time=t.time()
 
 g1_correl=qmps.first_order_correlation(bins, input_params)
+
+
+print("G1 correl--- %s seconds ---" %(t.time() - start_time))
+
+
+start_time=t.time()
+
+g2_correl=qmps.second_order_correlation(bins, input_params)
+
+
+print("G2 correl--- %s seconds ---" %(t.time() - start_time))
 
 #%%
 fonts=15
@@ -204,7 +220,7 @@ pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussia
 i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num_r=photon_num)
 
 
-
+start_time=t.time()
 """Calculate time evolution of the system"""
 
 bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
@@ -214,7 +230,9 @@ bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 pop=qmps.pop_dynamics(bins,input_params)
 
+print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 
+#%%
 
 fonts=15
 pic_style(fonts)

@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
+import time as t
 
 #Parameters for plots style
 
@@ -75,6 +76,8 @@ i_s0=qmps.states.i_se()
 i_n0 = qmps.states.vacuum(tmax,input_params)
 
 
+start_time=t.time()
+
 """Choose the Hamiltonian"""
 
 Hm=qmps.hamiltonian_1tls_feedback(input_params)
@@ -89,7 +92,7 @@ bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
 
 pop=qmps.pop_dynamics_1tls_nmar(bins,input_params)
 
-
+print("--- %s seconds ---" %(t.time() - start_time))
 #%%
 
 fonts=15
