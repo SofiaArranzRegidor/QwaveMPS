@@ -194,13 +194,13 @@ input_params.bond=8
 
 pulse_time = tmax
 photon_num = 2
-gaussian_mean = 4
-gaussian_variance = 1
+gaussian_center = 4
+gaussian_width = 1
 
 
 i_s0=qmps.states.i_sg()
 
-pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_variance, gaussian_mean)
+pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
 i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num_r=photon_num)
 
 
