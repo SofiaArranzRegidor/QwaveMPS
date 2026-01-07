@@ -49,7 +49,7 @@ def clean_ticks(x, pos):
 
 delta_t = 0.02
 tmax = 40#70
-tlist=np.arange(0,tmax,delta_t)
+tlist=np.arange(0,tmax+delta_t/2,delta_t)
 d_t_l=2 #Time right channel bin dimension
 d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -87,8 +87,8 @@ max_tmax = 500
 pulse_pump = qmps.states.gaussian_envelope(max_tmax, qmps.parameters.InputParams(delta_t=delta_t, tmax=None, d_sys_total=None, d_t_total=None, bond=None, gamma_l=None, gamma_r=None), 0.5, 1.5)
 pulse_pump = np.pi * qmps.states.normalize_pulse_envelope(delta_t, pulse_pump)
 
-pump = cw_pump
-#pump = pulse_pump
+#pump = cw_pump
+pump = pulse_pump
 
 #%% CW Markovian
 
@@ -148,7 +148,7 @@ phase=np.pi
 
 delta_t = 0.02
 tmax2 = 200
-tlist2=np.arange(0,tmax2,delta_t)
+tlist2=np.arange(0,tmax2+delta_t/2,delta_t)
 
 input_params.phase = phase
 input_params.delta_t = delta_t
@@ -203,7 +203,7 @@ ax[0].text(.5, 0.9, '(a)',fontsize=fonts)
 # ax[1].axvspan(0.0, tau, color='gray', alpha=0.2)
 ax[1].plot(ss_correl.t_cor,np.real(ss_correl.g1_listr),linewidth = 4, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{\rm M}$') # TLS population
 # ax[0,1].plot(tlist[:-1],np.real(pulsed_pump),linewidth = 3, color = 'silver',linestyle='--',label=r'$n_{\rm TLS}^{\rm an}$') # TLS population
-ax[1].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g1_list_nm),linewidth = 3,color = 'limegreen',linestyle='-',label=r'$g^{(1)}_{\rm NM}$') # Photons transmitted to the right channel
+ax[1].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g1_list),linewidth = 3,color = 'limegreen',linestyle='-',label=r'$g^{(1)}_{\rm NM}$') # Photons transmitted to the right channel
 ax[1].legend(loc='upper right',frameon=False,handlelength=1.0)
 ax[1].grid(True, linestyle='--', alpha=0.6)
 ax[1].set_ylim([0.,1.05])
@@ -215,7 +215,7 @@ ax[1].text(.5, 0.9, '(b)',fontsize=fonts)
 
 ax[2].plot(ss_correl.t_cor,np.real(ss_correl.g2_listr),linewidth = 4, color = 'b',linestyle='-',label=r'$g^{(2)}_{\rm M}$') # TLS population
 # ax[1,0].plot(tlist[:-1],np.real(pulsed_pump),linewidth = 3, color = 'silver',linestyle='--',label=r'$n_{\rm TLS}^{\rm an}$') # TLS population
-ax[2].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g2_list_nm),linewidth = 3,color = 'deepskyblue',linestyle='-',label=r'$g^{(2)}_{\rm NM}$') # Photons transmitted to the right channel
+ax[2].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g2_list),linewidth = 3,color = 'deepskyblue',linestyle='-',label=r'$g^{(2)}_{\rm NM}$') # Photons transmitted to the right channel
 # ax[0,2].plot(tlist,np.real(ref_p),linewidth = 3,color = 'brown',linestyle='--',label=r'$N^{\rm out}_{L}$') # Photons transmitted to the right channel
 ax[2].legend(loc='upper right',frameon=False,handlelength=1.0)#,bbox_to_anchor=(1, 1.07),labelspacing=0.2 )
 ax[2].set_xlabel('$\gamma t$',fontsize=fonts)
@@ -272,7 +272,7 @@ ax[0,0].text(7., 0.1, r'$\phi=0$',fontsize=fonts)
 # ax[1].axvspan(0.0, tau, color='gray', alpha=0.2)
 ax[0,1].plot(ss_correl.t_cor,np.real(ss_correl.g1_listr),linewidth = 4, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{\rm M}$') # TLS population
 # ax[0,1].plot(tlist[:-1],np.real(pulsed_pump),linewidth = 3, color = 'silver',linestyle='--',label=r'$n_{\rm TLS}^{\rm an}$') # TLS population
-ax[0,1].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g1_list_nm),linewidth = 3,color = 'limegreen',linestyle='-',label=r'$g^{(1)}_{\rm NM}$') # Photons transmitted to the right channel
+ax[0,1].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g1_list),linewidth = 3,color = 'limegreen',linestyle='-',label=r'$g^{(1)}_{\rm NM}$') # Photons transmitted to the right channel
 ax[0,1].legend(loc='upper right',frameon=False,handlelength=1.0)
 ax[0,1].grid(True, linestyle='--', alpha=0.6)
 ax[0,1].set_ylim([0.,1.05])
@@ -284,7 +284,7 @@ ax[0,1].text(.5, 0.9, '(b)',fontsize=fonts)
 
 ax[0,2].plot(ss_correl.t_cor,np.real(ss_correl.g2_listr),linewidth = 4, color = 'b',linestyle='-',label=r'$g^{(2)}_{\rm M}$') # TLS population
 # ax[1,0].plot(tlist[:-1],np.real(pulsed_pump),linewidth = 3, color = 'silver',linestyle='--',label=r'$n_{\rm TLS}^{\rm an}$') # TLS population
-ax[0,2].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g2_list_nm),linewidth = 3,color = 'deepskyblue',linestyle='-',label=r'$g^{(2)}_{\rm NM}$') # Photons transmitted to the right channel
+ax[0,2].plot(ss_correls_nm.t_cor,np.real(ss_correls_nm.g2_list),linewidth = 3,color = 'deepskyblue',linestyle='-',label=r'$g^{(2)}_{\rm NM}$') # Photons transmitted to the right channel
 # ax[0,2].plot(tlist,np.real(ref_p),linewidth = 3,color = 'brown',linestyle='--',label=r'$N^{\rm out}_{L}$') # Photons transmitted to the right channel
 ax[0,2].legend(loc='upper right',frameon=False,handlelength=1.0)#,bbox_to_anchor=(1, 1.07),labelspacing=0.2 )
 # ax[0,2].set_xlabel('$\gamma t$',fontsize=fonts)
