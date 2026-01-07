@@ -316,6 +316,53 @@ def normalize_pulse_envelope(delta_t:float, pulse_env:list[float])->np.ndarray:
     return pulse_env
 
 #%% Pulses
+def fock_pulse(pulse_env:list[float],pulse_time:float,params:InputParams, photon_num:int, direction:str='R', bond0:int=1)->list[np.ndarray]:
+    """
+    Creates an Fock pulse input field state with a normalized pulse envelope
+
+    Parameters
+    ----------
+    pulse_time : float
+        Time length of the pulse. If the pulse envelope is of greater length it will be truncated.
+
+    delta_t : float
+        Time step size for the simulation.
+        
+    d_t_total : list[int]
+        List of sizes of the photonic Hilbert spaces.
+    
+    bond : int
+        Truncation for maximum bond dimension. 
+        
+    pulse_env : list[float], default: None
+        Time dependent pulse envelope for the incident pulse. Default uses a tophat pulse for the duration of the pulse_time.
+    
+    photon_num : int
+        Incident photon number.
+
+    direction : str, default: 'R'
+        Flag to dictate the direction of the propagating pulse.
+
+    bond0 : int, default: 1
+        Default bond dimension of bins.
+    
+    Returns
+    -------
+    apk_can : list[ndarray]
+        A list of the incident time bins of the Fock pulse, with the first bin in index 0.
+    
+    Examples
+    -------- 
+    """ 
+    if direction.upper() == 'L' or direction == 1 or len(params.d_t_total)==1:
+        photon_num_l = photon_num
+        photon_num_r = 0
+    else:
+        photon_num_r = photon_num
+        photon_num_l = 0
+
+    return _fock_pulse(pulse_env, pulse_time, params, pulse_env, photon_num_l, photon_num_r, bond0)
+
 
 # Could probably be generalized to N photonic channels by just generalizing the indices list
 # Also note that not sure it makes sense if dont's have one of photon_num_l or photon_num_r = 0, or both equal each other (in which case seem to have (|N>|0> + |0>|N>) state) 
@@ -323,7 +370,7 @@ def normalize_pulse_envelope(delta_t:float, pulse_env:list[float])->np.ndarray:
 # May try to generalize it later so can use same function for one time bin space...
 # Will have to do a few tests to be certain things are right, this is extension of function I usually use that does same thing but ONLY for L OR R channel
 # Can always just make a wrapper function for this that only allows for one or the other if we want.
-def fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:
+def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:
     """
     Creates an Fock pulse input field state with a normalized pulse envelope
 
@@ -371,17 +418,22 @@ def fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, puls
     
     m = int(round(pulse_time/delta_t,0))
     time_bin_dim = np.prod(d_t_total)
-    dt = d_t_total[0]
-    channel_num=2
+    dt = d_t_total[0]    
+    channel_num=min(len(d_t_total), 2)
     
     # Lists created to track parameters for the L and R Hilbert spaces respectively
-    indices = [np.arange(0,time_bin_dim, dt), np.arange(0,dt,1)]    #IndicesL and IndicesR
+    indices_untruncated = [np.arange(0,time_bin_dim, dt), np.arange(0,dt,1)]    #IndicesL and IndicesR
+    indices_untruncated = indices_untruncated[-channel_num:] # Correct the size positions in single hilbert space case
     photon_nums = [photon_num_l, photon_num_r]
     photon_num_dims = [photon_num_l+1, photon_num_r+1]
     
-    indices = [indices[0][:photon_num_dims[0]], indices[1][:photon_num_dims[1]]] # Truncate if necessary (fewer photon pulse than size of Hilbert space)
-    indices2 = [indices[0][::-1], indices[1][::-1]]
-    dt_indices = [np.arange(0,dt)[:photon_num_dims[0]], np.arange(0,dt)[:photon_num_dims[1]]] # Should be truncated or not?
+    indices = []
+    indices2 = []
+    dt_indices = []
+    for i in range(len(indices_untruncated)):
+        indices.append(indices_untruncated[i][:photon_num_dims[i]]) # Truncate if necessary (fewer photon pulse than size of Hilbert space)
+        indices2.append(indices[i][::-1])
+        dt_indices.append(np.arange(0,dt)[:photon_num_dims[i]]) # Should be truncated or not?
 
     # Normalize the pulse envelopes
     pulse_envs = [pulse_env_l, pulse_env_r]
