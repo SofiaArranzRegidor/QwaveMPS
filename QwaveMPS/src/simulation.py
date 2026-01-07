@@ -116,16 +116,16 @@ def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, params:Inp
     tbins.append(states.i_ng(d_t))
     schmidt=[]
     schmidt.append(np.zeros(1))
-    evol=u_evol(ham,d_sys,d_t)
+    if not callable(ham):
+        evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
     input_field=states.input_state_generator(d_t_total, i_n0)
     cor_list=[]
     for k in range(n):   
         i_nk = next(input_field)   
-        if isinstance(evol, list):
-            phi1=ncon([i_s,i_nk,evol[k]],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
-        else:
-            phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
+        if callable(ham):
+            evol=u_evol(ham(k),d_sys,d_t)
+        phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1, bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
         sbins.append(i_s)
@@ -216,7 +216,8 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:Inp
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
-    evol=u_evol(ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
+    if not callable(ham):
+        evol=u_evol(ham,d_sys,d_t,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
     swap_t_t=swap(d_t,d_t)
     swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/delta_t,0)) #time steps between system and feedback
@@ -244,10 +245,9 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:Inp
         
         #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
         i_nk = next(input_field)                
-        if isinstance(evol, list):
-            phi1=ncon([i_t,i_s,i_nk,evol[k]],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
-        else:    
-            phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
+        if callable(ham):
+            evol=u_evol(ham(k),d_sys,d_t, 2)
+        phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
         i_t,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
         i_stemp,stemp,i_n=_svd_tensors(i_2, bond,d_sys,d_t)
