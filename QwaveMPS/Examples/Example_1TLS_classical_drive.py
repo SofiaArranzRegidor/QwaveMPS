@@ -47,7 +47,7 @@ gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 #Define input parameters
 input_params = qmps.parameters.InputParams(
     delta_t=0.02,
-    tmax = 25,
+    tmax = 35,
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=gamma_l,
@@ -58,7 +58,7 @@ input_params = qmps.parameters.InputParams(
 #Make a tlist for plots:
 tmax=input_params.tmax
 delta_t=input_params.delta_t
-tlist=np.arange(0,tmax+delta_t,delta_t)
+tlist=np.arange(0,tmax+(delta_t/2),delta_t)
 
 
 """ Choose the initial state and coupling"""
@@ -148,7 +148,7 @@ plt.show()
 #%% Long time spectrum
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(w_list/cw_pump,np.real(spect)/max(spect),linewidth = 4, color = 'purple',linestyle='-') # TLS population
+plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
 # plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('$(\omega - \omega_L)/g$',fontsize=fonts)
 plt.ylabel('Spectrum',fontsize=fonts)
