@@ -835,16 +835,16 @@ def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
         The expectation value of the operator for the given ket.
     """
 
-    currRankOp = len(mpo.shape)+2 #Adjusted for indices numbering
-    if expectation_n.prevRank != currRankOp:
-        expectation_n.prevRank = currRankOp
-        halfRankOp = int(currRankOp/2)+1
-        expectation_n.ketIndices = np.concatenate((np.arange(1,halfRankOp, dtype=int), [currRankOp])).tolist()
-        expectation_n.opIndices = np.concatenate((np.arange(halfRankOp, currRankOp, dtype=int), np.arange(2,halfRankOp, dtype=int))).tolist()
-        expectation_n.braIndices = np.concatenate(([1], np.arange(halfRankOp,currRankOp+1, dtype=int))).tolist()
+    curr_rank_op = len(mpo.shape)+2 #Adjusted for indices numbering
+    if expectation_n.prev_rank != curr_rank_op:
+        expectation_n.prev_rank = curr_rank_op
+        half_rank_op = int(curr_rank_op/2)+1
+        expectation_n.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
+        expectation_n.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), np.arange(2,half_rank_op, dtype=int))).tolist()
+        expectation_n.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
 
-    return ncon([np.conj(ket), mpo, ket], [expectation_n.ketIndices, expectation_n.opIndices, expectation_n.braIndices])
-expectation_n.prevRank = None
+    return ncon([np.conj(ket), mpo, ket], [expectation_n.ket_indices, expectation_n.op_indices, expectation_n.bra_indices])
+expectation_n.prev_rank = None
 
 '''
 Takes in list of time ordered normalized (with OC) time bins at position of relevance
