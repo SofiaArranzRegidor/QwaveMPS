@@ -313,8 +313,59 @@ def normalize_pulse_envelope(delta_t:float, pulse_env:list[float])->np.ndarray:
 #-------------------------
 # Fock pulse MPS generator
 #-------------------------
+def fock_pulse(pulse_env:list[float],pulse_time:float,params:InputParams, photon_num:int, direction:str='R', bond0:int=1)->list[np.ndarray]:
+    """
+    Creates an Fock pulse input field state with a normalized pulse envelope
 
-def fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:
+    Parameters
+    ----------
+    pulse_time : float
+        Time length of the pulse. If the pulse envelope is of greater length it will be truncated.
+    
+    delta_t : float
+        Time step size for the simulation.
+
+    d_t_total : list[int]
+        List of sizes of the photonic Hilbert spaces.
+
+    bond : int
+        Truncation for maximum bond dimension. 
+
+    pulse_env : list[float], default: None
+        Time dependent pulse envelope for the incident pulse. Default uses a tophat pulse for the duration of the pulse_time.
+
+    photon_num : int
+        Incident photon number.
+
+    direction : str, default: 'R'
+        Flag to dictate the direction of the propagating pulse.
+
+    bond0 : int, default: 1
+        Default bond dimension of bins.
+
+    Returns
+    -------
+    apk_can : list[ndarray]
+        A list of the incident time bins of the Fock pulse, with the first bin in index 0.
+
+    Examples
+    -------- 
+
+    """ 
+
+
+    if direction.upper() == 'L' or direction == 1 or len(params.d_t_total)==1:
+        photon_num_l = photon_num
+        photon_num_r = 0
+
+    else:
+        photon_num_r = photon_num
+        photon_num_l = 0
+
+    return _fock_pulse(pulse_env, pulse_time, params, pulse_env, photon_num_l, photon_num_r, bond0)
+
+
+def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:    
     """
     Creates an Fock pulse input field MPS with a normalized pulse envelope
 

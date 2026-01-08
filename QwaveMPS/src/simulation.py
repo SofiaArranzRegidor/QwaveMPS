@@ -849,7 +849,41 @@ expectation_n.prev_rank = None
 '''
 Takes in list of time ordered normalized (with OC) time bins at position of relevance
 '''
-def two_time_correlations(time_bin_list, ops_same_time, ops_two_time, d_t, bond, oc_end_list_flag=True, completion_print_flag=True):
+def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], d_t:float, bond:int, oc_end_list_flag:bool=True, completion_print_flag:bool=True) -> list[np.ndarray]:
+    """ 
+    Calculates a list of arbitrary two time point correlation functions at t and t+tau for nonnegative tau. 
+        
+    Parameters
+    ----------
+    time_bin_list : [ndarray]
+        List of time bins with the OC in either the initial or final bin in the list.
+    
+    ops_same_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+
+    ops_two_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
+
+    d_t : float
+        Time bin dimension of the simulation.
+
+    bond : int
+        Maximum bond dimension of the simulation.
+
+    oc_end_list_flag : bool, default=True 
+        Leaves the chain of bins unchanged for the calculation if the OC is at the end of the chain. Else assumes it is at the beginning and moves it to the end at start of calculation.
+       
+    completion_print_flag : bool, default=True
+        Flag to print completion loop number percent of the calculation (note this is not the percent completion, and later loops complete faster than earlier ones). 
+
+    Returns
+    -------
+    result : [np.ndarray]
+        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
+        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    """
+
     time_bin_list_copy = copy.deepcopy(time_bin_list)
     swap_matrix = swap(d_t, d_t)
     
