@@ -13,19 +13,21 @@ It covers two cases:
 
 Structure:    
     
-    1. Setup of the simulation parameters.
+    1. Setup of the input parameters.
+    
+    2. Setup of the input parameters.
     
         - Time step (delta_t)
         - Maximum time (tmax)
+        - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
+        (for a single TLS, d_sys=2).
         - Size of time bin (d_t_total). This is the field Hilbert subspace at each time step.
         (In this case we allow one photon per time step and per right (d_t_r) and left (d_t_l) channels.
          Hence, the subspace is d_t_total=2*2=4)
-        - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
-        (for a single TLS, d_sys=2).
         - Maximum bond dimension (bond). bond=d_t_total^(number of excitations).    
         Starting with the TLS excited and field in vacuum, 1 excitation => bond=2
         
-    2. Initial state and coupling configuration. 
+    3. Initial state and coupling configuration. 
     
         - Choice the system initial state (i_s0). Here, initially excited, 
             i_s0 = qmps.states.i_se()
@@ -36,13 +38,13 @@ Structure:
           and the with chiral coupling,         
             gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
             
-    3. Selection of the corresponding Hamiltonian.
+    4. Selection of the corresponding Hamiltonian.
     
-    4. Time evolution calculation.
+    5. Time evolution calculation.
     
-    5. Observables alculation (time dyanamics populations).
+    6. Observables alculation (time dyanamics populations).
     
-    6. Example plot containing,
+    7. Example plot containing,
     
         - Integrated photon flux transmitted to the right channel
         - Integrated photon flux reflected to the left channel
