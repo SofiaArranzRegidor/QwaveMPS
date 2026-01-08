@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct  9 10:12:52 2025
+This is an example of a single two-level system (TLS) decaying into a semi-infinite 
+waveguide with a side mirror. This is calculated in the non-Markovian regime with a 
+delay time tau, that in this case it is the roundtrip time of the feedback loop (back 
+and forth from the mirror), and a phase that can be constructive or destructive.
+ 
+All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
-@author: sofia
+It covers two cases:
+    1. Example with constructive feedback (tau=0.5, phase=pi)
+    2. Example with destructive feedback (tau=0.5, phase=0)
+        
+Requirements: 
+    
+ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
+    
+    pip install ncon 
+        
 """
 
 import matplotlib.pyplot as plt
@@ -30,15 +44,9 @@ def clean_ticks(x, pos):
 
 #%%
 
-"""One first need to choose the delay time tau:
-
-In this case it is the roundtrip time of the feedback loop (back and forth from the mirror)
-
-"""
-
 """ Example with constructive feedback:
 
-Choose a constructive feedback phase"""
+Choose a constructive feedback phase, e.g. phase=pi"""
 
 #Choose the bins:
 d_sys1=2 # tls bin dimension
@@ -47,7 +55,7 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 d_t=2 #time bin dimension of one channel
 d_t_total=np.array([d_t]) #single channel for mirror case
 
-#Copuling is symmetric by default
+#Choose the coupling
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
 #Define input parameters
@@ -75,8 +83,8 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 i_s0=qmps.states.i_se()
 i_n0 = qmps.states.vacuum(tmax,input_params)
 
-
-start_time=t.time()
+#To track computational time
+start_time=t.time() 
 
 """Choose the Hamiltonian"""
 
@@ -121,6 +129,7 @@ plt.show()
 
 Choose a destructive feedback phase"""
 
+#update it in the input parameters
 input_params.phase=0
 
 """Choose the Hamiltonian"""
