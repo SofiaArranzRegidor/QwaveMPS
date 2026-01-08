@@ -354,17 +354,22 @@ def fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, puls
     
     m = int(round(pulse_time/delta_t,0))
     time_bin_dim = np.prod(d_t_total)
-    dt = d_t_total[0]
-    channel_num=2
+    dt = d_t_total[0]    
+    channel_num=min(len(d_t_total), 2)
     
     # Lists created to track parameters for the L and R Hilbert spaces respectively
-    indices = [np.arange(0,time_bin_dim, dt), np.arange(0,dt,1)]    #IndicesL and IndicesR
+    indices_untruncated = [np.arange(0,time_bin_dim, dt), np.arange(0,dt,1)]    #IndicesL and IndicesR
+    indices_untruncated = indices_untruncated[-channel_num:] # Correct the size positions in single hilbert space case
     photon_nums = [photon_num_l, photon_num_r]
     photon_num_dims = [photon_num_l+1, photon_num_r+1]
     
-    indices = [indices[0][:photon_num_dims[0]], indices[1][:photon_num_dims[1]]] # Truncate if necessary (fewer photon pulse than size of Hilbert space)
-    indices2 = [indices[0][::-1], indices[1][::-1]]
-    dt_indices = [np.arange(0,dt)[:photon_num_dims[0]], np.arange(0,dt)[:photon_num_dims[1]]] # Should be truncated or not?
+    indices = []
+    indices2 = []
+    dt_indices = []
+    for i in range(len(indices_untruncated)):
+        indices.append(indices_untruncated[i][:photon_num_dims[i]]) # Truncate if necessary (fewer photon pulse than size of Hilbert space)
+        indices2.append(indices[i][::-1])
+        dt_indices.append(np.arange(0,dt)[:photon_num_dims[i]]) # Should be truncated or not?
 
     # Normalize the pulse envelopes
     pulse_envs = [pulse_env_l, pulse_env_r]

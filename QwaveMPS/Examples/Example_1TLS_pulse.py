@@ -133,7 +133,7 @@ i_s0=qmps.states.i_sg()
 
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
-i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params, photon_num_r=photon_num)
+i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='R')
 
 start_time=t.time()
 
@@ -217,7 +217,7 @@ gaussian_width = 1
 i_s0=qmps.states.i_sg()
 
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
-i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num_r=photon_num)
+i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num, direction='R')
 
 
 start_time=t.time()
@@ -255,8 +255,3 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 # plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
-
-
-
-
-

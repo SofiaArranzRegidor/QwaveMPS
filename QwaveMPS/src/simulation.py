@@ -13,6 +13,7 @@ It requires the module ncon (pip install --user ncon)
 
 
 import numpy as np
+import copy
 from ncon import ncon
 from scipy.linalg import svd,norm
 from .operators import * 
@@ -116,16 +117,16 @@ def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, params:Inp
     tbins.append(states.i_ng(d_t))
     schmidt=[]
     schmidt.append(np.zeros(1))
-    evol=u_evol(ham,d_sys,d_t)
+    if not callable(ham):
+        evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
     input_field=states.input_state_generator(d_t_total, i_n0)
     cor_list=[]
     for k in range(n):   
         i_nk = next(input_field)   
-        if isinstance(evol, list):
-            phi1=ncon([i_s,i_nk,evol[k]],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
-        else:
-            phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
+        if callable(ham):
+            evol=u_evol(ham(k),d_sys,d_t)
+        phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1, bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
         sbins.append(i_s)
@@ -216,7 +217,8 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:Inp
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
-    evol=u_evol(ham,d_t,d_sys,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
+    if not callable(ham):
+        evol=u_evol(ham,d_sys,d_t,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
     swap_t_t=swap(d_t,d_t)
     swap_sys_t=swap(d_sys,d_t)
     l=int(round(tau/delta_t,0)) #time steps between system and feedback
@@ -244,10 +246,9 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:Inp
         
         #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
         i_nk = next(input_field)                
-        if isinstance(evol, list):
-            phi1=ncon([i_t,i_s,i_nk,evol[k]],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
-        else:    
-            phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
+        if callable(ham):
+            evol=u_evol(ham(k),d_sys,d_t, 2)
+        phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
         i_t,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
         i_stemp,stemp,i_n=_svd_tensors(i_2, bond,d_sys,d_t)
@@ -813,6 +814,106 @@ def second_order_correlation(bins:Bins,params:InputParams,single_channel=False):
             cor_list2=cor_list2[1:]   
         return G2Correl(g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix)   
 
+
+# Expectation operation ket for larger/arbitrary tensor spaces
+# Saving previous MPO rank avoids creation of lists for repeated calculations
+def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
+    """ 
+    Takes the expectation value of an nth rank tensor with an nth rank MPO.
+    
+    Parameters
+    ----------
+    ket : ndarray
+        Ket for taking the expectation value
+    
+    mpo : ndarray
+        Matrix product operator for the expectation value.
+
+    Returns
+    -------
+    result : complex
+        The expectation value of the operator for the given ket.
+    """
+
+    curr_rank_op = len(mpo.shape)+2 #Adjusted for indices numbering
+    if expectation_n.prev_rank != curr_rank_op:
+        expectation_n.prev_rank = curr_rank_op
+        half_rank_op = int(curr_rank_op/2)+1
+        expectation_n.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
+        expectation_n.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), np.arange(2,half_rank_op, dtype=int))).tolist()
+        expectation_n.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
+
+    return ncon([np.conj(ket), mpo, ket], [expectation_n.ket_indices, expectation_n.op_indices, expectation_n.bra_indices])
+expectation_n.prev_rank = None
+
+'''
+Takes in list of time ordered normalized (with OC) time bins at position of relevance
+'''
+def two_time_correlations(time_bin_list, ops_same_time, ops_two_time, d_t, bond, oc_end_list_flag=True, completion_print_flag=True):
+    time_bin_list_copy = copy.deepcopy(time_bin_list)
+    swap_matrix = swap(d_t, d_t)
+    
+    
+    correlations = [np.zeros((len(time_bin_list_copy), len(time_bin_list_copy)), dtype=complex) for i in ops_two_time]
+    
+    # If the OC is at end of the time bin list, move it to the start (shifts OC from one end to other, index 0)
+    if oc_end_list_flag:
+        for i in range(len(time_bin_list_copy)-1,0,-1):
+            bin_contraction = ncon([time_bin_list_copy[i-1],time_bin_list_copy[i]],[[-1,-2,1],[1,-3,-4]])
+            left_bin, stemp, right_bin = _svd_tensors(bin_contraction, bond, d_t, d_t)
+            time_bin_list_copy[i] = right_bin #right normalized system bin    
+            time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
+    
+    # Loop over to fill in correlation matrices values
+    print('Correlation Calculation Completion:')
+    loop_num = len(time_bin_list_copy) - 1
+    print_rate = max(round(loop_num / 100.0), 1)
+    for i in range(len(time_bin_list_copy)-1):
+
+        i_1=time_bin_list_copy[0]
+        i_2=time_bin_list_copy[1] 
+        
+        #for the first raw (tau=0)
+        for k in range(len(correlations)):
+            correlations[k][i,0] = expectation(i_1, ops_same_time[k]) #this means I'm storing [t,tau] 
+        
+        #for the rest of the rows (column by column)
+        for j in range(len(time_bin_list_copy)-1):       
+            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+            for k in range(len(correlations)):
+                correlations[k][i,j+1] = expectation_n(state, ops_two_time[k]) #this means I'm storing [t,tau] 
+
+            
+            swapped_tensor=ncon([i_1,i_2,swap_matrix],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the time bin down the line
+            i_t2, stemp, i_t1 = _svd_tensors(swapped_tensor, bond, d_t, d_t)
+
+            i_1 = stemp[:,None,None] * i_t1 #OC tau bin            
+
+            if j < (len(time_bin_list_copy)-2):                
+                i_2=time_bin_list_copy[j+2] #next time bin for the next correlation
+                time_bin_list_copy[j]=i_t2 #update of the increasing bin
+            if j == len(time_bin_list_copy)-2:
+                time_bin_list_copy[j]=i_t2
+                time_bin_list_copy[j+1]= i_1
+        
+        #after the last value of the column we bring back the first time
+        for j in range(len(time_bin_list_copy)-1,0,-1):            
+            swapped_tensor=ncon([time_bin_list_copy[j-1],time_bin_list_copy[j],swap_matrix],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
+            returning_bin, stemp, right_bin = _svd_tensors(swapped_tensor, bond, d_t, d_t)
+            if j>1:
+                #timeBinListCopy[j] = vt[range(chi),:].reshape(chi,dTime,timeBinListCopy[i].shape[-1]) #right normalized system bin    
+                time_bin_list_copy[j] = right_bin #right normalized system bin    
+                time_bin_list_copy[j-1]= returning_bin * stemp[None,None,:] #OC on left bin
+            # Final iteration drop the returning bin
+            if j == 1:
+               time_bin_list_copy[j] = stemp[:,None,None] * right_bin
+        time_bin_list_copy=time_bin_list_copy[1:]    #Truncating the start of the list now that are done with that bin (t=i)
+        
+        if i % print_rate == 0 and completion_print_flag == True:
+            print((float(i)/loop_num)*100, '%')
+    return correlations
+
+'''
 def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,operator2:np.ndarray, delta_t:float,d_t_total:np.array,bond:int):
     """
     Calculates the first order correlation function of the right moving photons
@@ -880,6 +981,7 @@ def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,oper
                cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
         cor_list2=cor_list2[1:]   
     return cor_matrix 
+'''
 
 def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams):
     """For faster calculations when we have a CW classical pump"""
