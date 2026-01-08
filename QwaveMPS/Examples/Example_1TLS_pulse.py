@@ -125,7 +125,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 """ Choose the initial state"""
 
 # Pulse parameters
-pulse_time = 2
+pulse_time = 1
 photon_num = 1
 
 
@@ -255,89 +255,3 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 # plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
-
-
-#%% Example of chiral basis
-""" Example with constructive feedback:
-
-Choose a constructive feedback phase"""
-
-#Choose the bins:
-d_sys1=2 # tls bin dimension
-d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
-
-d_t=2 #time bin dimension of one channel
-d_t_total=np.array([d_t]) #single channel for mirror case
-
-#Copuling is symmetric by default
-gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
-
-#Define input parameters
-input_params = qmps.parameters.InputParams(
-    delta_t=0.03,
-    tmax = 8,
-    d_sys_total=d_sys_total,
-    d_t_total=d_t_total,
-    gamma_l=gamma_l,
-    gamma_r = gamma_r,  
-    bond=4,
-    tau=1.5,
-    phase=np.pi/2
-)
-
-
-#Make a tlist for plots:
-tmax=input_params.tmax
-delta_t=input_params.delta_t
-tlist=np.arange(0,tmax+delta_t,delta_t)
-
-
-""" Choose the initial state"""
-
-i_s0=qmps.states.i_sg()
-
-photon_num = 1
-pulse_time = 1
-pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
-i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='L')
-
-
-start_time=t.time()
-
-"""Choose the Hamiltonian"""
-
-Hm=qmps.hamiltonian_1tls_feedback(input_params)
-
-
-""" Time evolution of the system"""
-
-bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
-
-
-""" Calculate population dynamics"""
-
-pop=qmps.pop_dynamics_1tls_nmar(bins,input_params)
-
-print("--- %s seconds ---" %(t.time() - start_time))
-#%%
-
-
-fonts=15
-pic_style(fonts)
-
-fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(pop.trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(pop.loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.grid(True, linestyle='--', alpha=0.6)
-plt.xlim([0.,tmax])
-plt.xlabel('Time, $\gamma t$')
-plt.ylabel('Populations')
-formatter = FuncFormatter(clean_ticks)
-ax.xaxis.set_major_formatter(formatter)
-ax.yaxis.set_major_formatter(formatter)
-plt.tight_layout()
-plt.show()
-# %%
