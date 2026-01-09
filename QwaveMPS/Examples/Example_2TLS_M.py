@@ -1,9 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 15 15:51:31 2025
+This is an example of 2 two-level systems (TLS1 and TLS2) decaying into the waveguide
+in the Markovian regime. 
 
-@author: sofia
+All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
+
+Computes time evolution, population dynamics, the entanglement entropy,
+and an example of a single-time observable, in this case the single time 
+first-order correlation. 
+Example plots:
+        1. TLS population dynamics
+        2. Single time first-order correlation + the entanglement entropy
+
+Requirements: 
+    
+ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
+    
+    pip install ncon 
+        
 """
 
 import matplotlib.pyplot as plt
@@ -40,7 +55,7 @@ d_sys1=2 # first tls bin dimension
 d_sys2=2 # second tls bin dimension
 d_sys_total=np.array([d_sys1, d_sys2]) #total system bin dimension
 
-#Choose the coupling:
+#Choose the coupling for each TLS:
 gamma_l1,gamma_r1=qmps.coupling('symmetrical',gamma=1)
 gamma_l2,gamma_r2=qmps.coupling('symmetrical',gamma=1)
 
@@ -66,21 +81,24 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state"""
 
+#Starting with the firt TLS excited and the second in ground state
 i_s01=qmps.states.i_se()
 i_s02= qmps.states.i_sg()
 
-# i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
-
 i_s0=np.kron(i_s01,i_s02)
+
+#If starting with an entangled initial state
+# i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
 
 i_n0 = qmps.states.vacuum(tmax, input_params)
 
-start_time=t.time()
 
 """Choose the Hamiltonian"""
 
 hm=qmps.hamiltonian_2tls_mar(input_params)
 
+#To track computational time
+start_time=t.time()
 
 """Calculate time evolution of the system"""
 
@@ -94,7 +112,7 @@ pop=qmps.pop_dynamics_2tls(bins,input_params)
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
-#%%
+#%% Plot with population dynamics
 
 fonts=15
 pic_style(fonts)
@@ -118,8 +136,9 @@ plt.xlim([0.,tmax])
 plt.tight_layout()
 plt.show()
 
-#%%
+#%% 
 
+#To track computational time
 start_time=t.time()
 
 """Calculate entanglement entropy"""
@@ -127,8 +146,9 @@ ent_s=qmps.entanglement(bins.schmidt)
 
 print("Entanglement--- %s seconds ---" %(t.time() - start_time))
 
-"""Calculate single time  correlation"""
+"""Calculate single time correlation"""
 
+#To track computational time
 start_time=t.time()
 
 #Define the operator we want to calculate,
@@ -141,7 +161,7 @@ g1=[qmps.expectation(time_b_i,single_t_g1/delta_t**2) for time_b_i in bins.time_
 
 print("single time g1--- %s seconds ---" %(t.time() - start_time))
 
-#%%
+#%% Plot with entanglement entropy and g1
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm sys}$')

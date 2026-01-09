@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 25 11:33:34 2025
+This is an example of 2 two-level systems (TLS1 and TLS2) decaying into the waveguide
+in the non-Markovian regime (with feedback). 
 
-@author: sofia
+All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
+
+Computes time evolution, and population dynamics, with an example plot.
+
+Requirements: 
+    
+ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
+    
+    pip install ncon 
+        
 """
 
 import matplotlib.pyplot as plt
@@ -46,6 +56,7 @@ gamma_l1,gamma_r1=qmps.coupling('symmetrical',gamma=1)
 gamma_l2,gamma_r2=qmps.coupling('symmetrical',gamma=1)
 
 #Define input parameters
+#Need to define the delay time tau and phase
 input_params = qmps.parameters.InputParams(
     delta_t=0.05,
     tmax = 5,
@@ -94,7 +105,8 @@ bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 pop=qmps.pop_dynamics_2tls(bins,input_params)
 
 print("--- %s seconds ---" %(t.time() - start_time))
-#%%
+
+#%% Plot with population dynamics
 
 fonts=15
 pic_style(fonts)

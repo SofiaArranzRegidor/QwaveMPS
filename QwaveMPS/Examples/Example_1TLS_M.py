@@ -4,6 +4,7 @@
 """
 
 This is a basic example of a single two-level system (TLS) decaying into the waveguide. 
+
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
 It covers two cases:

@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Dec 12 15:08:26 2025
+This is an example of a single two-level system (TLS)
+driven by a classical continuous-wave (CW) field. 
 
-@author: sofia
+All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
+
+Computes time evolution, population dynamics, steady-state correlations,
+and the emission spectrum, with the following example plots:
+        1. TLS population dynamics
+        2. First and second-order steady-state correlations
+        3. Long-time emission spectrum
+
+Requirements: 
+    
+ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
+    
+    pip install ncon 
+        
 """
 
 import matplotlib.pyplot as plt
@@ -67,7 +81,6 @@ i_s0=qmps.states.i_se()
 
 i_n0 = qmps.states.vacuum(tmax,input_params)
 
-start_time=t.time()
 
 """Choose the Hamiltonian"""
 
@@ -75,6 +88,10 @@ start_time=t.time()
 cw_pump=2*np.pi
 
 Hm=qmps.hamiltonian_1tls(input_params,cw_pump)
+
+
+#To track computational time
+start_time=t.time()
 
 
 """Calculate time evolution of the system"""
@@ -124,7 +141,6 @@ plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
-# plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
 #%% Steady state correlation dynamics
@@ -142,14 +158,12 @@ plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
-# plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
 #%% Long time spectrum
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
-# plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('$(\omega - \omega_L)/g$',fontsize=fonts)
 plt.ylabel('Spectrum',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
@@ -159,6 +173,5 @@ plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
-# plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 

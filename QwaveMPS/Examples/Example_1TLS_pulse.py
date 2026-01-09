@@ -2,69 +2,26 @@
 # -*- coding: utf-8 -*-
 
 """
+This is an example of a single two-level system (TLS)
+interacting with a Fock state pulse. 
 
-This is a basic example of a single two-level system (TLS) decaying into the waveguide. 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
 It covers two cases:
-    
-    1. Symmetrical coupling into the waveguide
-    2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
+    1. Example with a 1-photon tophat pulse
+    2. Example with a 2-photon gaussian pulse
 
-Structure:    
-    
-    1. Setup of the simulation parameters.
-    
-        - Time step (delta_t)
-        - Maximum time (tmax)
-        - Size of time bin (d_t). This is the field Hilbert subspace at each time step.
-        (In this case we allow one photon per time step and per right and left channels.
-         Hence, the subspace is d_t=2*2=4)
-        - Size of the system bin (d_sys). This is the TLS Hilbert subspace 
-        (for a single TLS, d_sys=2).
-        - Maximum bond dimension (bond). bond=d_t*(number of excitations).    
-        Starting with the TLS excited and field in vacuum, 1 excitation => bond=2
-        
-    2. Initial state and coupling configuration. 
-    
-        - Choice the system initial state (i_s0). Here, initially excited, 
-            i_s0 = QM.states.i_se()
-        - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
-            i_n0 = QM.states.i_ng(d_t)
-        - Choice of coupling. Here, it is first calculated with symmetrical coupling,
-            gamma_l,gamma_r=QM.coupling('symmetrical',gamma=1)            
-          and the with chiral coupling,         
-            gamma_l,gamma_r=QM.coupling('chiral',gamma=1)
-            
-    3. Selection of the corresponding Hamiltonian.
-    
-    4. Time evolution calculation.
-    
-    5. Observables alculation (time dyanamics populations).
-    
-    6. Example plot containing,
-    
-        - Photons transmitted to the right channel
-        - Photons reflected to the left channel
-        - TLS population
-        - Conservation check (for one excitation it should be 1)
-    
-Repeat for both cases (symmetrical and chiral).
+Computes time evolution, population dynamics, and first and second-order correlations (for case 1),
+with example plots of the populations for both cases.
 
-"""
-
-
-"""    
 
 Requirements: 
     
 ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
     
     pip install ncon 
-    
+        
 """
-
-#%%
 
 import matplotlib.pyplot as plt
 from matplotlib import rc
@@ -121,26 +78,26 @@ delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
 
+""" Choose the initial state and pulse parameters"""
 
-""" Choose the initial state"""
-
-# Pulse parameters
-pulse_time = 1
-photon_num = 1
-
+# Pulse parameters por a 1-photon tophat pulse
+pulse_time = 1 #length of the pulse in time
+photon_num = 1 #number of photons
 
 i_s0=qmps.states.i_sg()
 
+#pulse envelope shape
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
 i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='R')
 
-start_time=t.time()
 
 """Choose the Hamiltonian"""
 
 Hm=qmps.hamiltonian_1tls(input_params)
 
+#To track computational time of populations
+start_time=t.time()
 
 """Calculate time evolution of the system"""
 
@@ -154,7 +111,9 @@ pop=qmps.pop_dynamics(bins,input_params)
 print("--- %s seconds ---" %(t.time() - start_time))
 
 
+"""Calculate correlations"""
 
+#To track computational time of g1
 start_time=t.time()
 
 g1_correl=qmps.first_order_correlation(bins, input_params)
@@ -162,7 +121,7 @@ g1_correl=qmps.first_order_correlation(bins, input_params)
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
-
+#To track computational time of g2
 start_time=t.time()
 
 g2_correl=qmps.second_order_correlation(bins, input_params)
@@ -190,7 +149,6 @@ plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
-# plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -205,9 +163,10 @@ input_params.tmax=12
 tmax=input_params.tmax
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
+#We need a higher bond dimension for a 2-photon pulse
 input_params.bond=8
 
-
+# Pulse parameters por a 2-photon gaussian pulse
 pulse_time = tmax
 photon_num = 2
 gaussian_center = 4
