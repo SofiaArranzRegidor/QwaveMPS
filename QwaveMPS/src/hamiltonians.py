@@ -9,9 +9,11 @@ This module contains the hamiltonians for different cases
 import numpy as np
 from QwaveMPS.src.operators import *
 from QwaveMPS.src.parameters import InputParams
+from typing import Callable, TypeAlias
 
+Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
-def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
+def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
     Hamiltonian for 1 TLS in the waveguide
     
@@ -42,9 +44,6 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     -------
     Hamiltonian : ndarray
         Hamiltonian coupling a single TLS pumped by a classical field to a waveguide.
-
-    Examples
-    -------- 
     """
     delta_t = params.delta_t
     d_t_total = params.d_t_total
@@ -69,7 +68,7 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     return hm_total
 
     
-def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta:float=0) -> np.ndarray|list:
+def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
     Hamiltonian for 1 TLS in a semi-infinite waveguide with a side mirror
     
@@ -132,7 +131,7 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
     return hm_total
 
 
-def hamiltonian_2tls_nmar(params:InputParams,omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
+def hamiltonian_2tls_nmar(params:InputParams,omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> Hamiltonian:
     """
     Hamiltonian for 2 TLSs in an infinite waveguide.
     
@@ -251,7 +250,7 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float=0, delta1:float=0, ome
     return hm_total
 
 
-def hamiltonian_2tls_mar(params:InputParams, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> np.ndarray:
+def hamiltonian_2tls_mar(params:InputParams, omega1:float=0, delta1:float=0, omega2:float=0, delta2:float=0) -> Hamiltonian:
     """
     Hamiltonian for 2 TLSs in an infinite waveguide.
     

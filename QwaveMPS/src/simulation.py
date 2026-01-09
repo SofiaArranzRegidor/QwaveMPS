@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-ADDING A COMMENT HERE TO CHECK
-
-This module contains the simulation to evolve the system 
+This module contains the simulations to evolve the systems 
 and calculate the main observables.
+
+Irovides time-evolution routines (Markovian and non-Markovian) for systems
+coupled to a 1D field, together with observable
+calculations (populations, correlations, spectra and entanglement).
 
 It requires the module ncon (pip install --user ncon)
 
@@ -20,12 +22,18 @@ from .operators import *
 from . import states as states
 from collections.abc import Iterator
 from QwaveMPS.src.parameters import *
+from typing import Callable, TypeAlias
 
-#%%
+Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
+
+# --------
+# Utility
+# --------
 
 def _svd_tensors(tensor:np.ndarray, bond:int, d_1:int, d_2:int) -> np.ndarray:
     """
-    Application of the SVD and reshaping of the tensors
+    Perform a SVD, reshape the tensors and return left tensor, 
+    normalized Schmidt vector, and right tensor.
 
     Parameters
     ----------
@@ -60,43 +68,39 @@ def _svd_tensors(tensor:np.ndarray, bond:int, d_1:int, d_2:int) -> np.ndarray:
     vt = vt[:chi, :].reshape(chi,d_2,tensor.shape[-1])
     return u, s_norm, vt
 
+# ------------------------------------------------------
+# Time evolution: Markovian and non-Markovian evolutions
+# ------------------------------------------------------
 
-def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
-    Time evolution of the system without delay times
+    Time evolution of the system without delay times (Markovian regime)
     
     Parameters
     ----------
+    ham : ndarray or callable
+        Either a fixed evolution operator/tensor or a callable returning the
+        evolution operator for time-step k: ham(k).
+    
     i_s0 : ndarray
-        Initial system bin.
-    
-    input_field : Iterator
-        Generator of time bins incident the system.
+        Initial system bin (tensor).
         
-    i_n0: ndarray
-    
-    delta_t : float
-        time step
-
-    tmax : float
-        max time
-
-    bond : int
-        max bond dimension
-    
-    d_sys_total : ndarray
-        List of sizes of system Hilbert spaces.
-
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
+    i_n0: ndarray 
+        Initial field bin.
+        Seed for the input time-bin generator.
+        
+    params:InputParams
+        Class containing the input parameters
+        (contains delta_t, tmax, bond, d_t_total, d_sys_total).
 
     Returns
     -------
-    sbins : [ndarray]
-        A list with the system bins.
-    
-    tbins : [ndarray]
-        A list with the time bins.
+    Bins:  Dataclass (from parameters.py) 
+        containing:
+            - sys_b: list of system bins
+            - time_b: list of time bins
+            - cor_b: list of tensors used for correlations
+            - schmidt: list of Schmidt coefficient arrays (for entanglement calculation)
     """
     
     delta_t = params.delta_t
@@ -146,51 +150,36 @@ def t_evol_mar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray, params:Inp
         
     return Bins(sys_b=sbins,time_b=tbins,cor_b=cor_list,schmidt=schmidt)
 
-
-
-def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
-    Time evolution of the system with delay times
+    Time evolution of the system with finite delays/feedback (non-Markovian regime)
     
     Parameters
     ----------
-    i_s0 : ndarray
-        Initial system bin
-    
-    input_field : Iterator
-        Generator of time bins incident the system.
+    ham : ndarray or callable
+        Either a fixed evolution operator/tensor or a callable returning the
+        evolution operator for time-step k: ham(k).
+        
+     i_s0 : ndarray
+         Initial system bin (tensor).
+         
+     i_n0: ndarray 
+         Initial field bin.
+         Seed for the input time-bin generator.
 
-    tau : float
-        Feedback time
-    
-    delta_t : float
-        time step
-
-    tmax : float
-        max time
-
-    bond : int
-        max bond dimension
-    
-    d_sys_total : ndarray
-        List of sizes of system Hilbert spaces.
-
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
+     params:InputParams
+         Class containing the input parameters
+         (contains delta_t, tmax, bond, d_t_total, d_sys_total, tau.).
 
     Returns
     -------
-    sbins : [ndarray]
-        A list with the system bins.
-    
-    tbins : [ndarray]
-        A list with the time bins (with OC).
-    
-    taubins : [ndarray]
-        A list of the feedback bins (with OC)
-
-    schmidt : [ndarray]
-        A list of the Schmidt coefficients
+    Bins:  Dataclass (from parameters.py) 
+        containing:
+          - sys_b: list of system bins
+          - time_b: list of time bins
+          - tau_b: list of feedback bins 
+          - cor_b: list of tensors used for correlations
+          - schmidt, schmidt_tau: lists of Schmidt coefficient arrays
     """
     delta_t = params.delta_t
     tmax=params.tmax
@@ -286,13 +275,15 @@ def t_evol_nmar(ham:np.ndarray|list, i_s0:np.ndarray, i_n0:np.ndarray,params:Inp
         if k == n-1:
             cor_list.append(i_t*stemp[None,None,:])   
             
-    # return sbins,tbins,taubins,cor_list,schmidt,schmidt_tau
     return Bins(sys_b=sbins,time_b=tbins,tau_b=taubins,cor_b=cor_list,schmidt=schmidt,schmidt_tau=schmidt_tau)
 
+# ---------------------------------------------------------------
+# Observables: populations, expectations, entanglement, spectrum
+# ---------------------------------------------------------------
 
-def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]):
+def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]) -> np.ndarray:
     """
-    Takes the expectation values of several operators of a list of normalized bins. 
+    Compute expectation values of a list of operators on a list of OC normalized bins.
 
     Parameters
     ----------
@@ -301,51 +292,73 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
 
     ops_list : list[ndarray]
         List of operators to take expectation values.
-    
+        Each operator must be compatible with the bin physical space.
     Returns
     -------
-    u : list[np.ndarray]
-        List of time dependent expectation values for the different observables. Indexed first with operator number, second with time.
+    np.ndarray
+        2D array shaped (len(ops_list), len(normalized_bins)) with expectation
+        values for each operator at each time.
     """
 
     return np.array([[expectation(bin, op) for bin in normalized_bins] for op in ops_list])
 
-
-def pop_dynamics(bins:Bins, params:InputParams):
-    """
-    Calculates the main population dynamics
-
+def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
+    """ 
+    General expectation utility: expectation operation ket for larger/arbitrary tensor spaces.
+    Take the expectation value of an nth rank tensor ket with an nth rank MPO.
+    
+    This helper caches index ordering logic depending on the operator rank to avoid
+    recomputing index lists repeatedly for identical operator ranks.
+    
     Parameters
     ----------
-    sbins : [ndarray] 
-        A list with the system bins.
-
-    tbins : [ndarray]
-        A list with the time bins.
-
-    delta_t : float
-        Time step size.
+    ket : ndarray
+        Ket for taking the expectation value
+    
+    mpo : ndarray
+        Matrix product operator for the expectation value.
 
     Returns
     -------
-    pop : ndarray
-        1D array containing TLS population.
+    result : complex
+        The expectation value of the operator for the given ket.
+        <ket| mpo |ket>
+    """
 
-    tbinsR : ndarray
-        1D array containing the right photon flux.
+    curr_rank_op = len(mpo.shape)+2 #Adjusted for indices numbering
+    if expectation_n.prev_rank != curr_rank_op:
+        expectation_n.prev_rank = curr_rank_op
+        half_rank_op = int(curr_rank_op/2)+1
+        expectation_n.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
+        expectation_n.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), np.arange(2,half_rank_op, dtype=int))).tolist()
+        expectation_n.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
 
-    tbinsL : ndarray
-        1D array containing the left photon flux.
+    return ncon([np.conj(ket), mpo, ket], [expectation_n.ket_indices, expectation_n.op_indices, expectation_n.bra_indices])
 
-    trans : ndarray
-        1D array containing the integrated flux to right.
+# initialize cache attributes for expectation_n
+expectation_n.prev_rank = None
 
-    ref : ndarray
-        1D array containing the integrated flux to the left.
+def pop_dynamics(bins:Bins, params:InputParams) -> Pop1TLS:
+    """
+    Calculates the main population dynamics for a single TLS in an infinite waveguide
+
+    Parameters
+    ----------
+    bins : Bins
+        Bins returned by t_evol_mar
     
-    total : ndarray
-        1D array containig the total quanta leaving the system, must be equal 
-    to total # excitations.
+    params : InputParams
+        Simulation parameters (contains delta_t, d_t_total, d_sys_total).
+
+    Returns
+    -------
+    Pop1TLS: Dataclass
+         containing:
+            - pop: TLS population
+            - tbins_r: right-moving photon flux per time bin
+            - tbins_l: left-moving photon flux per time bin
+            - int_n_r/int_n_l: integrated right/left flux
+            - total: total excitations (populations + integrated flux) at each time
     """
     delta_t = params.delta_t
     d_t_total = params.d_t_total
@@ -362,47 +375,33 @@ def pop_dynamics(bins:Bins, params:InputParams):
     trans = np.cumsum(tbinsR)
     ref = np.cumsum(tbinsL)
     total = trans + ref + pop
-
         
     return Pop1TLS(pop=pop,tbins_r=tbinsR,tbins_l=tbinsL,int_n_r=trans,int_n_l=ref,total=total)
 
-
-def pop_dynamics_1tls_nmar(bins:Bins, params:InputParams):
+def pop_dynamics_1tls_nmar(bins:Bins, params:InputParams) -> Pop1Channel:
     """
-    Calculates the main population dynamics
+    Calculates the main population dynamics for a single TLS in a semi-infinite waveguide,
+    with non-Markovian feedback (one channel).
 
     Parameters
     ----------
-    sbins : [ndarray] 
-        A list with the system bins.
-
-    tbins : [ndarray]
-        A list with the time bins.
-
-    delta_t : float
-        Time step size.
+    bins : Bins
+        Bins returned by t_evol_nmar
+    
+    params : InputParams
+        Simulation parameters
 
     Returns
     -------
-    pop : ndarray
-        1D array containing TLS population.
-
-    tbinsR : ndarray
-        1D array containing the right photon flux.
-
-    tbinsL : ndarray
-        1D array containing the left photon flux.
-
-    trans : ndarray
-        1D array containing the integrated flux to right.
-
-    ref : ndarray
-        1D array containing the integrated flux to the left.
-    
-    total : ndarray
-        1D array containig the total quanta leaving the system, must be equal 
-    to total # excitations.
+    Pop1Channel: Dataclass
+         containing:
+            - pop: TLS population
+            - tbins: photon flux per time bin
+            - trans: integrated transmitted flux
+            - loop: feedback-loop photon count
+            - total: total excitations at each time
     """
+    
     delta_t = params.delta_t
     d_sys_total = params.d_sys_total
     tau = params.tau
@@ -435,43 +434,28 @@ def pop_dynamics_1tls_nmar(bins:Bins, params:InputParams):
             total[i]  = pop[i] +  trans[i] + ph_loop[i]
     return Pop1Channel(pop=pop,tbins=tbins,trans=trans,loop=ph_loop,total=total)
 
-
-def pop_dynamics_2tls(bins:Bins,params:InputParams):
-                      #delta_t:float,d_sys_total:np.array,d_t_total:np.array, tau:float=0):
+def pop_dynamics_2tls(bins:Bins,params:InputParams) -> Pop2TLS:
     """
-    Calculates the main population dynamics
+    Calculates the main population dynamics for 2 TLSs in an infinite waveguide
 
     Parameters
     ----------
-    sbins : [ndarray] 
-        A list with the system bins.
-
-    tbins : [ndarray]
-        A list with the time bins.
-
-    delta_t : float
-        Time step size.
+    bins : Bins
+        Bins returned by t_evol_mar
+    
+    params : InputParams
+        Simulation parameters
 
     Returns
     -------
-    pop : ndarray
-        1D array containing TLS population.
-
-    tbins_r : ndarray
-        1D array containing the right photon flux.
-
-    tbins_l : ndarray
-        1D array containing the left photon flux.
-
-    trans : ndarray
-        1D array containing the integrated flux to right.
-
-    ref : ndarray
-        1D array containing the integrated flux to the left.
-    
-    total : ndarray
-        1D array containig the total quanta leaving the system, must be equal 
-    to total # excitations.
+    Pop2TLS: Dataclass
+         containing:
+            - pop1/pop2: populations of TLS1 and TLS2
+            - tbins_r/tbins_l:  right/left fluxes per time bin
+            - tbins_r2/tbins_l2: feedback-line fluxes (when tau != 0)
+            - int_n_r/int_n_l: integrated right/left flux
+            - in_r/in_l : in-loop flux (for feedback)
+            - total: total excitations at each time
     """
     
     sbins=bins.sys_b
@@ -541,23 +525,84 @@ def pop_dynamics_2tls(bins:Bins,params:InputParams):
         
     return Pop2TLS(pop1,pop2,tbins_r,tbins_l,tbins_r2,tbins_l2,int_n_r,int_n_l,in_r,in_l,total)
 
-
-def first_order_correlation(bins:Bins, params:InputParams,single_channel=False):
+def entanglement(sch:list[np.ndarray]) -> list[float]:
     """
-    Calculates the first order correlation function of the right moving photons
+    Compute von Neumann entanglement entropy across a list of Schmidt coefficient arrays.
 
     Parameters
     ----------
-
-    cor_bins : [ndarray]
-        A list with the time bins involved in the correlation.
-
-    delta_t : float
-        Time step size.
+    sch : list[np.ndarray]
+        List of Schmidt coefficient arrays (s) for each bipartition.
 
     Returns
     -------
-    Expectation value of g1_r
+    list[float]
+        Entanglement entropies computed as -sum(p * log2 p) where p = s**2.
+    """
+    ent_list=[]
+    for s in sch:
+        a=s**2   
+        a=np.trim_zeros(a) 
+        b=np.log2(a)
+        c=a*b
+        ent=-sum(c)
+        ent_list.append(ent)
+    return ent_list
+
+def spectrum_w(delta_t:float, g1_list: np.ndarray) -> [np.ndarray, np.ndarray]:
+    """
+    Compute the (discrete) spectrum in the long-time limit via Fourier transform 
+    of the two-time first-order correlation (steady-state solution).
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step used in the simulation; used to set frequency sampling.
+   
+    g1_list : np.ndarray
+        Steady-state first order correlation.
+
+    Returns
+    -------
+    s_w : np.ndarray
+        Spectrum in the long-time limit (steady state solution)
+    wlist : np.ndarray
+        Corresponding frequency list.
+    """
+    s_w = np.fft.fftshift(np.fft.fft(g1_list))
+    n=s_w.size
+    wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
+    return s_w,wlist
+
+# ----------------------
+# Correlation functions
+# ----------------------
+
+def first_order_correlation(bins:Bins, params:InputParams,single_channel=False) -> np.ndarray|G1Correl:
+    """
+    Calculates the first order correlation function g1(t,t+tau) for the outgoing field.
+
+    This routine builds a matrix of complex values with indices [t, tau] where tau >= 0.
+    
+    Parameters
+    ----------
+    bins : Bins
+        Bins returned by time evolution functions
+        cor_b field must contain the correlation tensors.
+    
+    params : InputParams
+        Simulation parameters 
+    
+    single_channel : bool
+       if True compute correlations for a single channel; 
+       if False compute left/right channel cross-correlations separately 
+       and return a G1Correl dataclass.
+       
+    Returns
+    -------
+    np.ndarray or G1Correl
+        If single_channel True: returns a 2D g1 matrix (complex).
+        Otherwise returns a G1Correl dataclass with separate matrices for rr, ll, rl, lr.
     """
     
     import time as t
@@ -679,23 +724,31 @@ def first_order_correlation(bins:Bins, params:InputParams,single_channel=False):
         print("--- %s seconds correlation---" %(t_c)) 
         return G1Correl(g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix)    
 
-
-def second_order_correlation(bins:Bins,params:InputParams,single_channel=False):
+def second_order_correlation(bins:Bins,params:InputParams,single_channel=False) -> np.ndarray|G2Correl:
     """
-    Calculates the first order correlation function of the right moving photons
+    Calculates the second order correlation function g2(t,t+tau) for the outgoing field.
 
+    This routine builds a matrix of complex values with indices [t, tau] where tau >= 0.
+    
     Parameters
     ----------
-
-    cor_bins : [ndarray]
-        A list with the time bins involved in the correlation.
-
-    delta_t : float
-        Time step size.
-
+    bins : Bins
+        Bins returned by time evolution functions
+        cor_b field must contain the correlation tensors.
+    
+    params : InputParams
+        Simulation parameters 
+    
+    single_channel : bool
+       if True compute correlations for a single channel; 
+       if False compute left/right channel cross-correlations separately 
+       and return a G2Correl dataclass.
+       
     Returns
     -------
-    Expectation value of g1_r
+    np.ndarray or G2Correl
+        If single_channel True: returns a 2D g2 matrix (complex).
+        Otherwise returns a G2Correl dataclass with separate matrices for rr, ll, rl, lr.
     """
     
     import time as t
@@ -814,44 +867,11 @@ def second_order_correlation(bins:Bins,params:InputParams,single_channel=False):
             cor_list2=cor_list2[1:]   
         return G2Correl(g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix)   
 
-
-# Expectation operation ket for larger/arbitrary tensor spaces
-# Saving previous MPO rank avoids creation of lists for repeated calculations
-def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
+def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=True) -> list[np.ndarray]:
     """ 
-    Takes the expectation value of an nth rank tensor with an nth rank MPO.
-    
-    Parameters
-    ----------
-    ket : ndarray
-        Ket for taking the expectation value
-    
-    mpo : ndarray
-        Matrix product operator for the expectation value.
-
-    Returns
-    -------
-    result : complex
-        The expectation value of the operator for the given ket.
-    """
-
-    curr_rank_op = len(mpo.shape)+2 #Adjusted for indices numbering
-    if expectation_n.prev_rank != curr_rank_op:
-        expectation_n.prev_rank = curr_rank_op
-        half_rank_op = int(curr_rank_op/2)+1
-        expectation_n.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
-        expectation_n.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), np.arange(2,half_rank_op, dtype=int))).tolist()
-        expectation_n.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
-
-    return ncon([np.conj(ket), mpo, ket], [expectation_n.ket_indices, expectation_n.op_indices, expectation_n.bra_indices])
-expectation_n.prev_rank = None
-
-'''
-Takes in list of time ordered normalized (with OC) time bins at position of relevance
-'''
-def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], d_t:float, bond:int, oc_end_list_flag:bool=True, completion_print_flag:bool=True) -> list[np.ndarray]:
-    """ 
-    Calculates a list of arbitrary two time point correlation functions at t and t+tau for nonnegative tau. 
+    General two-time correlation calculator.
+    Take in list of time ordered normalized (with OC) time bins at position of relevance.
+    Calculate a list of arbitrary two time point correlation functions at t and t+tau for nonnegative tau. 
         
     Parameters
     ----------
@@ -865,11 +885,8 @@ def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.
         List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
         ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
 
-    d_t : float
-        Time bin dimension of the simulation.
-
-    bond : int
-        Maximum bond dimension of the simulation.
+    params : InputParams
+        Simulation parameters 
 
     oc_end_list_flag : bool, default=True 
         Leaves the chain of bins unchanged for the calculation if the OC is at the end of the chain. Else assumes it is at the beginning and moves it to the end at start of calculation.
@@ -883,7 +900,10 @@ def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.
         List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
-
+    d_t_total=params.d_t_total
+    bond=params.bond
+    d_t=np.prod(d_t_total)
+    
     time_bin_list_copy = copy.deepcopy(time_bin_list)
     swap_matrix = swap(d_t, d_t)
     
@@ -947,78 +967,32 @@ def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.
             print((float(i)/loop_num)*100, '%')
     return correlations
 
-'''
-def general_field_correlation(cor_list1:list[np.array],operator1:np.ndarray,operator2:np.ndarray, delta_t:float,d_t_total:np.array,bond:int):
+def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams) -> SSCorrel|SSCorrel1Channel:
     """
-    Calculates the first order correlation function of the right moving photons
-
+    Efficient steady-state correlation calculation for continuous-wave pumping.
+    This computes time differences starting from a convergence index (steady-state
+    index). It returns a compact structure (SSCorrel or SSCorrel1Channel) 
+    containing normalized g1 and g2 lists and raw correlation arrays.
+    
     Parameters
     ----------
-
-    cor_bins : [ndarray]
-        A list with the time bins involved in the correlation.
-
-    delta_t : float
-        Time step size.
-
+    bins : Bins
+        Bins returned by time evolution functions
+        cor_b field must contain the correlation tensors.
+    
+    params : InputParams
+        Simulation parameters 
+    
+    pop : Pop1TLS
+        Population dataclass used to detect steady-state   
+        (it can be extended for other cases)
+        
     Returns
     -------
-    Expectation value of g1_r
+    SSCorrel or SSCorrel1Channel
+        Dataclass with precomputed time correlation lists for steady-state
+        (for more info see the corresponding dataclasses in parameters.py)
     """
-    cor_list2 =  cor_list1
-    cor_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-    d_t=np.prod(d_t_total)
-    swap_t_t=swap(d_t,d_t)
-    
-    operator12 = np.kron(operator1,operator2).reshape(d_t,d_t,d_t,d_t)
-    
-    #Bring the OC to the first bin
-    for i in range(len(cor_list2)-1,0,-1):
-        # print('iteration', i)
-        two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
-        cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
-        cor_list2[i]=cor_l2
-        cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
-    
-    for j in range(len(cor_list1)-1):            
-        
-        i_1=cor_list2[0]
-        i_2=cor_list2[1]     
-        
-        cor_matrix[0,j] = expectation(i_1,(operator1 @ operator2)) 
-        
-        for i in range(len(cor_list2)-1):  
-            # print('iteration', i)
-            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-            
-            cor_matrix[i+1,j]=expectation_2(state, operator12)
-            
-            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-            i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
-            i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
-            
-            if i < (len(cor_list2)-2):                
-                i_2=cor_list2[i+2] #next time bin for the next correlation
-                cor_list2[i]=i_t2 #update of the increasing bin
-            if i == len(cor_list2)-2:
-                cor_list2[i]=i_t2
-                cor_list2[i+1]=i_1
-                
-        for i in range(len(cor_list2)-1,0,-1):            
-            two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
-            cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
-            if i>1:
-                cor_list2[i] = cor_l2  
-                cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
-            if i == 1:
-               cor_l = cor_l2
-               cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
-        cor_list2=cor_list2[1:]   
-    return cor_matrix 
-'''
-
-def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams):
-    """For faster calculations when we have a CW classical pump"""
     
     pop=pop.pop
     cor_list=bins.cor_b
@@ -1098,20 +1072,3 @@ def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams):
         
         return SSCorrel(t_cor=t_cor,g1_listl=g1_listl,g1_listr=g1_listr,g2_listl=g2_listl,g2_listr=g2_listr,c1_l=c1_l,c1_r=c1_r,c2_l=c2_l,c2_r=c2_r)
     
-def entanglement(sch):
-    ent_list=[]
-    for s in sch:
-        a=s**2   
-        a=np.trim_zeros(a) 
-        b=np.log2(a)
-        c=a*b
-        ent=-sum(c)
-        ent_list.append(ent)
-    return ent_list
-
-def spectrum_w(delta_t,g1_list):
-    #Fourier Transform
-    s_w = np.fft.fftshift(np.fft.fft(g1_list))
-    n=s_w.size
-    wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
-    return s_w,wlist
