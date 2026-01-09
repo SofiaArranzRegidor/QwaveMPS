@@ -26,9 +26,9 @@ from typing import Callable, TypeAlias
 
 Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
-# --------
-# Utility
-# --------
+# -----------------------------------
+# Singular Value Decomposition helper
+# -----------------------------------
 
 def _svd_tensors(tensor:np.ndarray, bond:int, d_1:int, d_2:int) -> np.ndarray:
     """
