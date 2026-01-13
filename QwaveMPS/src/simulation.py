@@ -485,11 +485,11 @@ def entanglement(sch:list[np.ndarray]) -> list[float]:
     """
     ent_list=[]
     for s in sch:
-        a=s**2   
-        a=np.trim_zeros(a) 
-        b=np.log2(a)
-        c=a*b
-        ent=-sum(c)
+        sqrd_sch=s**2   
+        sqrd_sch=np.trim_zeros(sqrd_sch) 
+        log_sqrd_sch=np.log2(sqrd_sch)
+        prod=sqrd_sch*log_sqrd_sch
+        ent=-sum(prod)
         ent_list.append(ent)
     return ent_list
 
