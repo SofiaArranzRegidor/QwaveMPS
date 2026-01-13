@@ -347,6 +347,64 @@ def expectation_2(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,5,4],[2,3,5,6],[1,3,6,4]])
     return sol
 
+
+def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]) -> np.ndarray:
+    """
+    Compute expectation values of a list of operators on a list of OC normalized bins.
+
+    Parameters
+    ----------
+    normalized_bins : list[ndarray]
+        List of OC normalized bins in order of time to have localized expectation values taken.
+
+    ops_list : list[ndarray]
+        List of operators to take expectation values.
+        Each operator must be compatible with the bin physical space.
+    Returns
+    -------
+    np.ndarray
+        2D array shaped (len(ops_list), len(normalized_bins)) with expectation
+        values for each operator at each time.
+    """
+
+    return np.array([[expectation(bin, op) for bin in normalized_bins] for op in ops_list])
+
+def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
+    """ 
+    General expectation utility: expectation operation ket for larger/arbitrary tensor spaces.
+    Take the expectation value of an nth rank tensor ket with an nth rank MPO.
+    
+    This helper caches index ordering logic depending on the operator rank to avoid
+    recomputing index lists repeatedly for identical operator ranks.
+    
+    Parameters
+    ----------
+    ket : ndarray
+        Ket for taking the expectation value
+    
+    mpo : ndarray
+        Matrix product operator for the expectation value.
+
+    Returns
+    -------
+    result : complex
+        The expectation value of the operator for the given ket.
+        <ket| mpo |ket>
+    """
+
+    curr_rank_op = len(mpo.shape)+2 #Adjusted for indices numbering
+    if expectation_n.prev_rank != curr_rank_op:
+        expectation_n.prev_rank = curr_rank_op
+        half_rank_op = int(curr_rank_op/2)+1
+        expectation_n.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
+        expectation_n.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), np.arange(2,half_rank_op, dtype=int))).tolist()
+        expectation_n.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
+
+    return ncon([np.conj(ket), mpo, ket], [expectation_n.ket_indices, expectation_n.op_indices, expectation_n.bra_indices])
+
+# initialize cache attributes for expectation_n
+expectation_n.prev_rank = None
+
 #-----------------
 #Population MPOs
 #-----------------
@@ -633,38 +691,3 @@ def g2(delta_t:float,d_t_total:np.array) -> np.ndarray:
     d_t=np.prod(d_t_total)
     return b.reshape(d_t,d_t,d_t,d_t)
 
-#------------------------
-#Steady-state index helper
-#------------------------
-
-def steady_state_index(pop:list,window: int=10, tol: float=1e-5) -> int or None:
-    """
-    Steady-state index helper function to find the time step 
-    when the steady state is reached in the population dynamics.
-    
-    Parameters
-    ----------
-    pop : list
-        List of population values
-    
-    window : int, default: 10
-        Number of recent points to analyze
-    
-    tol : float, default: 1e-5
-        Maximum deviation allowed in the final window
-    
-    Returns
-    -------
-    int or None
-        The index of the start of the steady window, or None if none found.
-    """
-    pop = np.asarray(pop)
-    for i in range(window, len(pop)):
-        tail = pop[i-window:i]
-        if tail.max() - tail.min() > tol:
-            continue
-        if np.max(np.abs(np.diff(tail))) > tol:
-            continue
-        print('Steady state found at list index i = ', i - window)
-        return i - window
-    return None
