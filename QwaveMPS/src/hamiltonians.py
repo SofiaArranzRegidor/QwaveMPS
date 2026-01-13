@@ -56,16 +56,16 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
     d_sys=np.prod(d_sys_total)
-    t1= np.sqrt(gamma_l)*(np.kron(sigmaplus(d_sys),delta_b_l(delta_t,d_t_total)) + np.kron(sigmaminus(d_sys),delta_b_dag_l(delta_t,d_t_total))) 
-    t2= np.sqrt(gamma_r)*(np.kron(sigmaplus(d_sys),delta_b_r(delta_t,d_t_total)) + np.kron(sigmaminus(d_sys),delta_b_dag_r(delta_t,d_t_total))) 
+    t1= np.sqrt(gamma_l)*(np.kron(sigmaplus(),delta_b_l(delta_t,d_t_total)) + np.kron(sigmaminus(),delta_b_dag_l(delta_t,d_t_total))) 
+    t2= np.sqrt(gamma_r)*(np.kron(sigmaplus(),delta_b_r(delta_t,d_t_total)) + np.kron(sigmaminus(),delta_b_dag_r(delta_t,d_t_total))) 
     if isinstance(omega, np.ndarray):
         omegas = tuple(omega)
         def hm_total(t_k):
-            hm_sys=omegas[t_k]/2*delta_t*(np.kron(sigmaplus(d_sys),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(d_sys),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
+            hm_sys=omegas[t_k]/2*delta_t*(np.kron(sigmaplus(),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
             hm = hm_sys+t1+t2
             return hm  
     else:
-        hm_sys=omega/2*delta_t*(np.kron(sigmaplus(d_sys),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(d_sys),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
+        hm_sys=omega/2*delta_t*(np.kron(sigmaplus(),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
         hm_total=hm_sys+t1+t2
     return hm_total
 
@@ -111,18 +111,18 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
     
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t)*np.exp(-1j*phase),sigmaplus(d_sys)),np.eye(d_t))
-    t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),delta_b(delta_t))
+    t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t)*np.exp(-1j*phase),sigmaplus()),np.eye(d_t))
+    t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaplus()),delta_b(delta_t))
     t3=np.sqrt(gamma_l)*np.kron(np.kron(delta_b_dag(delta_t)*np.exp(1j*phase),sigmaminus()),np.eye(d_t))
-    t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),delta_b_dag(delta_t))   
+    t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaminus()),delta_b_dag(delta_t))   
     if isinstance(omega, np.ndarray):
         omegas = tuple(omega)
         def hm_total(t_k):  
-            hm_sys=omegas[t_k]/2*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),np.eye(d_t)))
+            hm_sys=omegas[t_k]/2*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus()),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus()),np.eye(d_t)))
             hm = hm_sys + t1 + t2 + t3 + t4
             return hm
     else:        
-        hm_sys=omega/2*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus(d_sys)),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus(d_sys)),np.eye(d_t)))
+        hm_sys=omega/2*delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus()),np.eye(d_t)) +np.kron(np.kron(np.eye(d_t),sigmaminus()),np.eye(d_t)))
         hm_total = hm_sys + t1 + t2 + t3 + t4
     return hm_total
 
@@ -161,10 +161,10 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
     d_sys2=d_sys_total[1]
     d_t=np.prod(d_t_total)
     
-    sigmaplus1=np.kron(sigmaplus(d_sys1),np.eye(d_sys2))
-    sigmaminus1=np.kron(sigmaminus(d_sys1),np.eye(d_sys2))
-    sigmaplus2=np.kron(np.eye(d_sys1),sigmaplus(d_sys2))
-    sigmaminus2=np.kron(np.eye(d_sys1),sigmaminus(d_sys2))
+    sigmaplus1=np.kron(sigmaplus(),np.eye(d_sys2))
+    sigmaminus1=np.kron(sigmaminus(),np.eye(d_sys2))
+    sigmaplus2=np.kron(np.eye(d_sys1),sigmaplus())
+    sigmaminus2=np.kron(np.eye(d_sys1),sigmaminus())
     e1=np.kron(e(d_sys1),np.eye(d_sys2))    
     e2=np.kron(np.eye(d_sys1),e(d_sys2))   
     
@@ -260,10 +260,10 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
     d_sys2=d_sys_total[1]
     d_t=np.prod(d_t_total)
     
-    sigmaplus1=np.kron(sigmaplus(d_sys1),np.eye(d_sys2))
-    sigmaminus1=np.kron(sigmaminus(d_sys1),np.eye(d_sys2))
-    sigmaplus2=np.kron(np.eye(d_sys1),sigmaplus(d_sys2))
-    sigmaminus2=np.kron(np.eye(d_sys1),sigmaminus(d_sys2))
+    sigmaplus1=np.kron(sigmaplus(),np.eye(d_sys2))
+    sigmaminus1=np.kron(sigmaminus(),np.eye(d_sys2))
+    sigmaplus2=np.kron(np.eye(d_sys1),sigmaplus())
+    sigmaminus2=np.kron(np.eye(d_sys1),sigmaminus())
     e1=np.kron(e(),np.eye(d_sys2))    
     e2=np.kron(np.eye(d_sys1),e(d_sys2))   
     

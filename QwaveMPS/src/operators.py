@@ -29,39 +29,29 @@ from ncon import ncon
 #Basic TLS and boson operators
 #-----------------------------
 
-def sigmaplus(d_sys:int=2) -> np.ndarray:  
+def sigmaplus() -> np.ndarray:  
     """
     Raising operator for the Pauli spins (|e><g|).
-    
-    Parameters
-    ----------
-    d_sys : int, default: 2 (for a TLS)
-        Size of the Hilbert space of the matter system.
 
     Returns
     -------
     oper : ndarray
         ndarray for the Pauli spin raising operator.
     """
-    a = np.zeros((d_sys,d_sys),dtype=complex)
+    a = np.zeros((2,2),dtype=complex)
     a[1,0]=1.       
     return a
 
-def sigmaminus(d_sys:int=2) -> np.ndarray:  
+def sigmaminus() -> np.ndarray:  
     """
     Lowering operator for the Pauli spins  (|g><e|). 
     
-    Parameters
-    ----------
-    d_sys : int, default: 2 (for a TLS)
-        Size of the Hilbert space of the matter system.
-
     Returns
     -------
     oper : ndarray
         ndarray for the Pauli spin lowering operator.
     """
-    a = np.zeros((d_sys,d_sys),dtype=complex)
+    a = np.zeros((2,2),dtype=complex)
     a[0,1]=1.       
     return a
 
