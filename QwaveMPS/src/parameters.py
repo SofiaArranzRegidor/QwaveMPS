@@ -26,7 +26,7 @@ class InputParams:
         Array describing the local physical dimensions of the system bins.
     - d_t_total: np.ndarray
         Array with dimensions for the time bins.
-    - bond: int
+    - max_bond: int
         Maximum MPS bond dimension (chi) to use for truncation.
     - gamma_l, gamma_r: float
         Coupling (decay) rates to the left and right channels respectively.
@@ -43,24 +43,24 @@ class InputParams:
     tmax: float
     d_sys_total: np.ndarray
     d_t_total: np.ndarray
-    bond: int
+    max_bond: int
     gamma_l: float
     gamma_r: float
     gamma_l2:float= 0
     gamma_r2:float= 0
-    tau: float = 0
+    tau: list = None
     phase: float = 0
     
     
 @dataclass
 class Bins:
     """Bin metadata used for analysing time-dependent quantities.
-   - sys_b: list
+   - system_states: list
        List of system bins used when calculating system observables.
-   - time_b: list
+   - output_field_states: list
        Time bins used when calculating field observables.
-   - cor_b: list
-       Correlation bins used when computing photon correlation functions.
+   - correlation_bins: list
+       Correlation bins used when computing output field photon correlation functions.
    - schmidt: list
        Schmidt decomposition system bins usen when calculating entanglement entropy.
    - tau_b: list, optional
@@ -68,11 +68,11 @@ class Bins:
    - schmidt_tau: list, optional
        Schmidt decomposition tau bins usen when calculating delayed entanglement entropy.
    """
-    sys_b: list     
-    time_b: list
-    cor_b: list
+    system_states: list     
+    output_field_states: list
+    correlation_bins: list
     schmidt: list
-    tau_b: list = None
+    delayed_field_states: list = None
     schmidt_tau: list = None
     
 @dataclass

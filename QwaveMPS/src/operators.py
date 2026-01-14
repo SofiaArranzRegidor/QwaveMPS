@@ -201,6 +201,123 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     d_t_r=d_t_total[1]
     return np.kron(np.eye(d_t_l),delta_b(delta_t, d_t_r))       
 
+#------------------------------
+# Bosonic Observable Operators
+#------------------------------
+def a_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
+    """
+    Creation operator for observables in the truncated Fock basis.
+    
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+
+    d_t : int, default: 2
+        Size of the truncated field Hilbert space
+
+    Returns
+    -------
+    oper : ndarray
+        ndarray creation operator observable.
+    """
+    return delta_b_dag(delta_t, d_t) / delta_t
+
+def a(delta_t:float, d_t:int=2) -> np.ndarray:  
+    """
+    Annihilation operator for observables in the truncated Fock basis.
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+    
+    d_t : int, default: 2
+        Size of the truncated field Hilbert space
+
+    Returns
+    -------
+    oper : ndarray
+        ndarray annihilation operator observable.
+    """      
+    return delta_b(delta_t, d_t) / delta_t
+
+def a_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+    """
+    Left creation operator for a system with two field channels in the truncated Fock basis.
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+    
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces (left and right channels).
+
+    Returns
+    -------
+    oper : ndarray
+        ndarray left creation operator observable.
+    """ 
+    return delta_b_dag_l(delta_t, d_t_total) / delta_t   
+
+def a_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray: 
+    """
+    Right creation operator for a system with two field channels, in the truncated Fock basis.
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+    
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces (left and right channels).
+
+    Returns
+    -------
+    oper : ndarray
+        ndarray right creation operator observable.
+    """ 
+    return delta_b_dag_r(delta_t, d_t_total) / delta_t    
+
+def a_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+    """
+    Left annihilation operator for a system with two field channels in the truncated Fock basis.
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+    
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces (left and right channels).
+
+    Returns
+    -------
+    oper : ndarray
+        ndarray left annihilation operator observable.
+    """ 
+    return delta_b_l(delta_t, d_t_total) / delta_t
+
+def a_r(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+    """
+    Right annihilation operator for a system with two field channels, in the truncated Fock basis.
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+        
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces (left and right channels).
+
+    Returns
+    -------
+    oper : ndarray
+        ndarray right annihilation operator observable.
+    """ 
+    return delta_b_r(delta_t, d_t_total) / delta_t
+
 #-------------------
 #Time evolution MPO
 #-------------------
@@ -467,6 +584,7 @@ def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:
     Photonic population fora single channel solution: np.ndarray
     """ 
     return np.real((delta_b_dag(delta_t,d_t) @ delta_b(delta_t,d_t))/delta_t)
+
 
 
 #-----------------

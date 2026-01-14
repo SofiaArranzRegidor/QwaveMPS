@@ -69,7 +69,7 @@ input_params = qmps.parameters.InputParams(
     gamma_r = gamma_r1,
     gamma_l2 = gamma_l2,
     gamma_r2 = gamma_r2,
-    bond=4,
+    max_bond=4,
     phase=np.pi
 )
 
@@ -104,11 +104,19 @@ start_time=t.time()
 
 bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
 
+"""Define relevant observable operators"""
+pop_tls1_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
+pop_tls2_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
+
+flux_l_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
+flux_r_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
 
 """Calculate population dynamics"""
+tls_pops = qmps.single_time_expectation(bins.system_states, [pop_tls1_op, pop_tls2_op])
+fluxes = qmps.single_time_expectation(bins.output_field_states, [flux_l_op, flux_r_op])
 
-pop=qmps.pop_dynamics_2tls(bins,input_params)
-
+# Integrating over outgoing flux
+total_quanta = tls_pops[0] + tls_pops[1] + np.cumsum(fluxes[0] + fluxes[1]) * delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -119,11 +127,11 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.pop1),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
-plt.plot(tlist,np.real(pop.pop2),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='R')
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
+plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
+plt.plot(tlist,np.real(fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='R')
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
@@ -153,11 +161,11 @@ start_time=t.time()
 
 #Define the operator we want to calculate,
 #in this case the single time first order correlation function
-single_t_g1=qmps.delta_b_dag_r(delta_t,d_t_total) @ qmps.delta_b_r(delta_t,d_t_total)
+single_t_g1=qmps.a_dag_r(delta_t,d_t_total) @ qmps.a_r(delta_t,d_t_total)
 
 #Use the general one time expectation function to get the observable
 #Note here that noise operators are not normalized so /delta_t**2 is required
-g1=[qmps.expectation(time_b_i,single_t_g1/delta_t**2) for time_b_i in bins.time_b]
+g1 = qmps.single_time_expectation(bins.output_field_states, [single_t_g1])[0]
 
 print("single time g1--- %s seconds ---" %(t.time() - start_time))
 

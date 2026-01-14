@@ -23,8 +23,7 @@ from . import states as states
 from collections.abc import Iterator
 from QwaveMPS.src.parameters import *
 from typing import Callable, TypeAlias
-
-Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
+from QwaveMPS.src.hamiltonians import Hamiltonian
 
 # -----------------------------------
 # Singular Value Decomposition helper
@@ -72,6 +71,42 @@ def _svd_tensors(tensor:np.ndarray, bond:int, d_1:int, d_2:int) -> np.ndarray:
 # Time evolution: Markovian and non-Markovian evolutions
 # ------------------------------------------------------
 
+def t_evol(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> Bins:
+    """ 
+    Appropriate time evolution of the system (chooses Markovian or non-markovian based on presence of delay times).
+    
+    Parameters
+    ----------
+    ham : ndarray or callable
+        Either a fixed evolution operator/tensor or a callable returning the
+        evolution operator for time-step k: ham(k).
+        
+     i_s0 : ndarray
+         Initial system bin (tensor).
+         
+     i_n0: ndarray 
+         Initial field bin.
+         Seed for the input time-bin generator.
+
+     params:InputParams
+         Class containing the input parameters
+         (contains delta_t, tmax, bond, d_t_total, d_sys_total, tau.).
+
+    Returns
+    -------
+    Bins:  Dataclass (from parameters.py) 
+        containing:
+          - sys_b: list of system bins
+          - time_b: list of time bins
+          - tau_b: list of feedback bins 
+          - cor_b: list of tensors used for correlations
+          - schmidt, schmidt_tau: lists of Schmidt coefficient arrays
+    """
+    if len(params.tau) == 0 or params.tau == None:
+        return t_evol_mar(ham, i_s0, i_n0, params)
+    else:
+        return t_evol_nmar(ham, i_s0, i_n0, params)
+
 def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times (Markovian regime)
@@ -105,7 +140,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     
     delta_t = params.delta_t
     tmax=params.tmax
-    bond=params.bond
+    bond=params.max_bond
     d_t_total = params.d_t_total
     d_sys_total = params.d_sys_total
 
@@ -148,7 +183,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
         if k == n-1:
             cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
         
-    return Bins(sys_b=sbins,time_b=tbins,cor_b=cor_list,schmidt=schmidt)
+    return Bins(system_states=sbins,output_field_states=tbins,correlation_bins=cor_list,schmidt=schmidt)
 
 def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
@@ -183,7 +218,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     """
     delta_t = params.delta_t
     tmax=params.tmax
-    bond=params.bond
+    bond=params.max_bond
     d_t_total = params.d_t_total
     d_sys_total = params.d_sys_total
     tau=params.tau
@@ -275,54 +310,12 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         if k == n-1:
             cor_list.append(i_t*stemp[None,None,:])   
             
-    return Bins(sys_b=sbins,time_b=tbins,tau_b=taubins,cor_b=cor_list,schmidt=schmidt,schmidt_tau=schmidt_tau)
+    return Bins(system_states=sbins,output_field_states=tbins,delayed_field_states=taubins,correlation_bins=cor_list,schmidt=schmidt,schmidt_tau=schmidt_tau)
 
 # ---------------------------------------------------------------
 # Observables: populations, entanglement, spectrum
 # ---------------------------------------------------------------
-
-
-def pop_dynamics(bins:Bins, params:InputParams) -> Pop1TLS:
-    """
-    Calculates the main population dynamics for a single TLS in an infinite waveguide
-
-    Parameters
-    ----------
-    bins : Bins
-        Bins returned by t_evol_mar
-    
-    params : InputParams
-        Simulation parameters (contains delta_t, d_t_total, d_sys_total).
-
-    Returns
-    -------
-    Pop1TLS: Dataclass
-         containing:
-            - pop: TLS population
-            - tbins_r: right-moving photon flux per time bin
-            - tbins_l: left-moving photon flux per time bin
-            - int_n_r/int_n_l: integrated right/left flux
-            - total: total excitations (populations + integrated flux) at each time
-    """
-    delta_t = params.delta_t
-    d_t_total = params.d_t_total
-    d_sys_total = params.d_sys_total
-    sbins=bins.sys_b
-    tbins=bins.time_b
-    
-    d_sys=np.prod(d_sys_total)
-    pop=np.array([expectation(s, tls_pop(d_sys)) for s in sbins])
-    tbinsR=np.array([expectation(t, a_r_pop(delta_t,d_t_total)) for t in tbins])
-    tbinsL=np.array([expectation(t, a_l_pop(delta_t,d_t_total)) for t in tbins])
-   
-    # Cumulative sums
-    trans = np.cumsum(tbinsR)
-    ref = np.cumsum(tbinsL)
-    total = trans + ref + pop
-        
-    return Pop1TLS(pop=pop,tbins_r=tbinsR,tbins_l=tbinsL,int_n_r=trans,int_n_l=ref,total=total)
-
-def pop_dynamics_1tls_nmar(bins:Bins, params:InputParams) -> Pop1Channel:
+def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:InputParams) -> Pop1Channel:
     """
     Calculates the main population dynamics for a single TLS in a semi-infinite waveguide,
     with non-Markovian feedback (one channel).
@@ -345,129 +338,21 @@ def pop_dynamics_1tls_nmar(bins:Bins, params:InputParams) -> Pop1Channel:
             - loop: feedback-loop photon count
             - total: total excitations at each time
     """
-    
-    delta_t = params.delta_t
-    d_sys_total = params.d_sys_total
+
     tau = params.tau
-    sbins=bins.sys_b
-    tbins=bins.time_b
-    taubins=bins.tau_b
-    
-    n=len(sbins) 
-    d_sys=np.prod(d_sys_total)
-    pop=np.array([expectation(s, tls_pop(d_sys)) for s in sbins])
-    tbins=np.array([expectation(t, a_pop(delta_t)) for t in tbins])
-    tbins2=np.real([expectation(taus, a_pop(delta_t)) for taus in taubins])
-    ph_loop=np.zeros(n,dtype=complex)
-    trans=np.zeros(n,dtype=complex)
-    total=np.zeros(n,dtype=complex)
+    delta_t = params.delta_t
+
+    n=len(time_dependent_func) 
+    observable_integrated_in_loop = np.zeros(n,dtype=complex)
     
     l=int(round(tau/delta_t,0))
-    temp_out=0
-    in_loop=0
-    for i in range(n):
-        temp_out+=tbins2[i]
-        trans[i]=temp_out
-        if i<=l:
-            in_loop=np.sum(tbins[:i+1]) 
-            ph_loop[i]=in_loop
-            total[i]=pop[i]+ph_loop[i]+trans[i]
-        if i>l:
-            in_loop=np.sum(tbins[i-l+1:i+1]) 
-            ph_loop[i]=in_loop
-            total[i]  = pop[i] +  trans[i] + ph_loop[i]
-    return Pop1Channel(pop=pop,tbins=tbins,trans=trans,loop=ph_loop,total=total)
 
-def pop_dynamics_2tls(bins:Bins,params:InputParams) -> Pop2TLS:
-    """
-    Calculates the main population dynamics for 2 TLSs in an infinite waveguide
-
-    Parameters
-    ----------
-    bins : Bins
-        Bins returned by t_evol_mar
+    cumulative_sum = np.cumsum(time_dependent_func)
+    observable_integrated_in_loop[:l+1] = cumulative_sum[:l+1]
+    observable_integrated_in_loop[l:] = cumulative_sum[l:] - cumulative_sum[:-l]
     
-    params : InputParams
-        Simulation parameters
+    return observable_integrated_in_loop * delta_t
 
-    Returns
-    -------
-    Pop2TLS: Dataclass
-         containing:
-            - pop1/pop2: populations of TLS1 and TLS2
-            - tbins_r/tbins_l:  right/left fluxes per time bin
-            - tbins_r2/tbins_l2: feedback-line fluxes (when tau != 0)
-            - int_n_r/int_n_l: integrated right/left flux
-            - in_r/in_l : in-loop flux (for feedback)
-            - total: total excitations at each time
-    """
-    
-    sbins=bins.sys_b
-    tbins=bins.time_b
-    taubins=bins.tau_b
-    delta_t,d_sys_total,d_t_total,tau = params.delta_t,params.d_sys_total,params.d_t_total,params.tau 
-    
-    n=len(sbins)
-    d_sys1=d_sys_total[0]
-    d_sys2=d_sys_total[1]
-
-    pop1=np.zeros(n,dtype=complex)
-    pop2=np.zeros(n,dtype=complex)
-    tbins_r=np.zeros(n,dtype=complex)
-    tbins_l=np.zeros(n,dtype=complex)
-    tbins_r2=np.zeros(n,dtype=complex)
-    tbins_l2=np.zeros(n,dtype=complex)
-    in_r=np.zeros(n,dtype=complex)
-    in_l=np.zeros(n,dtype=complex)
-    int_n_r=np.zeros(n,dtype=complex)
-    int_n_l=np.zeros(n,dtype=complex)
-    total=np.zeros(n,dtype=complex)
-    temp_in_r=0
-    temp_in_l=0
-    temp_outR=0
-    temp_outL=0
-    l=int(round(tau/delta_t,0))
-    temp_trans=0
-    temp_ref=0
-    for i in range(n):
-        i_s=sbins[i]
-        i_sm=i_s.reshape(i_s.shape[0]*2,i_s.shape[-1]*2)
-        u,sm,vt=svd(i_sm,full_matrices=False) #SVD
-        i_s1 = u[:,range(len(sm))].reshape(i_s.shape[0],2,len(sm))  
-        i_s1 = ncon([i_s1,np.diag(sm)],[[-1,-2,1],[1,-3]]) 
-        i_s2 = vt[range(len(sm)),:].reshape(len(sm),2,i_s.shape[-1]) 
-        i_s2 = ncon([np.diag(sm),i_s2],[[-1,1],[1,-2,-3]]) 
-        pop1[i]=expectation(i_s1, tls_pop(d_sys1))
-        pop2[i]=expectation(i_s2, tls_pop(d_sys2))    
-        tbins_r[i]=np.real(expectation(tbins[i], a_r_pop(delta_t,d_t_total)))
-        tbins_l[i]=np.real(expectation(tbins[i], a_l_pop(delta_t,d_t_total)))
-        if tau != 0:
-            tbins_r2[i]=np.real(expectation(taubins[i], a_r_pop(delta_t,d_t_total)))
-            tbins_l2[i]=np.real(expectation(taubins[i], a_l_pop(delta_t,d_t_total)))
-            temp_outR+=tbins_r2[i]
-            temp_outL+=tbins_l2[i]
-            int_n_r[i]=temp_outR
-            int_n_l[i]=temp_outL
-            if i <=l:
-                temp_in_r+=expectation(tbins[i], a_r_pop(delta_t,d_t_total))
-                in_r[i] = temp_in_r
-                temp_in_l+= expectation(tbins[i], a_l_pop(delta_t,d_t_total))
-                in_l[i] = temp_in_l
-                total[i]  = pop1[i] + pop2[i]  + in_r[i] + in_l[i]  + int_n_r[i] + int_n_l[i]
-            if i>l:
-                temp_in_r=np.sum(tbins_r[i-l+1:i+1]) 
-                temp_in_l=np.sum(tbins_l[i-l+1:i+1])
-                total[i]  = pop1[i] + pop2[i]  + temp_in_r + temp_in_l + int_n_r[i] + int_n_l[i]
-                in_r[i] = temp_in_r
-                in_l[i] = temp_in_l
-        if tau==0:
-            temp_trans+= tbins_r[i]
-            int_n_r[i] = temp_trans
-            temp_ref += tbins_l[i]
-            int_n_l[i] = temp_ref
-            total[i]  = pop1[i] + pop2[i]  + int_n_r[i] + int_n_l[i]
-        
-    return Pop2TLS(pop1,pop2,tbins_r,tbins_l,tbins_r2,tbins_l2,int_n_r,int_n_l,in_r,in_l,total)
 
 def entanglement(sch:list[np.ndarray]) -> list[float]:
     """
@@ -493,7 +378,7 @@ def entanglement(sch:list[np.ndarray]) -> list[float]:
         ent_list.append(ent)
     return ent_list
 
-def spectrum_w(delta_t:float, g1_list: np.ndarray) -> [np.ndarray, np.ndarray]:
+def spectrum_w(delta_t:float, g1_list: np.ndarray) -> list[np.ndarray, np.ndarray]:
     """
     Compute the (discrete) spectrum in the long-time limit via Fourier transform 
     of the two-time first-order correlation (steady-state solution).
@@ -519,299 +404,10 @@ def spectrum_w(delta_t:float, g1_list: np.ndarray) -> [np.ndarray, np.ndarray]:
     return s_w,wlist
 
 # ----------------------
-# Correlation functions
+# Two time point Correlation functions
 # ----------------------
 
-def first_order_correlation(bins:Bins, params:InputParams,single_channel=False) -> np.ndarray|G1Correl:
-    """
-    Calculates the first order correlation function g1(t,t+tau) for the outgoing field.
-
-    This routine builds a matrix of complex values with indices [t, tau] where tau >= 0.
-    
-    Parameters
-    ----------
-    bins : Bins
-        Bins returned by time evolution functions
-        cor_b field must contain the correlation tensors.
-    
-    params : InputParams
-        Simulation parameters 
-    
-    single_channel : bool
-       if True compute correlations for a single channel; 
-       if False compute left/right channel cross-correlations separately 
-       and return a G1Correl dataclass.
-       
-    Returns
-    -------
-    np.ndarray or G1Correl
-        If single_channel True: returns a 2D g1 matrix (complex).
-        Otherwise returns a G1Correl dataclass with separate matrices for rr, ll, rl, lr.
-    """
-    
-    import time as t
-    
-    d_t_total=params.d_t_total
-    bond=params.bond
-    delta_t=params.delta_t
-    cor_list1 = bins.cor_b
-    
-    cor_list2 =  cor_list1
-    d_t=np.prod(d_t_total)
-    swap_t_t=swap(d_t,d_t)
-    start_time_c = t.time()
-    
-    if single_channel==True:
-        g1_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-
-        #Bring the OC to the first bin
-        for i in range(len(cor_list2)-1,0,-1):
-            # print('iteration', i)
-            two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
-            cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
-            cor_list2[i]=cor_l2
-            cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
-        
-        for j in range(len(cor_list1)-1):            
-            
-            i_1=cor_list2[0]
-            i_2=cor_list2[1]     
-            
-            g1_matrix[0,j] = expectation(i_1,(delta_b_dag(delta_t, d_t_total) @ delta_b(delta_t, d_t_total)))/(delta_t**2)    
-            
-            for i in range(len(cor_list2)-1):  
-                # print('iteration', i)
-                state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-                
-                g1_matrix[i+1,j]=expectation_2(state, g1_rr(delta_t,d_t_total))/(delta_t**2) 
-           
-                swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-                i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
-                i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
-                
-                if i < (len(cor_list2)-2):                
-                    i_2=cor_list2[i+2] #next time bin for the next correlation
-                    cor_list2[i]=i_t2 #update of the increasing bin
-                if i == len(cor_list2)-2:
-                    cor_list2[i]=i_t2
-                    cor_list2[i+1]=i_1
-                    
-            for i in range(len(cor_list2)-1,0,-1):            
-                two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
-                cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
-                if i>1:
-                    cor_list2[i] = cor_l2  
-                    cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
-                if i == 1:
-                   cor_l = cor_l2
-                   cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
-            cor_list2=cor_list2[1:]   
-        t_c=t.time() - start_time_c    
-        print("--- %s seconds correlation---" %(t_c)) 
-        return g1_matrix         
-    else:
-        g1_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        g1_ll_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        g1_rl_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        g1_lr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-    
-    
-        #Bring the OC to the first bin
-        for i in range(len(cor_list2)-1,0,-1):
-            # print('iteration', i)
-            two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
-            cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
-            cor_list2[i]=cor_l2
-            cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
-        
-        for j in range(len(cor_list1)-1):            
-            
-            i_1=cor_list2[0]
-            i_2=cor_list2[1]     
-            
-            g1_rr_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**2)    
-            g1_ll_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**2)  
-            g1_rl_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**2) 
-            g1_lr_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**2) 
-            
-            for i in range(len(cor_list2)-1):  
-                # print('iteration', i)
-                state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-                
-                g1_rr_matrix[i+1,j]=expectation_2(state, g1_rr(delta_t,d_t_total))/(delta_t**2) 
-                g1_ll_matrix[i+1,j]=expectation_2(state, g1_ll(delta_t,d_t_total))/(delta_t**2) 
-                g1_rl_matrix[i+1,j]=expectation_2(state, g1_rl(delta_t,d_t_total))/(delta_t**2) 
-                g1_lr_matrix[i+1,j]=expectation_2(state, g1_lr(delta_t,d_t_total))/(delta_t**2) 
-                
-                swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-                i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
-                i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
-                
-                if i < (len(cor_list2)-2):                
-                    i_2=cor_list2[i+2] #next time bin for the next correlation
-                    cor_list2[i]=i_t2 #update of the increasing bin
-                if i == len(cor_list2)-2:
-                    cor_list2[i]=i_t2
-                    cor_list2[i+1]=i_1
-                    
-            for i in range(len(cor_list2)-1,0,-1):            
-                two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
-                cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
-                if i>1:
-                    cor_list2[i] = cor_l2  
-                    cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
-                if i == 1:
-                   cor_l = cor_l2
-                   cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
-            cor_list2=cor_list2[1:]   
-        t_c=t.time() - start_time_c    
-        print("--- %s seconds correlation---" %(t_c)) 
-        return G1Correl(g1_rr_matrix,g1_ll_matrix,g1_rl_matrix,g1_lr_matrix)    
-
-def second_order_correlation(bins:Bins,params:InputParams,single_channel=False) -> np.ndarray|G2Correl:
-    """
-    Calculates the second order correlation function g2(t,t+tau) for the outgoing field.
-
-    This routine builds a matrix of complex values with indices [t, tau] where tau >= 0.
-    
-    Parameters
-    ----------
-    bins : Bins
-        Bins returned by time evolution functions
-        cor_b field must contain the correlation tensors.
-    
-    params : InputParams
-        Simulation parameters 
-    
-    single_channel : bool
-       if True compute correlations for a single channel; 
-       if False compute left/right channel cross-correlations separately 
-       and return a G2Correl dataclass.
-       
-    Returns
-    -------
-    np.ndarray or G2Correl
-        If single_channel True: returns a 2D g2 matrix (complex).
-        Otherwise returns a G2Correl dataclass with separate matrices for rr, ll, rl, lr.
-    """
-    
-    import time as t
-    
-    d_t_total=params.d_t_total
-    bond=params.bond
-    delta_t=params.delta_t
-    cor_list1 = bins.cor_b
-    
-    start_time_c = t.time()
-    cor_list2 =  cor_list1
-    d_t=np.prod(d_t_total)
-    swap_t_t=swap(d_t,d_t)
-    
-    if single_channel==True:
-        g2_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-
-        
-        #Bring the OC to the first bin
-        for i in range(len(cor_list2)-1,0,-1):
-            # print('iteration', i)
-            two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
-            cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
-            cor_list2[i]=cor_l2
-            cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
-        
-        for j in range(len(cor_list1)-1):            
-            
-            i_1=cor_list2[0]
-            i_2=cor_list2[1]     
-                        
-            g2_rr_matrix[0,j] = expectation(i_1,(delta_b_dag(delta_t, d_t_total) @ delta_b_dag(delta_t, d_t_total) 
-                                                 @ delta_b(delta_t, d_t_total) @ delta_b(delta_t, d_t_total)))/(delta_t**4)    
-            for i in range(len(cor_list2)-1):  
-                state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-                
-                g2_rr_matrix[i+1,j]=expectation_2(state, g2(delta_t,d_t_total))/(delta_t**4) 
-    
-                swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-                i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
-                i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
-                
-                if i < (len(cor_list2)-2):                
-                    i_2=cor_list2[i+2] #next time bin for the next correlation
-                    cor_list2[i]=i_t2 #update of the increasing bin
-                if i == len(cor_list2)-2:
-                    cor_list2[i]=i_t2
-                    cor_list2[i+1]=i_1
-                    
-            for i in range(len(cor_list2)-1,0,-1):            
-                two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
-                cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
-                if i>1:
-                    cor_list2[i] = cor_l2  
-                    cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
-                if i == 1:
-                   cor_l = cor_l2
-                   cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
-            cor_list2=cor_list2[1:]   
-        return g2_rr_matrix 
-    else:    
-        g2_rr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        g2_ll_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        g2_rl_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        g2_lr_matrix= np.zeros((len(cor_list1),len(cor_list1)),dtype='complex') 
-        
-        #Bring the OC to the first bin
-        for i in range(len(cor_list2)-1,0,-1):
-            two_cor=ncon([cor_list2[i-1],cor_list2[i]],[[-1,-2,1],[1,-3,-4]])
-            cor_l1,stemp,cor_l2=_svd_tensors(two_cor, bond,d_t,d_t)
-            cor_list2[i]=cor_l2
-            cor_list2[i-1]= ncon([cor_l1,np.diag(stemp)],[[-1,-2,1],[1,-3]])
-        
-        for j in range(len(cor_list1)-1):            
-            
-            i_1=cor_list2[0]
-            i_2=cor_list2[1]     
-                        
-            g2_rr_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_dag_r(delta_t, d_t_total) 
-                                                 @ delta_b_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**4)    
-            g2_ll_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_dag_l(delta_t, d_t_total)
-                                                  @ delta_b_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**4)  
-            g2_rl_matrix[0,j] = expectation(i_1,(delta_b_dag_r(delta_t, d_t_total) @ delta_b_dag_l(delta_t, d_t_total)
-                                                 @ delta_b_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total)))/(delta_t**4) 
-            g2_lr_matrix[0,j] = expectation(i_1, (delta_b_dag_l(delta_t, d_t_total) @ delta_b_dag_r(delta_t, d_t_total)
-                                                  @ delta_b_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total)))/(delta_t**4) 
-            
-            for i in range(len(cor_list2)-1):  
-                state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-                
-                g2_rr_matrix[i+1,j]=expectation_2(state, g2_rr(delta_t,d_t_total))/(delta_t**4) 
-                g2_ll_matrix[i+1,j]=expectation_2(state, g2_ll(delta_t,d_t_total))/(delta_t**4) 
-                g2_rl_matrix[i+1,j]=expectation_2(state, g2_rl(delta_t,d_t_total))/(delta_t**4) 
-                g2_lr_matrix[i+1,j]=expectation_2(state, g2_lr(delta_t,d_t_total))/(delta_t**4) 
-                
-                swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-                i_t2,stemp,i_t1=_svd_tensors(swaps,bond,d_t,d_t)
-                i_1 = ncon([np.diag(stemp),i_t1],[[-1,1],[1,-2,-3]])
-                
-                if i < (len(cor_list2)-2):                
-                    i_2=cor_list2[i+2] #next time bin for the next correlation
-                    cor_list2[i]=i_t2 #update of the increasing bin
-                if i == len(cor_list2)-2:
-                    cor_list2[i]=i_t2
-                    cor_list2[i+1]=i_1
-                    
-            for i in range(len(cor_list2)-1,0,-1):            
-                two_cor=ncon([cor_list2[i-1],cor_list2[i],swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
-                cor_l,stemp,cor_l2=_svd_tensors(two_cor,bond,d_t,d_t)        
-                if i>1:
-                    cor_list2[i] = cor_l2  
-                    cor_list2[i-1]= ncon([cor_l,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC on left bin
-                if i == 1:
-                   cor_l = cor_l2
-                   cor_list2[i] = ncon([np.diag(stemp),cor_l],[[-1,1],[1,-2,-3]]) 
-            cor_list2=cor_list2[1:]   
-        return G2Correl(g2_rr_matrix,g2_ll_matrix,g2_rl_matrix,g2_lr_matrix)   
-
-def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=True) -> list[np.ndarray]:
+def two_time_correlations(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=True) -> list[np.ndarray]:
     """ 
     General two-time correlation calculator.
     Take in list of time ordered normalized (with OC) time bins at position of relevance.
@@ -845,12 +441,15 @@ def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
     d_t_total=params.d_t_total
-    bond=params.bond
+    bond=params.max_bond
     d_t=np.prod(d_t_total)
     
-    time_bin_list_copy = copy.deepcopy(time_bin_list)
+    time_bin_list_copy = copy.deepcopy(correlation_bins)
     swap_matrix = swap(d_t, d_t)
     
+    # Resize two_time_ops if needed
+    for i in range(len(ops_two_time)):
+        ops_two_time[i] = ops_two_time[i].reshape((d_t,)*(2*2))
     
     correlations = [np.zeros((len(time_bin_list_copy), len(time_bin_list_copy)), dtype=complex) for i in ops_two_time]
     
@@ -916,7 +515,7 @@ def two_time_correlations(time_bin_list:list[np.ndarray], ops_same_time:list[np.
 #Steady-state index helper, and correlations
 #-------------------------------------------
 
-def steady_state_index(pop:list,window: int=10, tol: float=1e-5) -> int or None:
+def steady_state_index(pop:list,window: int=10, tol: float=1e-5) -> int|None:
     """
     Steady-state index helper function to find the time step 
     when the steady state is reached in the population dynamics.
@@ -948,7 +547,7 @@ def steady_state_index(pop:list,window: int=10, tol: float=1e-5) -> int or None:
         return i - window
     return None
 
-def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams) -> SSCorrel|SSCorrel1Channel:
+def steady_state_correlations(bins:Bins, ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams) -> list[np.ndarray]:
     """
     Efficient steady-state correlation calculation for continuous-wave pumping.
     This computes time differences starting from a convergence index (steady-state
@@ -976,8 +575,8 @@ def steady_state_correlations(bins:Bins,pop:Pop1TLS,params:InputParams) -> SSCor
     """
     
     pop=pop.pop
-    cor_list=bins.cor_b
-    delta_t, d_t_total,bond=params.delta_t,params.d_t_total,params.bond
+    cor_list=bins.correlation_bins
+    delta_t, d_t_total,bond=params.delta_t,params.d_t_total,params.max_bond
     #First check convergence:
     conv_index =  steady_state_index(pop,10)  
     if conv_index is None:

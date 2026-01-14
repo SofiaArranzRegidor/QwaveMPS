@@ -119,7 +119,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond=4
+    max_bond=4
 )
 
 #Make a tlist for plots:
@@ -147,10 +147,19 @@ Hm=qmps.hamiltonian_1tls(input_params)
 
 bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
+"""Choose Observables"""
+tls_pop_op = qmps.tls_pop()
+a_l_pop = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
+a_r_pop = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+photon_pop_ops = [a_l_pop, a_r_pop]
+
 
 """Calculate population dynamics"""
 
-pop = qmps.pop_dynamics(bins,input_params)
+tls_pop = qmps.single_time_expectation(bins.system_states, [tls_pop_op])[0]
+photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
+# Integrate the flux leaving the system for total quanta
+total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1])*delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -161,10 +170,10 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
+plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -198,16 +207,17 @@ bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
 
 """Calculate population dynamics"""
 
-pop_ch=qmps.pop_dynamics(bins,input_params)
-
+tls_pop_ch = qmps.single_time_expectation(bins.system_states, [tls_pop_op])[0]
+photon_fluxes_ch = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
+total_quanta_ch = tls_pop_ch + np.cumsum(photon_fluxes_ch[0] + photon_fluxes_ch[1])*delta_t
 
 """Plotting the results"""
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop_ch.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(pop_ch.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop_ch.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(pop_ch.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(photon_fluxes_ch[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes_ch[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(tls_pop_ch),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total_quanta_ch),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')

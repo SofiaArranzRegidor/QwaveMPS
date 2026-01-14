@@ -66,7 +66,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond=4,
+    max_bond=4,
     tau=0.5,
     phase=np.pi
 )
@@ -97,8 +97,13 @@ bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
 
 
 """ Calculate population dynamics"""
+flux_op = qmps.a_dag(delta_t, d_t) @ qmps.a(delta_t, d_t)
 
-pop=qmps.pop_dynamics_1tls_nmar(bins,input_params)
+tls_pops = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+transmitted = qmps.single_time_expectation(bins.output_field_states, [flux_op])[0]
+loop_flux = qmps.single_time_expectation(bins.delayed_field_states, [flux_op])[0]
+loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
+total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
 #%%
@@ -107,10 +112,10 @@ fonts=15
 pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(pop.trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(pop.loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
+plt.plot(tlist,np.real(transmitted),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
@@ -144,7 +149,11 @@ bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 
 """ Calculate population dynamics"""
 
-pop_d = qmps.pop_dynamics_1tls_nmar(bins,input_params)
+tls_pops = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+transmitted = qmps.single_time_expectation(bins.output_field_states, [flux_op])[0]
+loop_flux = qmps.single_time_expectation(bins.delayed_field_states, [flux_op])[0]
+loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
+total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
 
 
 #%%
@@ -153,10 +162,10 @@ fonts=15
 pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop_d.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(pop_d.trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(pop_d.loop),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
-plt.plot(tlist,np.real(pop_d.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
+plt.plot(tlist,np.real(transmitted),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')

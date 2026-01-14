@@ -66,7 +66,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond=18
+    max_bond=18
 )
 
 #Make a tlist for plots:

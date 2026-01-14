@@ -69,7 +69,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond=4
+    max_bond=4
 )
 
 #Make a tlist for plots:
@@ -105,26 +105,64 @@ bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 
 """Calculate population dynamics"""
+# Photonic operators
+left_flux_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
+right_flux_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+photon_flux_ops = [left_flux_op, right_flux_op]
 
-pop=qmps.pop_dynamics(bins,input_params)
+tls_pop = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
 
+total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_t
 print("--- %s seconds ---" %(t.time() - start_time))
 
 
-"""Calculate correlations"""
+"""Calculate correlations (both could be calculated in same call for faster performance)"""
 
 #To track computational time of g1
 start_time=t.time()
 
-g1_correl=qmps.first_order_correlation(bins, input_params)
+# Construct list of ops at same time and two time points
+same_time_ops = []; two_time_ops = []
+a_dag_l = qmps.a_dag_l(delta_t, d_t_total); a_l = qmps.a_l(delta_t, d_t_total)
+a_dag_r = qmps.a_dag_r(delta_t, d_t_total); a_r = qmps.a_r(delta_t, d_t_total)
 
+# Add op <a_R^\dag(t) a_R(t+tau)>
+same_time_ops.append(a_dag_r @ a_r)
+two_time_ops.append(np.kron(a_dag_r, a_r))
+
+# Add op <a_L^\dag(t) a_L(t+tau)>
+same_time_ops.append(a_dag_l @ a_l)
+two_time_ops.append(np.kron(a_dag_l, a_l))
+
+# Add op <a_L^\dag(t) a_R(t+tau)>
+same_time_ops.append(a_dag_l @ a_r)
+two_time_ops.append(np.kron(a_dag_l, a_r))
+
+
+g1_correls = qmps.two_time_correlations(bins.correlation_bins, same_time_ops, two_time_ops, input_params)
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
 #To track computational time of g2
 start_time=t.time()
 
-g2_correl=qmps.second_order_correlation(bins, input_params)
+same_time_ops = []; two_time_ops = []
+# Add op <a_R^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_R(t)>
+same_time_ops.append(a_dag_r @ a_dag_r @ a_r @ a_r)
+two_time_ops.append(np.kron(a_dag_r @ a_r, a_dag_r @ a_r))
+
+# Add op <a_L^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_L(t)>
+same_time_ops.append(a_dag_l @ a_dag_l @ a_l @ a_l)
+two_time_ops.append(np.kron(a_dag_l @ a_l, a_dag_l @ a_l))
+
+
+# Add op <a_R^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_R(t)>
+same_time_ops.append(a_dag_r @ a_dag_l @ a_l @ a_r)
+two_time_ops.append(np.kron(a_dag_r @ a_r, a_dag_l @ a_l))
+
+
+g2_correl = qmps.two_time_correlations(bins.correlation_bins, same_time_ops, two_time_ops, input_params)
 
 
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))
@@ -135,10 +173,10 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -164,7 +202,7 @@ tmax=input_params.tmax
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
 #We need a higher bond dimension for a 2-photon pulse
-input_params.bond=8
+input_params.max_bond=8
 
 # Pulse parameters por a 2-photon gaussian pulse
 pulse_time = tmax
@@ -187,7 +225,9 @@ bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 """Calculate population dynamics"""
 
-pop=qmps.pop_dynamics(bins,input_params)
+tls_pop = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
+total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_t
 
 print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 
@@ -198,10 +238,10 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
