@@ -66,7 +66,7 @@ input_params = qmps.parameters.InputParams(
     gamma_r = gamma_r1,
     gamma_l2 = gamma_l2,
     gamma_r2 = gamma_r2,
-    bond=8,
+    max_bond=8,
     phase=np.pi,
     tau=0.5
 )
@@ -101,8 +101,22 @@ bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 
 
 """ Calculate population dynamics"""
+tls1_pop_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
+tls2_pop_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
-pop=qmps.pop_dynamics_2tls(bins,input_params)
+photon_flux_l_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
+photon_flux_r_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+photon_flux_ops = [photon_flux_l_op, photon_flux_r_op]
+
+tls_pops = qmps.single_time_expectation(bins.system_states, [tls1_pop_op, tls2_pop_op])
+photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
+photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, photon_flux_ops)
+
+loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
+loop_sum_r = qmps.loop_integrated_statistics(photon_fluxes_loop[1], input_params)
+
+total_quanta = np.sum(tls_pops) + np.sum(np.cumsum(photon_fluxes_out))*delta_t\
+      + loop_sum_l + loop_sum_r
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -113,11 +127,11 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.pop1),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
-plt.plot(tlist,np.real(pop.pop2),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='R')
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total')
+plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
+plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
+plt.plot(tlist,np.real(photon_fluxes_out[1]),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(photon_fluxes_out[0]),linewidth = 3,color = 'b',linestyle=':',label='R')
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')

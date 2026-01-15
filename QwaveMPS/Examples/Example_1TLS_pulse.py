@@ -123,46 +123,52 @@ print("--- %s seconds ---" %(t.time() - start_time))
 start_time=t.time()
 
 # Construct list of ops at same time and two time points
-same_time_ops = []; two_time_ops = []
+a_op_list = []; b_op_list = []
 a_dag_l = qmps.a_dag_l(delta_t, d_t_total); a_l = qmps.a_l(delta_t, d_t_total)
 a_dag_r = qmps.a_dag_r(delta_t, d_t_total); a_r = qmps.a_r(delta_t, d_t_total)
 
 # Add op <a_R^\dag(t) a_R(t+tau)>
-same_time_ops.append(a_dag_r @ a_r)
-two_time_ops.append(np.kron(a_dag_r, a_r))
+a_op_list.append(a_dag_r)
+b_op_list.append(a_r)
 
 # Add op <a_L^\dag(t) a_L(t+tau)>
-same_time_ops.append(a_dag_l @ a_l)
-two_time_ops.append(np.kron(a_dag_l, a_l))
+a_op_list.append(a_dag_l)
+b_op_list.append(a_l)
 
 # Add op <a_L^\dag(t) a_R(t+tau)>
-same_time_ops.append(a_dag_l @ a_r)
-two_time_ops.append(np.kron(a_dag_l, a_r))
+a_op_list.append(a_dag_l)
+b_op_list.append(a_r)
 
 
-g1_correls = qmps.two_time_correlations(bins.correlation_bins, same_time_ops, two_time_ops, input_params)
+g1_correls = qmps.correlation_2op_2t(bins.correlation_bins, a_op_list, b_op_list, input_params)
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
 #To track computational time of g2
 start_time=t.time()
 
-same_time_ops = []; two_time_ops = []
+a_op_list = []; b_op_list = []; c_op_list = []; d_op_list = []
 # Add op <a_R^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_R(t)>
-same_time_ops.append(a_dag_r @ a_dag_r @ a_r @ a_r)
-two_time_ops.append(np.kron(a_dag_r @ a_r, a_dag_r @ a_r))
+a_op_list.append(a_dag_r)
+b_op_list.append(a_dag_r)
+c_op_list.append(a_r)
+d_op_list.append(a_r)
 
 # Add op <a_L^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_L(t)>
-same_time_ops.append(a_dag_l @ a_dag_l @ a_l @ a_l)
-two_time_ops.append(np.kron(a_dag_l @ a_l, a_dag_l @ a_l))
+a_op_list.append(a_dag_l)
+b_op_list.append(a_dag_l)
+c_op_list.append(a_l)
+d_op_list.append(a_l)
 
 
 # Add op <a_R^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_R(t)>
-same_time_ops.append(a_dag_r @ a_dag_l @ a_l @ a_r)
-two_time_ops.append(np.kron(a_dag_r @ a_r, a_dag_l @ a_l))
+a_op_list.append(a_dag_r)
+b_op_list.append(a_dag_l)
+c_op_list.append(a_l)
+d_op_list.append(a_r)
 
 
-g2_correl = qmps.two_time_correlations(bins.correlation_bins, same_time_ops, two_time_ops, input_params)
+g2_correl = qmps.correlation_4op_2t(bins.correlation_bins, a_op_list, b_op_list, c_op_list, d_op_list, input_params)
 
 
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))

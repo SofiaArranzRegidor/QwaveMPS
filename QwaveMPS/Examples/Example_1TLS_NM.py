@@ -100,8 +100,10 @@ bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
 flux_op = qmps.a_dag(delta_t, d_t) @ qmps.a(delta_t, d_t)
 
 tls_pops = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+
 transmitted = qmps.single_time_expectation(bins.output_field_states, [flux_op])[0]
-loop_flux = qmps.single_time_expectation(bins.delayed_field_states, [flux_op])[0]
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, [flux_op])[0]
+
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
 
@@ -151,7 +153,8 @@ bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 
 tls_pops = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
 transmitted = qmps.single_time_expectation(bins.output_field_states, [flux_op])[0]
-loop_flux = qmps.single_time_expectation(bins.delayed_field_states, [flux_op])[0]
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, [flux_op])[0]
+
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
 
