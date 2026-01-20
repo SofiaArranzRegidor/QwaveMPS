@@ -109,17 +109,17 @@ d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
-gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1) # same as gamma_l, gamma_r = (0.5,0.5)
 
 #Define input parameters (dataclass)
 input_params = qmps.parameters.InputParams(
-    delta_t=0.05,
-    tmax = 8,
+    delta_t=0.05, # Time step of the simulation
+    tmax = 8, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    max_bond=4
+    bond_max=4 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
 
 #Make a tlist for plots:
@@ -134,13 +134,14 @@ i_s0=qmps.states.tls_excited() #TLS initially excited
 
 #waveguide initially vacuum for as long as calculation (tmax)
 i_n0 = qmps.states.vacuum(tmax,input_params) 
+#i_n0 = None # Another equivalent way to set the initial vacuum state
 
 #To track computational time
 start_time=t.time()
 
 """Choose the Hamiltonian"""
 
-Hm=qmps.hamiltonian_1tls(input_params)
+Hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
 
 
 """Calculate time evolution of the system"""
@@ -155,11 +156,14 @@ photon_pop_ops = [a_l_pop, a_r_pop]
 
 
 """Calculate population dynamics"""
+# Can calculate a single observable to get a time ordered ndarray of expectation values
+tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
 
-tls_pop = qmps.single_time_expectation(bins.system_states, [tls_pop_op])[0]
+# Can also calculate a list of observables on the same states
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
-# Integrate the flux leaving the system for total quanta
-total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1])*delta_t
+
+# Integrate the flux leaving the system added with the TLS population for total quanta
+total_quanta = tls_pop + np.cumsum(np.sum(photon_fluxes,axis=0))*delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -207,9 +211,9 @@ bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
 
 """Calculate population dynamics"""
 
-tls_pop_ch = qmps.single_time_expectation(bins.system_states, [tls_pop_op])[0]
+tls_pop_ch = qmps.single_time_expectation(bins.system_states, tls_pop_op)
 photon_fluxes_ch = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
-total_quanta_ch = tls_pop_ch + np.cumsum(photon_fluxes_ch[0] + photon_fluxes_ch[1])*delta_t
+total_quanta_ch = tls_pop_ch + np.cumsum(np.sum(photon_fluxes_ch, axis=0))*delta_t
 
 """Plotting the results"""
 

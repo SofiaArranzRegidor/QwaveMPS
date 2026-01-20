@@ -18,12 +18,12 @@ import numpy as np
 import copy
 from ncon import ncon
 from scipy.linalg import svd,norm
-from .operators import * 
 from . import states as states
 from collections.abc import Iterator
 from QwaveMPS.src.parameters import *
 from typing import Callable, TypeAlias
 from QwaveMPS.src.hamiltonians import Hamiltonian
+from QwaveMPS.src.operators import *
 
 # -----------------------------------
 # Singular Value Decomposition helper
@@ -140,7 +140,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     
     delta_t = params.delta_t
     tmax=params.tmax
-    bond=params.max_bond
+    bond=params.bond_max
     d_t_total = params.d_t_total
     d_sys_total = params.d_sys_total
 
@@ -156,6 +156,8 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     tbins.append(states.wg_ground(d_t))
     schmidt=[]
     schmidt.append(np.zeros(1))
+    tbins_in = []
+    tbins_in.append(states.wg_ground(d_t))
     if not callable(ham):
         evol=u_evol(ham,d_sys,d_t)
     swap_sys_t=swap(d_sys,d_t)
@@ -165,6 +167,13 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
         i_nk = next(input_field)   
         if callable(ham):
             evol=u_evol(ham(k),d_sys,d_t)
+
+        # Put OC in input bin to calculate input field observables
+        phi1 = ncon([i_s, i_nk], [[-1,-2,1], [1,-3,-4]])
+        i_s, stemp, i_nk = _svd_tensors(phi1, bond, d_sys, d_t)
+        i_nk = stemp[:,None,None] * i_nk # OC in input bin
+        tbins_in.append(i_nk)
+
         phi1=ncon([i_s,i_nk,evol],[[-1,2,3],[3,4,-4],[-2,-3,2,4]]) #system bin, time bin + u operator contraction  
         i_s,stemp,i_n=_svd_tensors(phi1, bond,d_sys,d_t)
         i_s=i_s*stemp[None,None,:] #OC system bin
@@ -183,7 +192,8 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
         if k == n-1:
             cor_list.append(ncon([i_n,np.diag(stemp)],[[-1,-2,1],[1,-3]]))
         
-    return Bins(system_states=sbins,output_field_states=tbins,correlation_bins=cor_list,schmidt=schmidt)
+    return Bins(system_states=sbins,output_field_states=tbins, input_field_states=tbins_in,
+                correlation_bins=cor_list,schmidt=schmidt)
 
 def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
@@ -218,7 +228,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     """
     delta_t = params.delta_t
     tmax=params.tmax
-    bond=params.max_bond
+    bond=params.bond_max
     d_t_total = params.d_t_total
     d_sys_total = params.d_sys_total
     tau=params.tau
@@ -227,6 +237,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     d_sys=np.prod(d_sys_total)
     sbins=[] 
     tbins=[]
+    tbins_in = []
     taubins=[]
     nbins=[]
     cor_list=[]
@@ -234,6 +245,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     schmidt_tau=[]
     sbins.append(i_s0)   
     tbins.append(states.wg_ground(d_t))
+    tbins_in.append(states.wg_ground(d_t))
     taubins.append(states.wg_ground(d_t))
     schmidt.append(np.zeros(1))
     schmidt_tau.append(np.zeros(1))
@@ -268,10 +280,17 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         i_t,stemp,i_stemp=_svd_tensors(i_1, bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_stemp #OC system bin
         
-        #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
         i_nk = next(input_field)                
         if callable(ham):
             evol=u_evol(ham(k),d_sys,d_t, 2)
+
+        # Put OC in input bin to calculate input field observables
+        phi1 = ncon([i_s, i_nk], [[-1,-2,1], [1,-3,-4]])
+        i_s, stemp, i_nk = _svd_tensors(phi1, bond, d_sys, d_t)
+        i_nk = stemp[:,None,None] * i_nk # OC in input bin
+        tbins_in.append(i_nk)
+
+        #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
         phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
         i_t,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
@@ -310,7 +329,9 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         if k == n-1:
             cor_list.append(i_t*stemp[None,None,:])   
             
-    return Bins(system_states=sbins,loop_field_states=tbins,output_field_states=taubins,correlation_bins=cor_list,schmidt=schmidt,schmidt_tau=schmidt_tau)
+    return Bins(system_states=sbins,loop_field_states=tbins,output_field_states=taubins,
+                input_field_states=tbins_in,correlation_bins=cor_list,
+                schmidt=schmidt,schmidt_tau=schmidt_tau)
 
 # ---------------------------------------------------------------
 # Observables: populations, entanglement, spectrum
@@ -431,13 +452,22 @@ def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
         List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
+    list_flag = op_list_check(a_op_list)
+
+    if list_flag and len(a_op_list) != len(b_op_list):
+        raise ValueError("Lengths of operators lists are not equals")
     
     ops_same_time = []; ops_two_time = []
 
     for i in range(len(a_op_list)):
         ops_same_time.append(a_op_list[i] @ b_op_list[i])
         ops_two_time.append(np.kron(a_op_list[i], b_op_list[i]))
-    return correlations_2t(correlation_bins, ops_same_time, ops_two_time, params)
+    results =  correlations_2t(correlation_bins, ops_same_time, ops_two_time, params)
+
+    if list_flag:
+        results = results[0]
+
+    return results
 
 def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], params:InputParams):
     """ 
@@ -464,13 +494,24 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
         List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
-    
+    list_flag = op_list_check(a_op_list)
+
+    if list_flag and not (len(a_op_list) == len(b_op_list) == len(c_op_list) == len(d_op_list)):
+        raise ValueError("Lengths of operators lists are not equal")
+
+
     ops_same_time = []; ops_two_time = []
 
     for i in range(len(a_op_list)):
         ops_same_time.append(a_op_list[i] @ b_op_list[i] @ c_op_list[i] @ d_op_list[i])
         ops_two_time.append(np.kron(a_op_list[i] @ d_op_list[i], b_op_list[i] @ c_op_list[i]))
-    return correlations_2t(correlation_bins, ops_same_time, ops_two_time, params)
+    
+    results = correlations_2t(correlation_bins, ops_same_time, ops_two_time, params)
+
+    if list_flag:
+        results = results[0]
+    return results
+
 
 def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams):
     """ 
@@ -533,7 +574,7 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
     d_t_total=params.d_t_total
-    bond=params.max_bond
+    bond=params.bond_max
     d_t=np.prod(d_t_total)
     
     time_bin_list_copy = copy.deepcopy(correlation_bins)
@@ -697,7 +738,7 @@ def steady_state_correlations(bins:Bins, ops_same_time:list[np.ndarray], ops_two
     
     pop=pop.pop
     cor_list=bins.correlation_bins
-    delta_t, d_t_total,bond=params.delta_t,params.d_t_total,params.max_bond
+    delta_t, d_t_total,bond=params.delta_t,params.d_t_total,params.bond_max
     #First check convergence:
     conv_index =  steady_state_index(pop,10)  
     if conv_index is None:

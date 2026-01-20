@@ -398,7 +398,7 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
     
     delta_t = params.delta_t
     d_t_total = params.d_t_total
-    bond = params.max_bond
+    bond = params.bond_max
     
     m = int(round(pulse_time/delta_t,0))
     time_bin_dim = np.prod(d_t_total)

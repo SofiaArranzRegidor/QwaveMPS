@@ -27,7 +27,7 @@ from ncon import ncon
 #-----------------------------
 # 
 #-----------------------------
-def _op_list_check(op_list):
+def op_list_check(op_list):
     '''
     Checks if given variable is a list of operators (ndarrays), either [] or numpy list.
     '''
@@ -216,6 +216,7 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
 def a_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Creation operator for observables in the truncated Fock basis.
+    Normalized by 1/sqrt(delta_t).
     
     Parameters
     ----------
@@ -235,6 +236,7 @@ def a_dag(delta_t:float, d_t:int=2) -> np.ndarray:
 def a(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
     Annihilation operator for observables in the truncated Fock basis.
+    Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
@@ -254,6 +256,7 @@ def a(delta_t:float, d_t:int=2) -> np.ndarray:
 def a_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
     """
     Left creation operator for a system with two field channels in the truncated Fock basis.
+    Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
@@ -273,6 +276,7 @@ def a_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
 def a_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray: 
     """
     Right creation operator for a system with two field channels, in the truncated Fock basis.
+    Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
@@ -292,6 +296,7 @@ def a_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
 def a_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
     """
     Left annihilation operator for a system with two field channels in the truncated Fock basis.
+    Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
@@ -311,6 +316,7 @@ def a_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
 def a_r(delta_t:float, d_t_total:np.array) -> np.ndarray:  
     """
     Right annihilation operator for a system with two field channels, in the truncated Fock basis.
+    Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
@@ -519,7 +525,7 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
         values for each operator at each time.
     """
     # Check if the operator is a list of operators, if  so return only the 0th element of the list
-    is_list_flag = _op_list_check(ops_list)
+    is_list_flag = op_list_check(ops_list)
     if not is_list_flag:
         ops_list = [ops_list]
 

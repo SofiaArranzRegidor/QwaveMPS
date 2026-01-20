@@ -26,24 +26,24 @@ class InputParams:
         Array describing the local physical dimensions of the system bins.
     - d_t_total: np.ndarray
         Array with dimensions for the time bins.
-    - max_bond: int
+    - bond_max: int
         Maximum MPS bond dimension (chi) to use for truncation.
-    - gamma_l, gamma_r: float
+    - gamma_l, gamma_r: float, (is deprecated and will be removed in future versions)
         Coupling (decay) rates to the left and right channels respectively.
-    - gamma_l2, gamma_r2: float, optional
+    - gamma_l2, gamma_r2: float, optional, (is deprecated and will be removed in future versions)
         Optional second set of coupling rates (e.g. for a second TLS).
         Default 0 means only one system.
     - tau: float, optional
         Delay time if modelling non-Markovian dynamics.
         Default 0.
-    - phase: float, optional
+    - phase: float, optional, (is deprecated and will be removed in future versions)
         Relative delayed phase. Default 0.
     """
     delta_t: float
     tmax: float
     d_sys_total: np.ndarray
     d_t_total: np.ndarray
-    max_bond: int
+    bond_max: int
     gamma_l: float
     gamma_r: float
     gamma_l2:float= 0
@@ -56,9 +56,12 @@ class InputParams:
 class Bins:
     """Bin metadata used for analysing time-dependent quantities.
    - system_states: list
-       List of system bins used when calculating system observables.
+       List of system bins used when calculating single time system observables.
    - output_field_states: list
-       Time bins used when calculating field observables.
+       Time bins used when calculating single time field observables.
+    - input_field_states: list
+        List of input time bins used for calculating single time field observables incident the system resulting from
+        defined initial field state.
    - correlation_bins: list
        Correlation bins used when computing output field photon correlation functions.
    - schmidt: list
@@ -71,6 +74,7 @@ class Bins:
    """
     system_states: list     
     output_field_states: list
+    input_field_states: list
     correlation_bins: list
     schmidt: list
     loop_field_states: list = None
