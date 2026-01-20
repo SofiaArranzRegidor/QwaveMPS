@@ -427,7 +427,7 @@ def spectrum_w(delta_t:float, g1_list: np.ndarray) -> list[np.ndarray, np.ndarra
 # Two time point Correlation functions
 # ----------------------
 
-def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams):
+def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> list[np.ndarray]|np.ndarray:
     """ 
     Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
             
@@ -459,17 +459,22 @@ def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
     
     ops_same_time = []; ops_two_time = []
 
-    for i in range(len(a_op_list)):
-        ops_same_time.append(a_op_list[i] @ b_op_list[i])
-        ops_two_time.append(np.kron(a_op_list[i], b_op_list[i]))
-    results =  correlations_2t(correlation_bins, ops_same_time, ops_two_time, params)
-
     if list_flag:
+        for i in range(len(a_op_list)):
+            ops_same_time.append(a_op_list[i] @ b_op_list[i])
+            ops_two_time.append(np.kron(a_op_list[i], b_op_list[i]))
+    else:
+        ops_same_time.append(a_op_list @ b_op_list)
+        ops_two_time.append(np.kron(a_op_list, b_op_list))
+    
+    results, t_list =  correlations_2t(correlation_bins, ops_same_time, ops_two_time, params, completion_print_flag=completion_print_flag)
+
+    if not list_flag:
         results = results[0]
 
-    return results
+    return results, t_list
 
-def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], params:InputParams):
+def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> list[np.ndarray]|np.ndarray:
     """ 
     Calculates the two time correlation function <A(t)B(t+tau)C(t+tau)D(t)> for each operator in the respective lists.
             
@@ -502,15 +507,20 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
 
     ops_same_time = []; ops_two_time = []
 
-    for i in range(len(a_op_list)):
-        ops_same_time.append(a_op_list[i] @ b_op_list[i] @ c_op_list[i] @ d_op_list[i])
-        ops_two_time.append(np.kron(a_op_list[i] @ d_op_list[i], b_op_list[i] @ c_op_list[i]))
-    
-    results = correlations_2t(correlation_bins, ops_same_time, ops_two_time, params)
-
     if list_flag:
+        for i in range(len(a_op_list)):
+            ops_same_time.append(a_op_list[i] @ b_op_list[i] @ c_op_list[i] @ d_op_list[i])
+            ops_two_time.append(np.kron(a_op_list[i] @ d_op_list[i], b_op_list[i] @ c_op_list[i]))
+    else:
+        ops_same_time.append(a_op_list @ b_op_list @ c_op_list @ d_op_list)
+        ops_two_time.append(np.kron(a_op_list @ d_op_list, b_op_list @ c_op_list))
+    
+    results, t_list = correlations_2t(correlation_bins, ops_same_time, ops_two_time, params, completion_print_flag=completion_print_flag)
+
+    # Don't return as list
+    if not list_flag:
         results = results[0]
-    return results
+    return results, t_list
 
 
 def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams):
@@ -540,7 +550,7 @@ def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
     """
     
 
-def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=False) -> list[np.ndarray]:
+def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=False) -> tuple[list[np.ndarray], np.ndarray]:
     """ 
     General two-time correlation calculator.
     Take in list of time ordered normalized (with OC) time bins at position of relevance.
@@ -640,8 +650,10 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         time_bin_list_copy=time_bin_list_copy[1:]    #Truncating the start of the list now that are done with that bin (t=i)
         
         if i % print_rate == 0 and completion_print_flag == True:
-            print((float(i)/loop_num)*100, '%')
-    return correlations
+            print(round((float(i)/loop_num)*100,2), '%')
+    
+    t_list = np.arange(len(correlation_bins)) * params.delta_t
+    return correlations, t_list
 
 def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams) -> list[np.ndarray]:
     """ 

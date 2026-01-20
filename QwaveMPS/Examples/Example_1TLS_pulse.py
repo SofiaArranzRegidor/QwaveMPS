@@ -154,7 +154,9 @@ plt.show()
 #To track computational time of g1
 start_time=t.time()
 
-# Construct list of ops at same time and two time points
+# Construct list of ops with the structure <A(t)B(t+tau)>
+# Much faster to calculate using a list and a single correlation_2op_2t() function call then
+# Three separate calls
 a_op_list = []; b_op_list = []
 a_dag_l = qmps.a_dag_l(delta_t, d_t_total); a_l = qmps.a_l(delta_t, d_t_total)
 a_dag_r = qmps.a_dag_r(delta_t, d_t_total); a_r = qmps.a_r(delta_t, d_t_total)
@@ -172,9 +174,51 @@ a_op_list.append(a_dag_l)
 b_op_list.append(a_r)
 
 
-g1_correls = qmps.correlation_2op_2t(bins.correlation_bins, a_op_list, b_op_list, input_params)
+g1_correls, corr_tlist = qmps.correlation_2op_2t(bins.correlation_bins, a_op_list, b_op_list, input_params)
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
+
+#%%% Graph an example in the t,tau plane
+import cmasher as cmr
+import matplotlib.ticker as ticker
+
+"""Example graphing G1_{RR}"""
+X,Y = np.meshgrid(corr_tlist,corr_tlist)
+z = np.real(g1_correls[0])
+absMax = np.abs(z).max()
+
+cmap = cmr.get_sub_cmap('seismic', 0, 1)
+fig, ax = plt.subplots(figsize=(4.5, 4))
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
+ax.set_ylabel(r'Time, $\gamma t$')
+ax.set_xlabel(r'Time, $\gamma\tau$')
+
+cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(clean_ticks))
+
+cbar.ax.tick_params(width=0.75)
+plt.show()
+
+
+""" Example graphing G1_{LL} """
+z = np.real(g1_correls[1])
+absMax = np.abs(z).max()
+fig, ax = plt.subplots(figsize=(4.5, 4))
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
+ax.set_ylabel(r'Time, $\gamma t$')
+ax.set_xlabel(r'Time, $\gamma\tau$')
+
+cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(clean_ticks))
+
+cbar.ax.tick_params(width=0.75)
+plt.show()
+
+#%% G2 Calculation
 
 #To track computational time of g2
 start_time=t.time()
