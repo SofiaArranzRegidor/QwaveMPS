@@ -66,9 +66,9 @@ input_params = qmps.parameters.InputParams(
     gamma_r = gamma_r1,
     gamma_l2 = gamma_l2,
     gamma_r2 = gamma_r2,
-    max_bond=8,
+    bond_max=8,
     phase=np.pi,
-    tau=0.5
+    tau=0.5 # Time delay between the two TLS's
 )
 
 
@@ -78,8 +78,8 @@ delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state and coupling"""
-
-i_s01=qmps.states.i_se()
+# Initial system state is an outer product of the two system states
+i_s01=qmps.states.tls_excited()
 i_s02= qmps.states.tls_ground()
 i_s0=np.kron(i_s01,i_s02)
 
@@ -101,21 +101,25 @@ bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 
 
 """ Calculate population dynamics"""
+# Create system operators as outer products of individual TLS Hilbert spaces
 tls1_pop_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 tls2_pop_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
+# Create photonic flux operators in each direction
 photon_flux_l_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
 photon_flux_r_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
 photon_flux_ops = [photon_flux_l_op, photon_flux_r_op]
 
+# Calculate time dependent TLS populations, and fluxes into/out of feedback loop
 tls_pops = qmps.single_time_expectation(bins.system_states, [tls1_pop_op, tls2_pop_op])
 photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
 photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, photon_flux_ops)
 
+# Use helper function to integrate over the flux into the loop to get loop population
 loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
 loop_sum_r = qmps.loop_integrated_statistics(photon_fluxes_loop[1], input_params)
 
-total_quanta = np.sum(tls_pops) + np.sum(np.cumsum(photon_fluxes_out))*delta_t\
+total_quanta = np.sum(tls_pops, axis=0) + np.cumsum(np.sum(photon_fluxes_out, axis=0))*delta_t\
       + loop_sum_l + loop_sum_r
 
 print("--- %s seconds ---" %(t.time() - start_time))
@@ -131,6 +135,7 @@ plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',lab
 plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
 plt.plot(tlist,np.real(photon_fluxes_out[1]),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(photon_fluxes_out[0]),linewidth = 3,color = 'b',linestyle=':',label='R')
+plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'magenta',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')

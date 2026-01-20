@@ -60,14 +60,14 @@ gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
-    delta_t=0.03,
-    tmax = 5,
+    delta_t=0.03, # simulation time step
+    tmax = 5, # simulation total time length
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    max_bond=4,
-    tau=0.5,
+    bond_max=4, #simulation maximum MPS bond dimension, truncates entanglement information
+    tau=0.5, # Roundtrip feedback time
     phase=np.pi
 )
 
@@ -75,13 +75,15 @@ input_params = qmps.parameters.InputParams(
 #Make a tlist for plots:
 tmax=input_params.tmax
 delta_t=input_params.delta_t
-tlist=np.arange(0,tmax+delta_t,delta_t)
+tlist=np.arange(0,tmax+delta_t/2,delta_t)
 
 
 """ Choose the initial state"""
 
 i_s0=qmps.states.tls_excited()
-i_n0 = qmps.states.vacuum(tmax,input_params)
+
+#i_n0 = qmps.states.vacuum(tmax,input_params)
+i_n0 = None # Showing that None is the vacuum state
 
 #To track computational time
 start_time=t.time() 
@@ -97,14 +99,20 @@ bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
 
 
 """ Calculate population dynamics"""
+# Use single channel bosonic operators, chiral waveguide Hilbert space
+# This is because len(d_t_total) == 1
 flux_op = qmps.a_dag(delta_t, d_t) @ qmps.a(delta_t, d_t)
 
-tls_pops = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 
-transmitted = qmps.single_time_expectation(bins.output_field_states, [flux_op])[0]
-loop_flux = qmps.single_time_expectation(bins.loop_field_states, [flux_op])[0]
+transmitted = qmps.single_time_expectation(bins.output_field_states, flux_op)
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
+# Helper function to integrate an operator over the feedback loop time points
+# Here returns a time dependent function (list) of the total excitation number
+#  in the feedback loop
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
+
 total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
@@ -151,10 +159,11 @@ bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
 
 """ Calculate population dynamics"""
 
-tls_pops = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
-transmitted = qmps.single_time_expectation(bins.output_field_states, [flux_op])[0]
-loop_flux = qmps.single_time_expectation(bins.loop_field_states, [flux_op])[0]
+tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
+transmitted = qmps.single_time_expectation(bins.output_field_states, flux_op)
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
+# Integrate again over the total quanta in the feedback loop
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
 

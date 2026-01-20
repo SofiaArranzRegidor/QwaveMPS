@@ -23,6 +23,7 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
         
 """
 
+#%%
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -50,7 +51,8 @@ def clean_ticks(x, pos):
 
 """"Choose the simulation parameters"""
 
-#Choose the bins:
+#Choose the bin dimensions
+# Here setting to 3 to accommodate a 2 photon space:
 d_t_l=3 #Time right channel bin dimension
 d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -69,7 +71,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    max_bond=4
+    bond_max=4
 )
 
 #Make a tlist for plots:
@@ -81,7 +83,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 """ Choose the initial state and pulse parameters"""
 
 # Pulse parameters por a 1-photon tophat pulse
-pulse_time = 1 #length of the pulse in time
+pulse_time = 1 #length of the pulse in time units of gamma
 photon_num = 1 #number of photons
 
 i_s0=qmps.states.tls_ground()
@@ -89,8 +91,11 @@ i_s0=qmps.states.tls_ground()
 #pulse envelope shape
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
+# Create the pulse envelope
 i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='R')
 
+# Multiple pulses may be appended in the usual list appending way
+#i_n0 += qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='L')
 
 """Choose the Hamiltonian"""
 
@@ -110,14 +115,41 @@ left_flux_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
 right_flux_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
 photon_flux_ops = [left_flux_op, right_flux_op]
 
-tls_pop = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+tls_pop = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
+flux_in = qmps.single_time_expectation(bins.input_field_states, photon_flux_ops)
 
+# Calculate total quanta that has entered the system, tls population + net flux out
 total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_t
 print("--- %s seconds ---" %(t.time() - start_time))
 
+#%%
+fonts=15
+pic_style(fonts)
 
-"""Calculate correlations (both could be calculated in same call for faster performance)"""
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(flux_in[0]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm in,L}$') # Photon flux in from right
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'magenta',linestyle='--',label=r'$n_{\rm in,R}$') # Photon flux in from left
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
+plt.xlabel('Time, $\gamma t$',fontsize=fonts)
+plt.ylabel('Populations',fontsize=fonts)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.ylim([0.,1.05])
+plt.xlim([0.,tmax])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+plt.show()
+
+#%%
+"""Calculate correlations 
+(both could be calculated in same call for faster performance with use of identity operators)"""
 
 #To track computational time of g1
 start_time=t.time()
@@ -173,28 +205,6 @@ g2_correl = qmps.correlation_4op_2t(bins.correlation_bins, a_op_list, b_op_list,
 
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))
 
-#%%
-fonts=15
-pic_style(fonts)
-
-
-fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel('Time, $\gamma t$',fontsize=fonts)
-plt.ylabel('Populations',fontsize=fonts)
-plt.grid(True, linestyle='--', alpha=0.6)
-plt.ylim([0.,1.05])
-plt.xlim([0.,tmax])
-plt.tight_layout()
-formatter = FuncFormatter(clean_ticks)
-ax.xaxis.set_major_formatter(formatter)
-ax.yaxis.set_major_formatter(formatter)
-plt.show()
-
 
 
 #%% 2 photon Gaussian pulse
@@ -208,7 +218,7 @@ tmax=input_params.tmax
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
 #We need a higher bond dimension for a 2-photon pulse
-input_params.max_bond=8
+input_params.bond_max=8
 
 # Pulse parameters por a 2-photon gaussian pulse
 pulse_time = tmax
@@ -231,8 +241,10 @@ bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
 
 """Calculate population dynamics"""
 
-tls_pop = qmps.single_time_expectation(bins.system_states, [qmps.tls_pop()])[0]
+tls_pop = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
+flux_in = qmps.single_time_expectation(bins.input_field_states, photon_flux_ops)
+
 total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_t
 
 print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
@@ -247,6 +259,7 @@ fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm in,R}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')
 plt.xlabel('Time, $\gamma t$')

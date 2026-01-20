@@ -61,23 +61,26 @@ gamma_l2,gamma_r2=qmps.coupling('symmetrical',gamma=1)
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
-    delta_t=0.05,
-    tmax = 8,
+    delta_t=0.05, # Simulation time step
+    tmax = 8, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
+
+    # Couplings
     gamma_l=gamma_l1,
     gamma_r = gamma_r1,
     gamma_l2 = gamma_l2,
     gamma_r2 = gamma_r2,
-    max_bond=4,
-    phase=np.pi
+
+    bond_max=4, # Maximum MPS bond dimension, sets truncation of entanglement
+    phase=np.pi # Phase of interaction between the 2 TLS's
 )
 
 
 #Make a tlist for plots:
 tmax=input_params.tmax
 delta_t=input_params.delta_t
-tlist=np.arange(0,tmax+delta_t,delta_t)
+tlist=np.arange(0,tmax+delta_t/2,delta_t)
 
 """ Choose the initial state"""
 
@@ -85,12 +88,14 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 i_s01=qmps.states.tls_excited()
 i_s02= qmps.states.tls_ground()
 
+# The total system initial state is the outer product of the two TLS's states
 i_s0=np.kron(i_s01,i_s02)
 
 #If starting with an entangled initial state
 # i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
 
 i_n0 = qmps.states.vacuum(tmax, input_params)
+# i_n0 = None # Another way to set the same initial state
 
 
 """Choose the Hamiltonian"""
@@ -105,6 +110,7 @@ start_time=t.time()
 bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
 
 """Define relevant observable operators"""
+# System operators are outerproducts of the two TLS Hilbert spaces
 pop_tls1_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 pop_tls2_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
@@ -115,8 +121,11 @@ flux_r_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
 tls_pops = qmps.single_time_expectation(bins.system_states, [pop_tls1_op, pop_tls2_op])
 fluxes = qmps.single_time_expectation(bins.output_field_states, [flux_l_op, flux_r_op])
 
-# Integrating over outgoing flux
-total_quanta = tls_pops[0] + tls_pops[1] + np.cumsum(fluxes[0] + fluxes[1]) * delta_t
+# Integrating over outgoing flux and sum over flux directions/TLS populations
+total_quanta = np.sum(tls_pops,axis=0) + np.cumsum(np.sum(fluxes,axis=0)) * delta_t
+# An equivalent formulation
+#total_quanta = tls_pops[0] + tls_pops[1] + np.cumsum(fluxes[0] + fluxes[1]) * delta_t
+
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -165,7 +174,7 @@ single_t_g1=qmps.a_dag_r(delta_t,d_t_total) @ qmps.a_r(delta_t,d_t_total)
 
 #Use the general one time expectation function to get the observable
 #Note here that noise operators are not normalized so /delta_t**2 is required
-g1 = qmps.single_time_expectation(bins.output_field_states, [single_t_g1])[0]
+g1 = qmps.single_time_expectation(bins.output_field_states, single_t_g1)
 
 print("single time g1--- %s seconds ---" %(t.time() - start_time))
 
