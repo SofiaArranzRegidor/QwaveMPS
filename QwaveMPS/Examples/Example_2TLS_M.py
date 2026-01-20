@@ -82,8 +82,8 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 """ Choose the initial state"""
 
 #Starting with the firt TLS excited and the second in ground state
-i_s01=qmps.states.i_se()
-i_s02= qmps.states.i_sg()
+i_s01=qmps.states.tls_excited()
+i_s02= qmps.states.tls_ground()
 
 i_s0=np.kron(i_s01,i_s02)
 

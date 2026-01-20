@@ -63,8 +63,9 @@ class Bins:
        Correlation bins used when computing output field photon correlation functions.
    - schmidt: list
        Schmidt decomposition system bins usen when calculating entanglement entropy.
-   - tau_b: list, optional
-       Tau (delay) bins used when calculating delayed field observables.
+   - loop_field_states: list, optional
+       Tau (delay) bins used when calculating delayed field observables. This is the list of 
+       field states entering the feedback loop at each time point.
    - schmidt_tau: list, optional
        Schmidt decomposition tau bins usen when calculating delayed entanglement entropy.
    """

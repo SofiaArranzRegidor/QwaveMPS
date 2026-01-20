@@ -37,7 +37,7 @@ Structure:
         
     2. Initial state and coupling configuration.    
         - Choice the system initial state (i_s0). Here, initially excited, 
-            i_s0 = qmps.states.i_se()
+            i_s0 = qmps.states.tls_excited()
         - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
           and considering that there is vacuum before the interaction until tmax.  
             i_n0 = qmps.states.vacuum(tmax,input_params) 
@@ -130,7 +130,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state"""
 
-i_s0=qmps.states.i_se() #TLS initially excited
+i_s0=qmps.states.tls_excited() #TLS initially excited
 
 #waveguide initially vacuum for as long as calculation (tmax)
 i_n0 = qmps.states.vacuum(tmax,input_params) 

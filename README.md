@@ -51,7 +51,7 @@ d_sys_total=np.array([d_sys1]) #total system bin
 ```
 Choose the initial state and coupling:
 ```python
-i_s0=qmps.states.i_se() #TLS initially excited
+i_s0=qmps.states.tls_excited() #TLS initially excited
 i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total) #waveguide in vacuum
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 ```

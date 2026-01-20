@@ -153,7 +153,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     sbins=[] 
     sbins.append(i_s0)
     tbins=[]
-    tbins.append(states.i_ng(d_t))
+    tbins.append(states.wg_ground(d_t))
     schmidt=[]
     schmidt.append(np.zeros(1))
     if not callable(ham):
@@ -233,8 +233,8 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     schmidt=[]
     schmidt_tau=[]
     sbins.append(i_s0)   
-    tbins.append(states.i_ng(d_t))
-    taubins.append(states.i_ng(d_t))
+    tbins.append(states.wg_ground(d_t))
+    taubins.append(states.wg_ground(d_t))
     schmidt.append(np.zeros(1))
     schmidt_tau.append(np.zeros(1))
     input_field=states.input_state_generator(d_t_total, i_n0)
@@ -248,7 +248,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     l=int(round(tau/delta_t,0)) #time steps between system and feedback
     
     for i in range(l):
-        nbins.append(states.i_ng(d_t))
+        nbins.append(states.wg_ground(d_t))
         t_0+=delta_t
     
     i_stemp=i_s0      
@@ -564,13 +564,13 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         
         #for the first raw (tau=0)
         for k in range(len(correlations)):
-            correlations[k][i,0] = expectation(i_1, ops_same_time[k]) #this means I'm storing [t,tau] 
+            correlations[k][i,0] = expectation_1bin(i_1, ops_same_time[k]) #this means I'm storing [t,tau] 
         
         #for the rest of the rows (column by column)
         for j in range(len(time_bin_list_copy)-1):       
             state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
             for k in range(len(correlations)):
-                correlations[k][i,j+1] = expectation_n(state, ops_two_time[k]) #this means I'm storing [t,tau] 
+                correlations[k][i,j+1] = expectation_nbins(state, ops_two_time[k]) #this means I'm storing [t,tau] 
 
             
             swapped_tensor=ncon([i_1,i_2,swap_matrix],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the time bin down the line
@@ -712,19 +712,19 @@ def steady_state_correlations(bins:Bins, ops_same_time:list[np.ndarray], ops_two
     swap_t_t=swap(d_t,d_t)
     
     if d_t==2:
-        exp_0=expectation(i_2,delta_b_dag(delta_t, d_t_total))
-        exp2_0=expectation(i_2, delta_b(delta_t, d_t_total))
-        c1=[expectation(i_2, delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))]
-        c2=[expectation(i_2, delta_b_dag(delta_t, d_t_total) @ delta_b_dag(delta_t, d_t_total) @ delta_b(delta_t, d_t_total) @delta_b(delta_t, d_t_total))]
+        exp_0=expectation_1bin(i_2,delta_b_dag(delta_t, d_t_total))
+        exp2_0=expectation_1bin(i_2, delta_b(delta_t, d_t_total))
+        c1=[expectation_1bin(i_2, delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))]
+        c2=[expectation_1bin(i_2, delta_b_dag(delta_t, d_t_total) @ delta_b_dag(delta_t, d_t_total) @ delta_b(delta_t, d_t_total) @delta_b(delta_t, d_t_total))]
         coher_list=[exp_0*exp2_0]
-        denom=expectation(i_2,  delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))
+        denom=expectation_1bin(i_2,  delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))
         
         for i in range(len(cor_list1)-2,0,-1):
             state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
             # Separating between left and right spectra
-            c1.append(expectation_2(state, g1(delta_t,d_t_total))) #for calculating the total spectra
-            c2.append(expectation_2(state, g2(delta_t,d_t_total)))
-            coher_list.append(exp_0*expectation(i_2, delta_b(delta_t, d_t_total))) #for calculating the coherent spectra           
+            c1.append(expectation_2bins(state, g1(delta_t,d_t_total))) #for calculating the total spectra
+            c2.append(expectation_2bins(state, g2(delta_t,d_t_total)))
+            coher_list.append(exp_0*expectation_1bin(i_2, delta_b(delta_t, d_t_total))) #for calculating the coherent spectra           
             swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
             i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
             i_2 = ncon([i_t1,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin
@@ -736,28 +736,28 @@ def steady_state_correlations(bins:Bins, ops_same_time:list[np.ndarray], ops_two
         return SSCorrel1Channel(t_cor=t_cor,g1_list=g1_list,g2_list=g2_list,c1=c1,c2=c2)
 
     else:
-        exp_0l=expectation(i_2,delta_b_dag_l(delta_t, d_t_total))
-        exp2_0l=expectation(i_2, delta_b_l(delta_t, d_t_total))
-        exp_0r=expectation(i_2, delta_b_dag_r(delta_t, d_t_total))
-        exp2_0r=expectation(i_2, delta_b_r(delta_t, d_t_total))
-        c1_l=[expectation(i_2, delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))]
-        c1_r=[expectation(i_2, delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total))]
-        c2_l=[expectation(i_2, delta_b_dag_l(delta_t, d_t_total) @ delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total) @delta_b_l(delta_t, d_t_total))]
-        c2_r=[expectation(i_2,  delta_b_dag_r(delta_t, d_t_total) @ delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total) @delta_b_r(delta_t, d_t_total))]
+        exp_0l=expectation_1bin(i_2,delta_b_dag_l(delta_t, d_t_total))
+        exp2_0l=expectation_1bin(i_2, delta_b_l(delta_t, d_t_total))
+        exp_0r=expectation_1bin(i_2, delta_b_dag_r(delta_t, d_t_total))
+        exp2_0r=expectation_1bin(i_2, delta_b_r(delta_t, d_t_total))
+        c1_l=[expectation_1bin(i_2, delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))]
+        c1_r=[expectation_1bin(i_2, delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total))]
+        c2_l=[expectation_1bin(i_2, delta_b_dag_l(delta_t, d_t_total) @ delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total) @delta_b_l(delta_t, d_t_total))]
+        c2_r=[expectation_1bin(i_2,  delta_b_dag_r(delta_t, d_t_total) @ delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total) @delta_b_r(delta_t, d_t_total))]
         coher_listl=[exp_0l*exp2_0l]
         coher_listr=[exp_0r*exp2_0r]    
-        denoml=expectation(i_2,  delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))
-        denomr = expectation(i_2,  delta_b_dag_r(delta_t, d_t_total)@ delta_b_r(delta_t, d_t_total))
+        denoml=expectation_1bin(i_2,  delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))
+        denomr = expectation_1bin(i_2,  delta_b_dag_r(delta_t, d_t_total)@ delta_b_r(delta_t, d_t_total))
         
         for i in range(len(cor_list1)-2,0,-1):
             state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
             # Separating between left and right spectra
-            c1_l.append(expectation_2(state, g1_ll(delta_t,d_t_total))) #for calculating the total spectra
-            c1_r.append(expectation_2(state, g1_rr(delta_t,d_t_total)))
-            c2_l.append(expectation_2(state, g2_ll(delta_t,d_t_total)))
-            c2_r.append(expectation_2(state, g2_rr(delta_t,d_t_total)))
-            coher_listl.append(exp_0l*expectation(i_2, delta_b_l(delta_t, d_t_total))) #for calculating the coherent spectra
-            coher_listr.append(exp_0r*expectation(i_2, delta_b_r(delta_t, d_t_total)))
+            c1_l.append(expectation_2bins(state, g1_ll(delta_t,d_t_total))) #for calculating the total spectra
+            c1_r.append(expectation_2bins(state, g1_rr(delta_t,d_t_total)))
+            c2_l.append(expectation_2bins(state, g2_ll(delta_t,d_t_total)))
+            c2_r.append(expectation_2bins(state, g2_rr(delta_t,d_t_total)))
+            coher_listl.append(exp_0l*expectation_1bin(i_2, delta_b_l(delta_t, d_t_total))) #for calculating the coherent spectra
+            coher_listr.append(exp_0r*expectation_1bin(i_2, delta_b_r(delta_t, d_t_total)))
             
             swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
             i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)

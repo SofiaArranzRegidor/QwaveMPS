@@ -28,7 +28,7 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     
     Parameters
     ----------
-    params:InputParams
+    params : InputParams
         Class containing the input parameters.
 
     omega : float or np.ndarray, optional

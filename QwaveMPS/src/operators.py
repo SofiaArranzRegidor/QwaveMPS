@@ -24,6 +24,15 @@ import numpy as np
 from scipy.linalg import expm
 from ncon import ncon
 
+#-----------------------------
+# 
+#-----------------------------
+def _op_list_check(op_list):
+    '''
+    Checks if given variable is a list of operators (ndarrays), either [] or numpy list.
+    '''
+    return isinstance(op_list, (list, tuple)) \
+        or (isinstance(op_list, np.ndarray) and op_list.ndim > 2)
 
 #-----------------------------
 #Basic TLS and boson operators
@@ -202,7 +211,7 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     return np.kron(np.eye(d_t_l),delta_b(delta_t, d_t_r))       
 
 #------------------------------
-# Bosonic Observable Operators
+# Normalized Bosonic Observable Operators
 #------------------------------
 def a_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
@@ -414,7 +423,7 @@ def vectorized_swap(dim1:int, dim2:int) -> np.ndarray:
 #Expectation MPOs
 #-----------------
 
-def expectation(a_list:np.ndarray, mpo:np.ndarray) -> complex:
+def expectation_1bin(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     """
     The expectation value <A|MPO|A> of a single MPS bin with a given operator.
 
@@ -434,7 +443,7 @@ def expectation(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,4],[2,3],[1,3,4]])
     return sol
 
-def expectation_2(a_list:np.ndarray, mpo:np.ndarray) -> complex:
+def expectation_2bins(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     """
     The expectation value <A|MPO|A> of a 2-bin MPS with a given operator.
 
@@ -454,29 +463,7 @@ def expectation_2(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,5,4],[2,3,5,6],[1,3,6,4]])
     return sol
 
-
-def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]) -> np.ndarray:
-    """
-    Compute expectation values of a list of operators on a list of OC normalized bins.
-
-    Parameters
-    ----------
-    normalized_bins : list[ndarray]
-        List of OC normalized bins in order of time to have localized expectation values taken.
-
-    ops_list : list[ndarray]
-        List of operators to take expectation values.
-        Each operator must be compatible with the bin physical space.
-    Returns
-    -------
-    np.ndarray
-        2D array shaped (len(ops_list), len(normalized_bins)) with expectation
-        values for each operator at each time.
-    """
-
-    return np.array([[expectation(bin, op) for bin in normalized_bins] for op in ops_list])
-
-def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
+def expectation_nbins(ket:np.ndarray, mpo:np.ndarray) -> complex:
     """ 
     General expectation utility: expectation operation ket for larger/arbitrary tensor spaces.
     Take the expectation value of an nth rank tensor ket with an nth rank MPO.
@@ -500,17 +487,48 @@ def expectation_n(ket:np.ndarray, mpo:np.ndarray) -> complex:
     """
 
     curr_rank_op = len(mpo.shape)+2 #Adjusted for indices numbering
-    if expectation_n.prev_rank != curr_rank_op:
-        expectation_n.prev_rank = curr_rank_op
+    if expectation_nbins.prev_rank != curr_rank_op:
+        expectation_nbins.prev_rank = curr_rank_op
         half_rank_op = int(curr_rank_op/2)+1
-        expectation_n.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
-        expectation_n.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), np.arange(2,half_rank_op, dtype=int))).tolist()
-        expectation_n.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
+        expectation_nbins.ket_indices = np.concatenate((np.arange(1,half_rank_op, dtype=int), [curr_rank_op])).tolist()
+        expectation_nbins.op_indices = np.concatenate((np.arange(half_rank_op, curr_rank_op, dtype=int), 
+                                                       np.arange(2,half_rank_op, dtype=int))).tolist()
+        expectation_nbins.bra_indices = np.concatenate(([1], np.arange(half_rank_op,curr_rank_op+1, dtype=int))).tolist()
 
-    return ncon([np.conj(ket), mpo, ket], [expectation_n.ket_indices, expectation_n.op_indices, expectation_n.bra_indices])
+    return ncon([np.conj(ket), mpo, ket], [expectation_nbins.ket_indices, expectation_nbins.op_indices, expectation_nbins.bra_indices])
 
 # initialize cache attributes for expectation_n
-expectation_n.prev_rank = None
+expectation_nbins.prev_rank = None
+
+def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]) -> np.ndarray:
+    """
+    Compute expectation values of a list of operators on a list of OC normalized bins.
+
+    Parameters
+    ----------
+    normalized_bins : list[ndarray]
+        List of OC normalized bins in order of time to have localized expectation values taken.
+
+    ops_list : list[ndarray]
+        List of operators to take expectation values.
+        Each operator must be compatible with the bin physical space.
+    Returns
+    -------
+    np.ndarray
+        2D array shaped (len(ops_list), len(normalized_bins)) with expectation
+        values for each operator at each time.
+    """
+    # Check if the operator is a list of operators, if  so return only the 0th element of the list
+    is_list_flag = _op_list_check(ops_list)
+    if not is_list_flag:
+        ops_list = [ops_list]
+
+    result = np.array([[expectation_1bin(bin, op) for bin in normalized_bins] for op in ops_list])
+
+    if not is_list_flag:
+        result = result[0]
+
+    return result
 
 #-----------------
 #Population MPOs

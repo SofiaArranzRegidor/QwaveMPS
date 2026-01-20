@@ -84,7 +84,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 pulse_time = 1 #length of the pulse in time
 photon_num = 1 #number of photons
 
-i_s0=qmps.states.i_sg()
+i_s0=qmps.states.tls_ground()
 
 #pulse envelope shape
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
@@ -217,7 +217,7 @@ gaussian_center = 4
 gaussian_width = 1
 
 
-i_s0=qmps.states.i_sg()
+i_s0=qmps.states.tls_ground()
 
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
 i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num, direction='R')

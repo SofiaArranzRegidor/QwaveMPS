@@ -23,7 +23,7 @@ from QwaveMPS.src.parameters import InputParams
 #Initial basic states
 #--------------------
 
-def i_ng(d_t:int, bond0:int=1) -> np.ndarray:
+def wg_ground(d_t:int, bond0:int=1) -> np.ndarray:
     """
     Waveguide vacuum state for a single time bin.
 
@@ -44,15 +44,12 @@ def i_ng(d_t:int, bond0:int=1) -> np.ndarray:
     i[:,0,:]=1.
     return i
 
-def i_sg(d_sys:int=2, bond0:int=1) -> np.ndarray:
+def tls_ground(bond0:int=1) -> np.ndarray:
     """
     TLS ground state tensor.
 
     Parameters
     ----------
-    d_sys : int, default: 2
-        Size of the Hilbert space of the matter system.
-
     bond0 : int, default: 1
         Initial size of the bond dimension.
     
@@ -61,19 +58,16 @@ def i_sg(d_sys:int=2, bond0:int=1) -> np.ndarray:
     state : ndarray
         ndarray ground state atom.
     """ 
-    i_s = np.zeros([bond0,d_sys,bond0],dtype=complex) 
+    i_s = np.zeros([bond0,2,bond0],dtype=complex) 
     i_s[:,0,:]=1.
     return i_s
     
-def i_se(d_sys:int=2, bond0:int=1) -> np.ndarray:
+def tls_excited(bond0:int=1) -> np.ndarray:
     """
     TLS excited state tensor.
 
     Parameters
     ----------
-    d_sys : int, default: 2
-        Size of the Hilbert space of the matter system.
-
     bond0 : int, default: 1
         Initial size of the bond dimension.
     
@@ -82,7 +76,7 @@ def i_se(d_sys:int=2, bond0:int=1) -> np.ndarray:
     state : ndarray
         ndarray excited state atom.
     """ 
-    i_s = np.zeros([bond0,d_sys,bond0],dtype=complex) 
+    i_s = np.zeros([bond0,2,bond0],dtype=complex) 
     i_s[:,1,:]=1.
     return i_s
 
@@ -112,7 +106,7 @@ def vacuum(time_length:float, params:InputParams) -> np.ndarray:
     d_t=np.prod(d_t_total)
     
     
-    return [i_ng(d_t, bond0) for i in range(l)]
+    return [wg_ground(d_t, bond0) for i in range(l)]
 
 def input_state_generator(d_t_total:list[int], input_bins:list[np.ndarray]=None, bond0:int=1, default_state=None) -> Iterator[np.ndarray]:
     """
@@ -147,7 +141,7 @@ def input_state_generator(d_t_total:list[int], input_bins:list[np.ndarray]=None,
     # After all specified input bins are yielded, start inputting vacuum bins
     if default_state is None:
         while True:
-            yield i_ng(d_t, bond0)
+            yield wg_ground(d_t, bond0)
     else:
         while True:
             yield default_state
@@ -358,9 +352,12 @@ def fock_pulse(pulse_env:list[float],pulse_time:float,params:InputParams, photon
         photon_num_l = photon_num
         photon_num_r = 0
 
-    else:
+    elif direction.upper() == 'R' or direction == 0:
         photon_num_r = photon_num
         photon_num_l = 0
+    else:
+        raise(TypeError('Direction of Fock pulse must either be left (\'L\') or right (\'R\')' \
+        'in the case of a basis with two propagating directions.'))
 
     return _fock_pulse(pulse_env, pulse_time, params, pulse_env, photon_num_l, photon_num_r, bond0)
 

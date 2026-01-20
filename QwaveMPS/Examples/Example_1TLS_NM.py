@@ -80,7 +80,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state"""
 
-i_s0=qmps.states.i_se()
+i_s0=qmps.states.tls_excited()
 i_n0 = qmps.states.vacuum(tmax,input_params)
 
 #To track computational time
