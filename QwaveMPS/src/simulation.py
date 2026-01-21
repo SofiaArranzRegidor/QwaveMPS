@@ -197,7 +197,8 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
 
 def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
-    Time evolution of the system with finite delays/feedback (non-Markovian regime)
+    Time evolution of the system with finite delays/feedback (non-Markovian regime).
+    Requires tau to be at least delta_t.
     
     Parameters
     ----------
