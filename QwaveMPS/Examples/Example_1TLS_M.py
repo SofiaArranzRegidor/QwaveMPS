@@ -130,11 +130,11 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state"""
 
-i_s0=qmps.states.tls_excited() #TLS initially excited
+sys_initial_state=qmps.states.tls_excited() #TLS initially excited
 
 #waveguide initially vacuum for as long as calculation (tmax)
-i_n0 = qmps.states.vacuum(tmax,input_params) 
-#i_n0 = None # Another equivalent way to set the initial vacuum state
+wg_initial_state = qmps.states.vacuum(tmax,input_params) 
+#wg_initial_state = None # Another equivalent way to set the initial vacuum state
 
 #To track computational time
 start_time=t.time()
@@ -146,7 +146,7 @@ Hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Choose Observables"""
 tls_pop_op = qmps.tls_pop()
@@ -207,7 +207,7 @@ hm=qmps.hamiltonian_1tls(input_params)
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
 """Calculate population dynamics"""
 

@@ -86,16 +86,16 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 pulse_time = 1 #length of the pulse in time units of gamma
 photon_num = 1 #number of photons
 
-i_s0=qmps.states.tls_ground()
+sys_initial_state=qmps.states.tls_ground()
 
 #pulse envelope shape
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
 # Create the pulse envelope
-i_n0 = qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='R')
+wg_initial_state = qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='R')
 
 # Multiple pulses may be appended in the usual list appending way
-#i_n0 += qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='L')
+#wg_initial_state += qmps.states.fock_pulse(pulse_env,pulse_time, input_params,photon_num, direction='L')
 
 """Choose the Hamiltonian"""
 
@@ -106,7 +106,7 @@ start_time=t.time()
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """Calculate population dynamics"""
@@ -174,17 +174,16 @@ a_op_list.append(a_dag_l)
 b_op_list.append(a_r)
 
 
-g1_correls, corr_tlist = qmps.correlation_2op_2t(bins.correlation_bins, a_op_list, b_op_list, input_params)
+g1_correlations, correlation_tlist = qmps.correlation_2op_2t(bins.correlation_bins, a_op_list, b_op_list, input_params)
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
 #%%% Graph an example in the t,tau plane
 import cmasher as cmr
-import matplotlib.ticker as ticker
 
 """Example graphing G1_{RR}"""
-X,Y = np.meshgrid(corr_tlist,corr_tlist)
-z = np.real(g1_correls[0])
+X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
+z = np.real(g1_correlations[0])
 absMax = np.abs(z).max()
 
 cmap = cmr.get_sub_cmap('seismic', 0, 1)
@@ -196,14 +195,16 @@ ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma\tau$')
 
 cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
-cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(clean_ticks))
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
 
 cbar.ax.tick_params(width=0.75)
 plt.show()
 
 
 """ Example graphing G1_{LL} """
-z = np.real(g1_correls[1])
+z = np.real(g1_correlations[1])
 absMax = np.abs(z).max()
 fig, ax = plt.subplots(figsize=(4.5, 4))
 cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
@@ -212,44 +213,13 @@ cbar = fig.colorbar(cf,ax=ax, pad=0)
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma\tau$')
 
-cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
-cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(clean_ticks))
+cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-1}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
 
 cbar.ax.tick_params(width=0.75)
 plt.show()
-
-#%% G2 Calculation
-
-#To track computational time of g2
-start_time=t.time()
-
-a_op_list = []; b_op_list = []; c_op_list = []; d_op_list = []
-# Add op <a_R^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_R(t)>
-a_op_list.append(a_dag_r)
-b_op_list.append(a_dag_r)
-c_op_list.append(a_r)
-d_op_list.append(a_r)
-
-# Add op <a_L^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_L(t)>
-a_op_list.append(a_dag_l)
-b_op_list.append(a_dag_l)
-c_op_list.append(a_l)
-d_op_list.append(a_l)
-
-
-# Add op <a_R^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_R(t)>
-a_op_list.append(a_dag_r)
-b_op_list.append(a_dag_l)
-c_op_list.append(a_l)
-d_op_list.append(a_r)
-
-
-g2_correl = qmps.correlation_4op_2t(bins.correlation_bins, a_op_list, b_op_list, c_op_list, d_op_list, input_params)
-
-
-print("G2 correl--- %s seconds ---" %(t.time() - start_time))
-
-
 
 #%% 2 photon Gaussian pulse
 
@@ -257,7 +227,7 @@ print("G2 correl--- %s seconds ---" %(t.time() - start_time))
 """ Updated input field and simulation length"""
 
 
-input_params.tmax=12
+input_params.tmax=10
 tmax=input_params.tmax
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
@@ -271,16 +241,16 @@ gaussian_center = 4
 gaussian_width = 1
 
 
-i_s0=qmps.states.tls_ground()
+sys_initial_state=qmps.states.tls_ground()
 
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
-i_n0 = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num, direction='R')
+wg_initial_state = qmps.states.fock_pulse(pulse_envelope,pulse_time, input_params, photon_num, direction='R')
 
 
 start_time=t.time()
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """Calculate population dynamics"""
@@ -293,7 +263,7 @@ total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_
 
 print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 
-#%%
+#%%% Plot single time dynamics
 
 fonts=15
 pic_style(fonts)
@@ -317,3 +287,132 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 # plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
+
+#%%% G2 Calculation
+
+#To track computational time of g2
+start_time=t.time()
+
+# For speed calculating several at once, but could also calculate all at once
+a_op_list = []; b_op_list = []; c_op_list = []; d_op_list = []
+# Add op <a_R^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_R(t)>
+a_op_list.append(a_dag_r)
+b_op_list.append(a_dag_r)
+c_op_list.append(a_r)
+d_op_list.append(a_r)
+
+# Add op <a_L^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_L(t)>
+a_op_list.append(a_dag_l)
+b_op_list.append(a_dag_l)
+c_op_list.append(a_l)
+d_op_list.append(a_l)
+
+
+# Add op <a_R^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_R(t)>
+a_op_list.append(a_dag_r)
+b_op_list.append(a_dag_l)
+c_op_list.append(a_l)
+d_op_list.append(a_r)
+
+# Add op <a_L^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_L(t)>
+a_op_list.append(a_dag_l)
+b_op_list.append(a_dag_r)
+c_op_list.append(a_r)
+d_op_list.append(a_l)
+
+
+
+g2_correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bins, a_op_list, b_op_list, c_op_list, d_op_list, input_params)
+
+
+print("G2 correl--- %s seconds ---" %(t.time() - start_time))
+
+#%%% Plot an example
+import cmasher as cmr
+import matplotlib.ticker as ticker
+
+"""Example graphing G2_{RR}"""
+# G2_{RR} is symmetric over t1,t2, so symmeterize for plotting w.r.t. t1,t2
+def symmeterize_data(data):
+    transformedData = np.zeros(data.shape)
+    t_size, tau_size = data.shape # shape is square    
+    # Create broadcasted index arrays
+    i,j = np.triu_indices(t_size)
+    # Compute destination indices: (t, t + tau)
+    transformedData[i,j] = data[i, j-i]
+    # Fill in the other side of the data
+    transformedData = transformedData + transformedData.T - np.diag(np.diag(transformedData))
+    return transformedData
+
+# Transform G2_{LR} and G2_{RL} to get t1,t2 coordinates (complete for tau<0)
+def transform_LR_RL_data(dataRL, dataLR):
+    transformedData = np.zeros(dataLR.shape, dtype=complex)
+    t_size, tau_size = dataLR.shape # Shape is square
+    
+    # Add contributions from both t>= tau and t<= tau (diagonal is equal)
+    i, j = np.triu_indices(t_size)
+    transformedData[i, j] = dataLR[i, j - i]
+    transformedData[j, i] = dataRL[i, j - i]
+
+    return transformedData
+
+
+X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
+z = np.real(symmeterize_data(g2_correlations[0]))
+absMax = np.abs(z).max()
+
+cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
+fig, ax = plt.subplots(figsize=(4.5, 4))
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
+ax.set_ylabel(r'Time, $\gamma t$')
+ax.set_xlabel(r'Time, $\gamma(t+\tau)$')
+
+cbar.set_label(r'$G^{(2)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
+plt.show()
+
+
+z = np.real(symmeterize_data(g2_correlations[1]))
+absMax = np.abs(z).max()
+
+cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
+fig, ax = plt.subplots(figsize=(4.5, 4))
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
+ax.set_ylabel(r'Time, $\gamma t$')
+ax.set_xlabel(r'Time, $\gamma(t+\tau)$')
+
+cbar.set_label(r'$G^{(2)}_{LL}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
+plt.show()
+
+z = np.real(transform_LR_RL_data(g2_correlations[2],g2_correlations[3]))
+absMax = np.abs(z).max()
+
+cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
+fig, ax = plt.subplots(figsize=(4.5, 4))
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
+ax.set_ylabel(r'Time, $\gamma t$')
+ax.set_xlabel(r'Time, $\gamma(t+\tau)$')
+
+cbar.set_label(r'$G^{(2)}_{LR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
+plt.show()
+# %%

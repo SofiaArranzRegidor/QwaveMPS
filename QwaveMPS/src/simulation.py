@@ -427,6 +427,7 @@ def spectrum_w(delta_t:float, g1_list: np.ndarray) -> list[np.ndarray, np.ndarra
 # Two time point Correlation functions
 # ----------------------
 
+# The wrapper functions that are QuTip style
 def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> list[np.ndarray]|np.ndarray:
     """ 
     Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
@@ -522,8 +523,55 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
         results = results[0]
     return results, t_list
 
+# The wrapper functions that are QuTip style
+def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], t:float, params:InputParams) -> list[np.ndarray]|np.ndarray:
+    """ 
+    Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
+            
+    Parameters
+    ----------
+    correlation_bins : list[ndarray]
+        List of time bins with the OC in either the initial or final bin in the list.
+    
+    a_op_list : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
 
-def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams):
+    ops_two_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
+
+    params : InputParams
+        Simulation parameters 
+
+    Returns
+    -------
+    result : [np.ndarray]
+        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
+        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    """
+    list_flag = op_list_check(a_op_list)
+
+    if list_flag and len(a_op_list) != len(b_op_list):
+        raise ValueError("Lengths of operators lists are not equals")
+    
+    ops_same_time = []; ops_two_time = []
+
+    if list_flag:
+        for i in range(len(a_op_list)):
+            ops_same_time.append(a_op_list[i] @ b_op_list[i])
+            ops_two_time.append(np.kron(a_op_list[i], b_op_list[i]))
+    else:
+        ops_same_time.append(a_op_list @ b_op_list)
+        ops_two_time.append(np.kron(a_op_list, b_op_list))
+    
+    results, t_list =  correlations_1t(correlation_bins, ops_same_time, ops_two_time, t, params)
+
+    if not list_flag:
+        results = results[0]
+
+    return results, t_list
+
+def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], t:float, params:InputParams) -> list[np.ndarray]|np.ndarray:
     """ 
     Calculates the two time correlation function <A(t)B(t+tau)C(t+tau)D(t)> for each operator in the respective lists.
             
@@ -548,8 +596,133 @@ def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
         List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
-    
+    list_flag = op_list_check(a_op_list)
 
+    if list_flag and not (len(a_op_list) == len(b_op_list) == len(c_op_list) == len(d_op_list)):
+        raise ValueError("Lengths of operators lists are not equal")
+
+
+    ops_same_time = []; ops_two_time = []
+
+    if list_flag:
+        for i in range(len(a_op_list)):
+            ops_same_time.append(a_op_list[i] @ b_op_list[i] @ c_op_list[i] @ d_op_list[i])
+            ops_two_time.append(np.kron(a_op_list[i] @ d_op_list[i], b_op_list[i] @ c_op_list[i]))
+    else:
+        ops_same_time.append(a_op_list @ b_op_list @ c_op_list @ d_op_list)
+        ops_two_time.append(np.kron(a_op_list @ d_op_list, b_op_list @ c_op_list))
+    
+    results, t_list = correlations_1t(correlation_bins, ops_same_time, ops_two_time, t, params)
+
+    # Don't return as list
+    if not list_flag:
+        results = results[0]
+    return results, t_list
+
+
+
+# The wrapper functions that are QuTip style
+def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams) -> list[np.ndarray]|np.ndarray:
+    """ 
+    Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
+            
+    Parameters
+    ----------
+    correlation_bins : list[ndarray]
+        List of time bins with the OC in either the initial or final bin in the list.
+    
+    a_op_list : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+
+    ops_two_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
+
+    params : InputParams
+        Simulation parameters 
+
+    Returns
+    -------
+    result : [np.ndarray]
+        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
+        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    """
+    list_flag = op_list_check(a_op_list)
+
+    if list_flag and len(a_op_list) != len(b_op_list):
+        raise ValueError("Lengths of operators lists are not equals")
+    
+    ops_same_time = []; ops_two_time = []
+
+    if list_flag:
+        for i in range(len(a_op_list)):
+            ops_same_time.append(a_op_list[i] @ b_op_list[i])
+            ops_two_time.append(np.kron(a_op_list[i], b_op_list[i]))
+    else:
+        ops_same_time.append(a_op_list @ b_op_list)
+        ops_two_time.append(np.kron(a_op_list, b_op_list))
+    
+    results, tau_list, t_ss =  correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params)
+
+    if not list_flag:
+        results = results[0]
+
+    return results, tau_list, t_ss
+
+def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], params:InputParams) -> list[np.ndarray]|np.ndarray:
+    """ 
+    Calculates the two time correlation function <A(t)B(t+tau)C(t+tau)D(t)> for each operator in the respective lists.
+            
+    Parameters
+    ----------
+    correlation_bins : list[ndarray]
+        List of time bins with the OC in either the initial or final bin in the list.
+    
+    a_op_list : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+
+    ops_two_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
+
+    params : InputParams
+        Simulation parameters 
+
+    Returns
+    -------
+    result : [np.ndarray]
+        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
+        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    """
+    list_flag = op_list_check(a_op_list)
+
+    if list_flag and not (len(a_op_list) == len(b_op_list) == len(c_op_list) == len(d_op_list)):
+        raise ValueError("Lengths of operators lists are not equal")
+
+
+    ops_same_time = []; ops_two_time = []
+
+    if list_flag:
+        for i in range(len(a_op_list)):
+            ops_same_time.append(a_op_list[i] @ b_op_list[i] @ c_op_list[i] @ d_op_list[i])
+            ops_two_time.append(np.kron(a_op_list[i] @ d_op_list[i], b_op_list[i] @ c_op_list[i]))
+    else:
+        ops_same_time.append(a_op_list @ b_op_list @ c_op_list @ d_op_list)
+        ops_two_time.append(np.kron(a_op_list @ d_op_list, b_op_list @ c_op_list))
+    
+    results, tau_list, t_ss = correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params)
+
+    # Don't return as list
+    if not list_flag:
+        results = results[0]
+    return results, tau_list, t_ss
+
+
+#-------------------------------------------
+# The functional code used for correlation calculations.
+# This is the logic, and are also more general functions 
+# (can calculate ANY arbitrary two time correlation functions)
+#-------------------------------------------
 def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=False) -> tuple[list[np.ndarray], np.ndarray]:
     """ 
     General two-time correlation calculator.
@@ -594,7 +767,7 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
     for i in range(len(ops_two_time)):
         ops_two_time[i] = ops_two_time[i].reshape((d_t,)*(2*2))
     
-    correlations = [np.zeros((len(time_bin_list_copy), len(time_bin_list_copy)), dtype=complex) for i in ops_two_time]
+    correlations = np.array([np.zeros((len(time_bin_list_copy), len(time_bin_list_copy)), dtype=complex) for i in ops_two_time])
     
     # If the OC is at end of the time bin list, move it to the start (shifts OC from one end to other, index 0)
     if oc_end_list_flag:
@@ -655,7 +828,7 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
     t_list = np.arange(len(correlation_bins)) * params.delta_t
     return correlations, t_list
 
-def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams) -> list[np.ndarray]:
+def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], t, params:InputParams) -> list[np.ndarray]:
     """ 
     General two-time correlation calculator along a single axis.
     Take in list of time ordered normalized (with OC) time bins at position of relevance.
@@ -682,14 +855,70 @@ def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         List of 1D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
         The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
     """
-    return
+    d_t_total=params.d_t_total
+    bond=params.bond_max
+    delta_t = params.delta_t
+    d_t=np.prod(d_t_total)
 
+    t_index = int(round(t / delta_t, 0))
+    
+    time_bin_list_copy = copy.deepcopy(correlation_bins) # Work on deep copy to not risk altering initial
+    swap_matrix = swap(d_t, d_t)
 
+    # Resize two_time_ops if needed
+    for i in range(len(ops_two_time)):
+        ops_two_time[i] = ops_two_time[i].reshape((d_t,)*(2*2)) # One for factor for bin number, 2 point
+    
+    # Truncate to steady state index and create appropriate 
+    size = len(time_bin_list_copy)
+    correlations = np.array([np.zeros(size, dtype=complex) for i in ops_two_time])
+    
+    # Move OC back to t_index, then swap that bin to start of list
+    for i in range(size-1,t_index,-1):
+        bin_contraction = ncon([time_bin_list_copy[i-1],time_bin_list_copy[i]],[[-1,-2,1],[1,-3,-4]])
+        left_bin, stemp, right_bin = _svd_tensors(bin_contraction, bond, d_t, d_t)
+        time_bin_list_copy[i] = right_bin #right normalized system bin    
+        time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
+
+    # Swap bin the t_index bin backwards from t_index -> 0, with the OC
+    for i in range(t_index, 0, -1):
+        bin_contraction = ncon([time_bin_list_copy[i-1],time_bin_list_copy[i], swap_matrix],
+                               [[-1,5,1],[1,6,-4], [-2,-3,5,6]])
+        left_bin, stemp, right_bin = _svd_tensors(bin_contraction, bond, d_t, d_t)
+        time_bin_list_copy[i] = right_bin #right normalized system bin    
+        time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
+
+    # Calculate the rest of the points
+    for i in range(0, size-1):
+        i_1 = time_bin_list_copy[i]
+        i_2 = time_bin_list_copy[i+1]
+        state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+
+        # Calculate each two time point op
+        for j in range(len(ops_two_time)):
+            correlations[j][i] = expectation_nbins(state, ops_two_time[j])
+
+        swaps=ncon([i_1,i_2,swap_matrix],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
+        i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
+
+        # Now put OC in the right bin, i_t2, to move it up the chain
+        time_bin_list_copy[i+1]= stemp[:,None,None] * i_t2 #OC on right bin
+
+    # Calculate the single same time point
+    # Shift values above t_index to the right to prepare for insertion
+    
+    for j in range(len(ops_same_time)):
+        correlations[j][t_index+1:] = correlations[j][t_index:-1]
+        correlations[j][t_index] = expectation_1bin(time_bin_list_copy[-1], ops_same_time[j])
+    
+    tau_list = (np.arange(size) - t_index) * delta_t
+    return correlations, tau_list
+    
 #-------------------------------------------
 #Steady-state index helper, and correlations
 #-------------------------------------------
 
-def steady_state_index(pop:list,window: int=10, tol: float=1e-5) -> int|None:
+def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[np.ndarray],window: int=10, tol: float=1e-5) -> int|None:
     """
     Steady-state index helper function to find the time step 
     when the steady state is reached in the population dynamics.
@@ -710,23 +939,31 @@ def steady_state_index(pop:list,window: int=10, tol: float=1e-5) -> int|None:
     int or None
         The index of the start of the steady window, or None if none found.
     """
-    pop = np.asarray(pop)
-    for i in range(window, len(pop)):
-        tail = pop[i-window:i]
-        if tail.max() - tail.min() > tol:
-            continue
-        if np.max(np.abs(np.diff(tail))) > tol:
-            continue
-        print('Steady state found at list index i = ', i - window)
-        return i - window
+    op_num = len(operator_list)
+    expectation_vals_list = single_time_expectation(output_field_states, operator_list)
+    
+    for i in range(window, len(output_field_states)):
+        ss_found = True
+        for j in range(op_num):
+            tail = expectation_vals_list[j][i-window:i]
+            if tail.max() - tail.min() > tol:
+                ss_found = False
+                break
+            if np.max(np.abs(np.diff(tail))) > tol:
+                ss_found = False
+                break
+        
+        if ss_found:
+            print('Steady state found at list index i = ', i - window)
+            return i - window
     return None
 
-def steady_state_correlations(bins:Bins, ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams) -> list[np.ndarray]:
+def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, tol: float=1e-5, convergence_window: int=10) -> tuple[list[np.ndarray], np.ndarray]:
     """
-    Efficient steady-state correlation calculation for continuous-wave pumping.
+    Efficient steady-state correlation calculation.
     This computes time differences starting from a convergence index (steady-state
-    index). It returns a compact structure (SSCorrel or SSCorrel1Channel) 
-    containing normalized g1 and g2 lists and raw correlation arrays.
+    index). It returns a list of the 1D correlation arrays corresponding to the operator list, 
+    a list of tau points, and the initial t point at which steady state is considered
     
     Parameters
     ----------
@@ -747,82 +984,55 @@ def steady_state_correlations(bins:Bins, ops_same_time:list[np.ndarray], ops_two
         Dataclass with precomputed time correlation lists for steady-state
         (for more info see the corresponding dataclasses in parameters.py)
     """
-    
-    pop=pop.pop
-    cor_list=bins.correlation_bins
-    delta_t, d_t_total,bond=params.delta_t,params.d_t_total,params.bond_max
-    #First check convergence:
-    conv_index =  steady_state_index(pop,10)  
-    if conv_index is None:
-        raise ValueError("tmax not long enough for steady state")
-    # cor_list1=cor_list
-    cor_list1=cor_list[conv_index:]
-    t_cor=[0]
-    i_1=cor_list1[-2]
-    i_2=cor_list1[-1] #OC is in here
-    p=0
+    d_t_total=params.d_t_total
+    bond=params.bond_max
+    delta_t = params.delta_t
     d_t=np.prod(d_t_total)
-    swap_t_t=swap(d_t,d_t)
     
-    if d_t==2:
-        exp_0=expectation_1bin(i_2,delta_b_dag(delta_t, d_t_total))
-        exp2_0=expectation_1bin(i_2, delta_b(delta_t, d_t_total))
-        c1=[expectation_1bin(i_2, delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))]
-        c2=[expectation_1bin(i_2, delta_b_dag(delta_t, d_t_total) @ delta_b_dag(delta_t, d_t_total) @ delta_b(delta_t, d_t_total) @delta_b(delta_t, d_t_total))]
-        coher_list=[exp_0*exp2_0]
-        denom=expectation_1bin(i_2,  delta_b_dag(delta_t, d_t_total)@ delta_b(delta_t, d_t_total))
-        
-        for i in range(len(cor_list1)-2,0,-1):
-            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-            # Separating between left and right spectra
-            c1.append(expectation_2bins(state, g1(delta_t,d_t_total))) #for calculating the total spectra
-            c2.append(expectation_2bins(state, g2(delta_t,d_t_total)))
-            coher_list.append(exp_0*expectation_1bin(i_2, delta_b(delta_t, d_t_total))) #for calculating the coherent spectra           
-            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-            i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
-            i_2 = ncon([i_t1,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin
-            i_1=cor_list1[i-1] #next past bin for the next time step
-            p+=1    
-            t_cor.append(p*delta_t)       
-        g1_list=c1/denom
-        g2_list=c2/denom**2
-        return SSCorrel1Channel(t_cor=t_cor,g1_list=g1_list,g2_list=g2_list,c1=c1,c2=c2)
+    time_bin_list_copy = copy.deepcopy(correlation_bins) # Work on deep copy to not risk altering initial
+    swap_matrix = swap(d_t, d_t)
+    # Resize two_time_ops if needed
+    for i in range(len(ops_two_time)):
+        ops_two_time[i] = ops_two_time[i].reshape((d_t,)*(2*2)) # One for factor for bin number, 2 point
+    
+    #First check convergence of all correlations:
+    conv_index =  steady_state_index(output_field_states, ops_same_time,window=convergence_window, tol=tol)  
+    if conv_index is None:
+        raise ValueError("tmax not long enough for steady state of all given operators")
+    
+    # Truncate to steady state index and create appropriate 
+    time_bin_list_copy=time_bin_list_copy[conv_index:]
+    size = len(time_bin_list_copy)
+    correlations = np.array([np.zeros(size, dtype=complex) for i in ops_two_time])
+    
+    # Move OC back to t, then forward for positive taus
+    for i in range(size-1,0,-1):
+        bin_contraction = ncon([time_bin_list_copy[i-1],time_bin_list_copy[i]],[[-1,-2,1],[1,-3,-4]])
+        left_bin, stemp, right_bin = _svd_tensors(bin_contraction, bond, d_t, d_t)
+        time_bin_list_copy[i] = right_bin #right normalized system bin    
+        time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
 
-    else:
-        exp_0l=expectation_1bin(i_2,delta_b_dag_l(delta_t, d_t_total))
-        exp2_0l=expectation_1bin(i_2, delta_b_l(delta_t, d_t_total))
-        exp_0r=expectation_1bin(i_2, delta_b_dag_r(delta_t, d_t_total))
-        exp2_0r=expectation_1bin(i_2, delta_b_r(delta_t, d_t_total))
-        c1_l=[expectation_1bin(i_2, delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))]
-        c1_r=[expectation_1bin(i_2, delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total))]
-        c2_l=[expectation_1bin(i_2, delta_b_dag_l(delta_t, d_t_total) @ delta_b_dag_l(delta_t, d_t_total) @ delta_b_l(delta_t, d_t_total) @delta_b_l(delta_t, d_t_total))]
-        c2_r=[expectation_1bin(i_2,  delta_b_dag_r(delta_t, d_t_total) @ delta_b_dag_r(delta_t, d_t_total) @ delta_b_r(delta_t, d_t_total) @delta_b_r(delta_t, d_t_total))]
-        coher_listl=[exp_0l*exp2_0l]
-        coher_listr=[exp_0r*exp2_0r]    
-        denoml=expectation_1bin(i_2,  delta_b_dag_l(delta_t, d_t_total)@ delta_b_l(delta_t, d_t_total))
-        denomr = expectation_1bin(i_2,  delta_b_dag_r(delta_t, d_t_total)@ delta_b_r(delta_t, d_t_total))
-        
-        for i in range(len(cor_list1)-2,0,-1):
-            state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
-            # Separating between left and right spectra
-            c1_l.append(expectation_2bins(state, g1_ll(delta_t,d_t_total))) #for calculating the total spectra
-            c1_r.append(expectation_2bins(state, g1_rr(delta_t,d_t_total)))
-            c2_l.append(expectation_2bins(state, g2_ll(delta_t,d_t_total)))
-            c2_r.append(expectation_2bins(state, g2_rr(delta_t,d_t_total)))
-            coher_listl.append(exp_0l*expectation_1bin(i_2, delta_b_l(delta_t, d_t_total))) #for calculating the coherent spectra
-            coher_listr.append(exp_0r*expectation_1bin(i_2, delta_b_r(delta_t, d_t_total)))
-            
-            swaps=ncon([i_1,i_2,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #swapping the feedback bin to the left so it is next to the next bin
-            i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
-            i_2 = ncon([i_t1,np.diag(stemp)],[[-1,-2,1],[1,-3]]) #OC tau bin
-            i_1=cor_list1[i-1] #next past bin for the next time step
-            p+=1    
-            t_cor.append(p*delta_t)
-        
-        g1_listl=c1_l/denoml
-        g2_listl=c2_l/denoml**2
-        g1_listr=c1_r/denomr
-        g2_listr=c2_r/denomr**2
-        
-        return SSCorrel(t_cor=t_cor,g1_listl=g1_listl,g1_listr=g1_listr,g2_listl=g2_listl,g2_listr=g2_listr,c1_l=c1_l,c1_r=c1_r,c2_l=c2_l,c2_r=c2_r)
+    # Calculate the single same time point
+    for j in range(len(ops_same_time)):
+        correlations[j][0] = expectation_1bin(time_bin_list_copy[0], ops_same_time[j])
+    
+    # Calculate the rest of the points
+    for i in range(1, size):
+        i_1 = time_bin_list_copy[i-1]
+        i_2 = time_bin_list_copy[i]
+        state=ncon([i_1,i_2],[[-1,-2,1],[1,-3,-4]]) 
+
+        # Calculate each two time point op
+        for j in range(len(ops_two_time)):
+            correlations[j][i] = expectation_nbins(state, ops_two_time[j])
+
+        swaps=ncon([i_1,i_2,swap_matrix],[[-1,5,2],[2,6,-4],[-2,-3,5,6]])
+        i_t1,stemp,i_t2=_svd_tensors(swaps,bond,d_t,d_t)
+
+        # Now put OC in the right bin, i_t2, to move it up the chain
+        time_bin_list_copy[i]= stemp[:,None,None] * i_t2 #OC on right bin
+
+    t_steady_state = conv_index * delta_t
+    tau_list = np.arange(size) * delta_t
+    return correlations, tau_list, t_steady_state
     

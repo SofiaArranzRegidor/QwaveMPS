@@ -19,7 +19,7 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
     pip install ncon 
         
 """
-
+#%%
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -48,8 +48,8 @@ def clean_ticks(x, pos):
 """"Choose the simulation parameters"""
 
 #Choose the bins:
-d_t_l=2 #Time right channel bin dimension
-d_t_r=2 #Time left channel bin dimension
+d_t_l=3 #Time right channel bin dimension
+d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
 
 d_sys1=2 # tls bin dimension
@@ -61,12 +61,12 @@ gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 #Define input parameters
 input_params = qmps.parameters.InputParams(
     delta_t=0.02,
-    tmax = 35,
+    tmax = 35, #
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    max_bond=18
+    bond_max=18
 )
 
 #Make a tlist for plots:
@@ -77,9 +77,9 @@ tlist=np.arange(0,tmax+(delta_t/2),delta_t)
 
 """ Choose the initial state and coupling"""
 
-i_s0=qmps.states.tls_excited()
+sys_initial_state=qmps.states.tls_excited()
 
-i_n0 = qmps.states.vacuum(tmax,input_params)
+wg_initial_state = qmps.states.vacuum(tmax,input_params)
 
 
 """Choose the Hamiltonian"""
@@ -96,41 +96,30 @@ start_time=t.time()
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+
+"""Define relevant photonic operators"""
+tls_pop_op = qmps.tls_pop()
+a_l_pop = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
+a_r_pop = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+photon_pop_ops = [a_l_pop, a_r_pop]
 
 
 """Calculate population dynamics"""
-
-pop=qmps.pop_dynamics(bins,input_params)
+tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
+photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
-
-"""Calculate steady state correlations"""
-
-start_time=t.time()
-
-ss_correl=qmps.steady_state_correlations(bins,pop,input_params)
-
-print("ss correl --- %s seconds ---" %(t.time() - start_time))
-
-
-"""Calculate the spectrum"""
-
-start_time=t.time()
-
-spect,w_list=qmps.spectrum_w(delta_t,ss_correl.c1_r)
-
-print("spectrum --- %s seconds ---" %(t.time() - start_time))
-
-#%% Population dynamics
+#%% Population dynamics Graphing
 
 fonts=15
 pic_style(fonts)
 
-
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel('Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -144,15 +133,47 @@ ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 #%% Steady state correlation dynamics
+"""Calculate steady state correlations"""
+
+start_time=t.time()
+
+# Choose operators of which to take steady state correlations
+a_op_list = []; b_op_list = []
+a_dag_l = qmps.a_dag_l(delta_t, d_t_total); a_l = qmps.a_l(delta_t, d_t_total)
+a_dag_r = qmps.a_dag_r(delta_t, d_t_total); a_r = qmps.a_r(delta_t, d_t_total)
+
+# Add op <a_R^\dag(t) a_R(t+tau)>
+a_op_list.append(a_dag_r)
+b_op_list.append(a_r)
+
+# Add op <a_L^\dag(t) a_L(t+tau)>
+a_op_list.append(a_dag_l)
+b_op_list.append(a_l)
+
+# Add op <a_L^\dag(t) a_R(t+tau)>
+a_op_list.append(a_dag_l)
+b_op_list.append(a_r)
+
+
+# Calculate the steady state correlation (returns the list of tau dependent correlation lists,
+# list of tau values for the correlation, and the initial t value of steady state)
+correlations_ss,tau_list_ss,t_steady = qmps.correlation_ss_2op(bins.correlation_bins,bins.output_field_states,a_op_list, b_op_list, input_params)
+
+
+## Test out the case of a single 4op steady state correlation
+correlation_ss_4op, tau_list_ss_4op, t_steady_4op = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
+                                                                      a_dag_r, a_dag_r, a_r, a_r, input_params)
+
+print("ss correl --- %s seconds ---" %(t.time() - start_time))
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(ss_correl.t_cor,np.real(ss_correl.g2_listr),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_R$') 
-plt.plot(ss_correl.t_cor,np.real(ss_correl.g1_listr),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_R$') 
+plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_R$') 
+plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_R$') 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel('Time, $\gamma t$',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma \tau$',fontsize=fonts)
 plt.ylabel('Correlations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.ylim([0.,2.05])
+plt.ylim([0.,None])
 plt.xlim([0.,10])
 plt.tight_layout()
 formatter = FuncFormatter(clean_ticks)
@@ -160,7 +181,44 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
+#%%%
+"""Test the whole single time correlation function calculation for the previous operators"""
+start_time=t.time()
+
+# Note that the optimally efficient code would use identity matrices to make only a single function call
+correlations_1t,tau_list_1t = qmps.correlation_2op_1t(bins.correlation_bins,a_op_list, b_op_list, t_steady,input_params)
+correlation_4op_1t, tau_list_4op_1t = qmps.correlation_4op_1t(bins.correlation_bins,a_dag_r, a_dag_r, a_r, a_r, t_steady_4op, input_params)
+
+print("Full single time correlation --- %s seconds ---" %(t.time() - start_time))
+#%%%
+fig, ax = plt.subplots(figsize=(4.5, 4))
+plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}(\tau)$') 
+plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}(\tau)$') 
+plt.plot(tau_list_1t,np.real(correlations_1t[0]),linewidth = 3, color = 'skyblue',linestyle=':',label=r'$g^{(1)}_R(\tau)$') 
+plt.plot(tau_list_4op_1t,np.real(correlation_4op_1t),linewidth = 3, color = 'orange',linestyle=':',label=r'$g^{(2)}_R(\tau)$') 
+
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
+plt.xlabel(r'Time, $\gamma \tau$',fontsize=fonts)
+plt.ylabel('Correlations',fontsize=fonts)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.ylim([0.,None])
+plt.xlim([-5,10])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+plt.show()
+
+
 #%% Long time spectrum
+"""Calculate the spectrum"""
+
+start_time=t.time()
+
+# Calculate the steady state spectrum of G1_R using the calculated result
+spect,w_list=qmps.spectrum_w(input_params.delta_t,correlations_ss[0])
+
+print("spectrum --- %s seconds ---" %(t.time() - start_time))
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population

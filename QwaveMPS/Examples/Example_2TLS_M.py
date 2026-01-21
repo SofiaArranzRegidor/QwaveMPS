@@ -85,17 +85,17 @@ tlist=np.arange(0,tmax+delta_t/2,delta_t)
 """ Choose the initial state"""
 
 #Starting with the firt TLS excited and the second in ground state
-i_s01=qmps.states.tls_excited()
-i_s02= qmps.states.tls_ground()
+tls1_initial_state=qmps.states.tls_excited()
+tls2_initial_state= qmps.states.tls_ground()
 
 # The total system initial state is the outer product of the two TLS's states
-i_s0=np.kron(i_s01,i_s02)
+sys_initial_state=np.kron(tls1_initial_state,tls2_initial_state)
 
 #If starting with an entangled initial state
-# i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
+# sys_initial_state=1/np.sqrt(2)*(np.kron(tls1_initial_state,tls2_initial_state) + np.kron(tls2_initial_state,tls1_initial_state))
 
-i_n0 = qmps.states.vacuum(tmax, input_params)
-# i_n0 = None # Another way to set the same initial state
+wg_initial_state = qmps.states.vacuum(tmax, input_params)
+# wg_initial_state = None # Another way to set the same initial state
 
 
 """Choose the Hamiltonian"""
@@ -107,7 +107,7 @@ start_time=t.time()
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
 """Define relevant observable operators"""
 # System operators are outerproducts of the two TLS Hilbert spaces

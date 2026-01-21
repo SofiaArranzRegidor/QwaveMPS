@@ -80,10 +80,10 @@ tlist=np.arange(0,tmax+delta_t/2,delta_t)
 
 """ Choose the initial state"""
 
-i_s0=qmps.states.tls_excited()
+sys_initial_state=qmps.states.tls_excited()
 
-#i_n0 = qmps.states.vacuum(tmax,input_params)
-i_n0 = None # Showing that None is the vacuum state
+#wg_initial_state = qmps.states.vacuum(tmax,input_params)
+wg_initial_state = None # Showing that None is the vacuum state
 
 #To track computational time
 start_time=t.time() 
@@ -95,7 +95,7 @@ Hm=qmps.hamiltonian_1tls_feedback(input_params)
 
 """ Time evolution of the system"""
 
-bins = qmps.t_evol_nmar(Hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """ Calculate population dynamics"""
@@ -154,7 +154,7 @@ hm=qmps.hamiltonian_1tls_feedback(input_params)
 
 """ Time evolution of the system"""
 
-bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """ Calculate population dynamics"""

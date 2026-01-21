@@ -79,15 +79,15 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state and coupling"""
 # Initial system state is an outer product of the two system states
-i_s01=qmps.states.tls_excited()
-i_s02= qmps.states.tls_ground()
-i_s0=np.kron(i_s01,i_s02)
+tls1_initial_state=qmps.states.tls_excited()
+tls2_initial_state= qmps.states.tls_ground()
+sys_initial_state=np.kron(tls1_initial_state,tls2_initial_state)
 
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
-# i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
+# sys_initial_state=1/np.sqrt(2)*(np.kron(tls1_initial_state,tls2_initial_state)+np.kron(tls2_initial_state,tls1_initial_state))
 
-i_n0 = qmps.states.vacuum(tmax,input_params)
+wg_initial_state = qmps.states.vacuum(tmax,input_params)
 
 start_time=t.time()
 """Choose the Hamiltonian"""
@@ -97,7 +97,7 @@ hm=qmps.hamiltonian_2tls_nmar(input_params)
 
 """ Time evolution of the system"""
 
-bins = qmps.t_evol_nmar(hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """ Calculate population dynamics"""
