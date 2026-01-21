@@ -19,7 +19,7 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
     pip install ncon 
         
 """
-#%%
+#%% Imports and plot functions
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -42,7 +42,7 @@ def clean_ticks(x, pos):
     # Only show decimals if not an integer
     return f'{x:g}'
 
-#%%
+#%% Parameters, Simulations, and single time expectations values
 
 
 """"Choose the simulation parameters"""
@@ -61,7 +61,7 @@ gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 #Define input parameters
 input_params = qmps.parameters.InputParams(
     delta_t=0.02,
-    tmax = 35, #
+    tmax = 35, # Long max time to reach steady state
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=gamma_l,
@@ -78,8 +78,7 @@ tlist=np.arange(0,tmax+(delta_t/2),delta_t)
 """ Choose the initial state and coupling"""
 
 sys_initial_state=qmps.states.tls_excited()
-
-wg_initial_state = qmps.states.vacuum(tmax,input_params)
+wg_initial_state = None# qmps.states.vacuum(tmax,input_params)
 
 
 """Choose the Hamiltonian"""
@@ -87,6 +86,7 @@ wg_initial_state = qmps.states.vacuum(tmax,input_params)
 #CW Drive
 cw_pump=2*np.pi
 
+# Hamiltonian is 1TLS pumped (from above) by CW
 Hm=qmps.hamiltonian_1tls(input_params,cw_pump)
 
 
@@ -111,7 +111,7 @@ photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_po
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
-#%% Population dynamics Graphing
+#%%% Population dynamics Graphing
 
 fonts=15
 pic_style(fonts)
@@ -161,6 +161,7 @@ correlations_ss,tau_list_ss,t_steady = qmps.correlation_ss_2op(bins.correlation_
 
 
 ## Test out the case of a single 4op steady state correlation
+# Calculate for the op<a_R^\dag(t) a_R^\dag(t+tau) a_R(t+tau) a_R(t)>
 correlation_ss_4op, tau_list_ss_4op, t_steady_4op = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
                                                                       a_dag_r, a_dag_r, a_r, a_r, input_params)
 
@@ -181,7 +182,7 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
-#%%%
+#%% Full single time Correlation functions about the steady state time
 """Test the whole single time correlation function calculation for the previous operators"""
 start_time=t.time()
 
@@ -190,7 +191,7 @@ correlations_1t,tau_list_1t = qmps.correlation_2op_1t(bins.correlation_bins,a_op
 correlation_4op_1t, tau_list_4op_1t = qmps.correlation_4op_1t(bins.correlation_bins,a_dag_r, a_dag_r, a_r, a_r, t_steady_4op, input_params)
 
 print("Full single time correlation --- %s seconds ---" %(t.time() - start_time))
-#%%%
+#%%% Graphing of these single time dynamics
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}(\tau)$') 
 plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}(\tau)$') 
@@ -215,11 +216,12 @@ plt.show()
 
 start_time=t.time()
 
-# Calculate the steady state spectrum of G1_R using the calculated result
+# Calculate the steady state spectrum of G1_R using the previously calculated steady state result
 spect,w_list=qmps.spectrum_w(input_params.delta_t,correlations_ss[0])
 
 print("spectrum --- %s seconds ---" %(t.time() - start_time))
 
+# Plot the spectrum
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
 plt.xlabel('$(\omega - \omega_L)/g$',fontsize=fonts)
