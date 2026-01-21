@@ -332,33 +332,8 @@ import cmasher as cmr
 import matplotlib.ticker as ticker
 
 """Example graphing G2_{RR}"""
-# G2_{RR} is symmetric over t1,t2, so symmeterize for plotting w.r.t. t1,t2
-def symmeterize_data(data):
-    transformedData = np.zeros(data.shape)
-    t_size, tau_size = data.shape # shape is square    
-    # Create broadcasted index arrays
-    i,j = np.triu_indices(t_size)
-    # Compute destination indices: (t, t + tau)
-    transformedData[i,j] = data[i, j-i]
-    # Fill in the other side of the data
-    transformedData = transformedData + transformedData.T - np.diag(np.diag(transformedData))
-    return transformedData
-
-# Transform G2_{LR} and G2_{RL} to get t1,t2 coordinates (complete for tau<0)
-def transform_LR_RL_data(dataRL, dataLR):
-    transformedData = np.zeros(dataLR.shape, dtype=complex)
-    t_size, tau_size = dataLR.shape # Shape is square
-    
-    # Add contributions from both t>= tau and t<= tau (diagonal is equal)
-    i, j = np.triu_indices(t_size)
-    transformedData[i, j] = dataLR[i, j - i]
-    transformedData[j, i] = dataRL[i, j - i]
-
-    return transformedData
-
-
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
-z = np.real(symmeterize_data(g2_correlations[0]))
+z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[0]))
 absMax = np.abs(z).max()
 
 cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
@@ -378,7 +353,8 @@ cbar.ax.tick_params(width=0.75)
 plt.show()
 
 
-z = np.real(symmeterize_data(g2_correlations[1]))
+"""Example graphing G2_{LL}"""
+z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[1]))
 absMax = np.abs(z).max()
 
 cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
@@ -397,7 +373,9 @@ cbar.ax.yaxis.set_major_formatter(formatter)
 cbar.ax.tick_params(width=0.75)
 plt.show()
 
-z = np.real(transform_LR_RL_data(g2_correlations[2],g2_correlations[3]))
+"""Example graphing G2_{LR}"""
+# Arguments below would be reversed for G2_{RL}
+z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[3],g2_correlations[2]))
 absMax = np.abs(z).max()
 
 cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
@@ -415,4 +393,3 @@ cbar.ax.yaxis.set_major_formatter(formatter)
 
 cbar.ax.tick_params(width=0.75)
 plt.show()
-# %%

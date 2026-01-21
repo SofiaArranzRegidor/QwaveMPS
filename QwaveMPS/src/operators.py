@@ -23,6 +23,7 @@ It requires the module ncon (pip install --user ncon)
 import numpy as np
 from scipy.linalg import expm
 from ncon import ncon
+from QwaveMPS.src.parameters import InputParams
 
 #-----------------------------
 # 
@@ -506,6 +507,10 @@ def expectation_nbins(ket:np.ndarray, mpo:np.ndarray) -> complex:
 # initialize cache attributes for expectation_n
 expectation_nbins.prev_rank = None
 
+#-----------------
+# Single Time Observables
+#-----------------
+
 def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]) -> np.ndarray:
     """
     Compute expectation values of a list of operators on a list of OC normalized bins.
@@ -535,6 +540,63 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
         result = result[0]
 
     return result
+
+def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:InputParams) -> np.ndarray:
+    """
+    Calculates the time dependent integral of the function over all of the time points in the feedback loop.
+    For t<tau assumes initial integration over loop time points will be 0.
+
+    Parameters
+    ----------
+    time_dependent_func : np.ndarray[complex]
+        List of values for the time dependent function to be integrated over the loop at each time point.
+    
+    params : InputParams
+        Simulation parameters
+
+    Returns
+    -------
+    observable_integrated_in_loop : np.ndarray
+        List of values for the integration of time_dependent_func over the feedback loop at each time point.
+    """
+
+    tau = params.tau
+    delta_t = params.delta_t
+
+    n=len(time_dependent_func) 
+    observable_integrated_in_loop = np.zeros(n,dtype=complex)
+    
+    l=int(round(tau/delta_t,0))
+
+    cumulative_sum = np.cumsum(time_dependent_func)
+    observable_integrated_in_loop[:l+1] = cumulative_sum[:l+1]
+    observable_integrated_in_loop[l:] = cumulative_sum[l:] - cumulative_sum[:-l]
+    
+    return observable_integrated_in_loop * delta_t
+
+def entanglement(sch:list[np.ndarray]) -> list[float]:
+    """
+    Compute von Neumann entanglement entropy across a list of Schmidt coefficient arrays.
+
+    Parameters
+    ----------
+    sch : list[np.ndarray]
+        List of Schmidt coefficient arrays (s) for each bipartition.
+
+    Returns
+    -------
+    list[float]
+        Entanglement entropies computed as -sum(p * log2 p) where p = s**2.
+    """
+    ent_list=[]
+    for s in sch:
+        sqrd_sch=s**2   
+        sqrd_sch=np.trim_zeros(sqrd_sch) 
+        log_sqrd_sch=np.log2(sqrd_sch)
+        prod=sqrd_sch*log_sqrd_sch
+        ent=-sum(prod)
+        ent_list.append(ent)
+    return ent_list
 
 #-----------------
 #Population MPOs
