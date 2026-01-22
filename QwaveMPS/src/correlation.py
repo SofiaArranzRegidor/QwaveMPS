@@ -17,6 +17,10 @@ from QwaveMPS.src.simulation import _svd_tensors
 from QwaveMPS.src.operators import op_list_check,expectation_1bin,expectation_nbins,swap,single_time_expectation
 from QwaveMPS.src.parameters import InputParams
 
+# ----------------------
+# Functions acting on correlation results
+# ----------------------
+
 
 def spectrum_w(delta_t:float, g1_list: np.ndarray) -> list[np.ndarray, np.ndarray]:
     """
@@ -76,6 +80,110 @@ def transform_t_tau_to_t1_t2(positive_tau_results:np.ndarray, negative_tau_resul
 
     return transformed_t1_t2_data
 
+def spectral_intensity(correlation_matrix:np.ndarray, input_params:InputParams, padding:int=0, hanning_filter:bool=False, taper_length:int=16) -> tuple[np.ndarray,np.ndarray]:
+    """
+    Calculate the time dependent spectral intensity from a given two time correlation function.
+    
+    Parameters
+    ----------
+    correlation_matrix : np.ndarray
+        Computed two time correlation matrix used for the calculation of the spectral intensity. 
+   
+    input_params : InputParams
+        Input parameters of the simulation
+
+    padding : int, default=0
+        Number of 0's added to the Fourier transform as padding for smoother results.
+
+    hanning_filter : bool, default=False
+        Determines whether or not a Hanning filter is used to smooth the decay at the end of the function for a smoother result.
+
+    taper_length : int, default=16
+        Determines the number of time points from the end of the data on which the Hanning filter is applied.
+        Only relevant if hanning_filter is True.
+
+    Returns
+    -------
+    spectral_intensity : np.ndarray
+        The computed time dependent spectral intensity of the given correlation function.
+    w_list : np.ndarray
+        List of frequencies associated with the calculated spectral intensity.
+    """
+    delta_t = input_params.delta_t
+
+    correlation_matrix_copy = copy.deepcopy(correlation_matrix)
+    # Taper end of signal if using filter
+    if hanning_filter:
+        taper_window = np.hanning(2*taper_length)[taper_length:]
+        correlation_matrix_copy[:,-taper_length:] *= taper_window
+    
+    spectral_intensity = np.fft.fftshift(np.fft.fft(correlation_matrix_copy, axis=1, n=correlation_matrix_copy.shape[1]+padding), axes=1)
+    
+    # Multiply by factor of delta_t for correct scaling to mimic the continuous FT
+    spectral_intensity *= delta_t
+
+    w_list = np.fft.fftshift(np.fft.fftfreq(spectral_intensity.shape[1], d=delta_t))
+    w_list = w_list * 2.0 * np.pi
+
+    return np.real(spectral_intensity), w_list
+
+def time_dependent_spectrum(correlation_matrix:np.ndarray, input_params:InputParams, w_list:np.ndarray=None, padding:int=0) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate the time dependent spectra from a given two time correlation function.
+    
+    Parameters
+    ----------
+    correlation_matrix : np.ndarray
+        Computed two time correlation matrix used for the calculation of the spectral intensity. 
+   
+    input_params : InputParams
+        Input parameters of the simulation
+
+    w_list : np.ndarray, default=None
+        Frequency points at which the time dependent spectrum is calculated.
+        If None, generates the frequency list using np.fft.fftfreq() on the length of the correlation_matrix.
+
+    padding : int, default=0
+        Padding added to the frequency domain.
+        
+    Returns
+    -------
+    spectrum : np.ndarray
+        The computed time dependent spectrum of the given correlation function.
+    w_list : np.ndarray
+        List of frequencies associated with the calculated time dependent spectrum.
+    """
+    delta_t = input_params.delta_t
+    correlation_matrix_copy = copy.deepcopy(correlation_matrix)
+    size = correlation_matrix_copy.shape[0]
+
+    if w_list is None:
+        w_list = np.fft.fftshift(np.fft.fftfreq(size+padding, d=delta_t)) * 2.0 * np.pi
+    spectrum = np.zeros((size, len(w_list)), dtype=np.complex128)
+          
+    # Try to use numpy numerical integration over rank 3 tensor created: [t'][t''][omega]
+    integration_elements = np.broadcast_to(correlation_matrix_copy, (len(w_list),*correlation_matrix_copy.shape)).astype(np.complex128).copy() # Puts omega index first
+
+    # Calculate phase factors, store result as [omega, t', tau]
+    omegas = w_list[:, np.newaxis]
+    tau = np.arange(size)[np.newaxis,:]
+    phase_factors = np.exp(1j * omegas * tau * delta_t)
+    integration_elements *= phase_factors[:,np.newaxis,:]
+    
+    # Have integration elements in form [omega, t', tau]
+
+    # Direct summation (works correctly... coud it be faster)
+    # Remove tPrime summation somehow (then can avoid += with just assignment and slice)?
+    # Switch order of loops somehow? (substitution of summation indices?)
+    
+    # Cummulative sum for the function of t, outer most integral
+    cummulative_sums = np.cumsum(integration_elements, axis=2)
+    for t in range(size):
+        for t_prime in range(t+1):
+            spectrum[t,:] += cummulative_sums[:,t_prime,t-t_prime]
+    
+    spectrum *= delta_t**2
+    return np.real(spectrum), w_list
 
 # ----------------------
 # Two time point Correlation functions

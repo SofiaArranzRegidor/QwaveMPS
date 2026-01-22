@@ -62,6 +62,7 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+#gamma_l,gamma_r = 0,1
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
@@ -83,7 +84,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 """ Choose the initial state and pulse parameters"""
 
 # Pulse parameters por a 1-photon tophat pulse
-pulse_time = 1 #length of the pulse in time units of gamma
+pulse_time = 2 #length of the pulse in time units of gamma
 photon_num = 1 #number of photons
 
 sys_initial_state=qmps.states.tls_ground()
@@ -111,8 +112,8 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Calculate population dynamics"""
 # Photonic operators
-left_flux_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
-right_flux_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+left_flux_op = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
+right_flux_op = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
 photon_flux_ops = [left_flux_op, right_flux_op]
 
 tls_pop = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
@@ -154,22 +155,22 @@ plt.show()
 #To track computational time of g1
 start_time=t.time()
 
-# Construct list of ops with the structure <A(t)B(t+tau)>
+# Construct list of ops with the structure <A(t)B(t+t')>
 # Much faster to calculate using a list and a single correlation_2op_2t() function call then
 # Three separate calls
 a_op_list = []; b_op_list = []
-a_dag_l = qmps.a_dag_l(delta_t, d_t_total); a_l = qmps.a_l(delta_t, d_t_total)
-a_dag_r = qmps.a_dag_r(delta_t, d_t_total); a_r = qmps.a_r(delta_t, d_t_total)
+a_dag_l = qmps.a_dag_l(input_params); a_l = qmps.a_l(input_params)
+a_dag_r = qmps.a_dag_r(input_params); a_r = qmps.a_r(input_params)
 
-# Add op <a_R^\dag(t) a_R(t+tau)>
+# Add op <a_R^\dag(t) a_R(t+t')>
 a_op_list.append(a_dag_r)
 b_op_list.append(a_r)
 
-# Add op <a_L^\dag(t) a_L(t+tau)>
+# Add op <a_L^\dag(t) a_L(t+t')>
 a_op_list.append(a_dag_l)
 b_op_list.append(a_l)
 
-# Add op <a_L^\dag(t) a_R(t+tau)>
+# Add op <a_L^\dag(t) a_R(t+t')>
 a_op_list.append(a_dag_l)
 b_op_list.append(a_r)
 
@@ -178,7 +179,7 @@ g1_correlations, correlation_tlist = qmps.correlation_2op_2t(bins.correlation_bi
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
-#%%% Graph an example in the t,tau plane
+#%%% Graph an example in the t,t' plane
 import cmasher as cmr
 
 """Example graphing G1_{RR}"""
@@ -192,9 +193,9 @@ cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,
 cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
-ax.set_xlabel(r'Time, $\gamma\tau$')
+ax.set_xlabel(r'Time, $\gamma t^\prime$')
 
-cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+cbar.set_label(r'$G^{(1)}_{RR}(t,t^\prime)\ [\gamma]$',labelpad=0)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 cbar.ax.yaxis.set_major_formatter(formatter)
@@ -211,9 +212,9 @@ cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,
 cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
-ax.set_xlabel(r'Time, $\gamma\tau$')
+ax.set_xlabel(r'Time, $\gamma t^\prime$')
 
-cbar.set_label(r'$G^{(1)}_{RR}(t,\tau)\ [\gamma^{-1}]$',labelpad=0)
+cbar.set_label(r'$G^{(1)}_{LL}(t,t^\prime)\ [\gamma]$',labelpad=0)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 cbar.ax.yaxis.set_major_formatter(formatter)
@@ -254,10 +255,16 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """Calculate population dynamics"""
+# Calculate same time G2 in transmission
+same_time_G2_op = qmps.a_dag_r(input_params) @ qmps.a_dag_r(input_params) @ qmps.a_r(input_params) @ qmps.a_r(input_params)
 
 tls_pop = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
+same_time_G2 = qmps.single_time_expectation(bins.output_field_states, same_time_G2_op)
+
+# Act on input states to characterize the input field with bosonic/field operators
 flux_in = qmps.single_time_expectation(bins.input_field_states, photon_flux_ops)
+
 
 total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_t
 
@@ -269,13 +276,15 @@ fonts=15
 pic_style(fonts)
 
 
-fig, ax = plt.subplots(figsize=(4.5, 4))
+fig, ax = plt.subplots(figsize=(6, 4))
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm in,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(same_time_G2),linewidth = 3,color = 'magenta',linestyle='-',label=r'$G_{RR}^{(2)}(t,0)$') # Same time G2 in transmission (Right)
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend(loc='center right')
+
+plt.legend(loc='center', bbox_to_anchor=(1,0.5))
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
@@ -295,7 +304,7 @@ start_time=t.time()
 
 # For speed calculating several at once, but could also calculate all at once
 a_op_list = []; b_op_list = []; c_op_list = []; d_op_list = []
-# Add op <a_R^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_R(t)>
+# Add op <a_R^\dag(t) a_R^\dag(t+t') a_R^(t+t') a_R(t)>
 a_op_list.append(a_dag_r)
 b_op_list.append(a_dag_r)
 c_op_list.append(a_r)
@@ -342,9 +351,9 @@ cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,raster
 cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
-ax.set_xlabel(r'Time, $\gamma(t+\tau)$')
+ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
 
-cbar.set_label(r'$G^{(2)}_{RR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+cbar.set_label(r'$G^{(2)}_{RR}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 cbar.ax.yaxis.set_major_formatter(formatter)
@@ -363,9 +372,9 @@ cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,raster
 cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
-ax.set_xlabel(r'Time, $\gamma(t+\tau)$')
+ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
 
-cbar.set_label(r'$G^{(2)}_{LL}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+cbar.set_label(r'$G^{(2)}_{LL}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 cbar.ax.yaxis.set_major_formatter(formatter)
@@ -384,9 +393,9 @@ cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,raster
 cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
-ax.set_xlabel(r'Time, $\gamma(t+\tau)$')
+ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
 
-cbar.set_label(r'$G^{(2)}_{LR}(t,\tau)\ [\gamma^{-2}]$',labelpad=0)
+cbar.set_label(r'$G^{(2)}_{LR}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 cbar.ax.yaxis.set_major_formatter(formatter)

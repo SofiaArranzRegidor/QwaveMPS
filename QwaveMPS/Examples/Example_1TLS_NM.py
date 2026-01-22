@@ -101,7 +101,9 @@ bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 """ Calculate population dynamics"""
 # Use single channel bosonic operators, chiral waveguide Hilbert space
 # This is because len(d_t_total) == 1
-flux_op = qmps.a_dag(delta_t, d_t) @ qmps.a(delta_t, d_t)
+flux_op = qmps.a_pop(input_params)
+# Another way to define the same op
+#flux_op = qmps.a_dag(input_params) @ qmps.a(input_params)
 
 tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 

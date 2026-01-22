@@ -36,7 +36,7 @@ def op_list_check(op_list):
         or (isinstance(op_list, np.ndarray) and op_list.ndim > 2)
 
 #-----------------------------
-#Basic TLS and boson operators
+# TLS operators
 #-----------------------------
 
 def sigmaplus() -> np.ndarray:  
@@ -82,6 +82,25 @@ def e(d_sys:int=2) -> np.ndarray:
     exc = np.zeros((d_sys,d_sys),dtype=complex)
     exc[1,1]=1.      
     return exc
+
+def tls_pop(d_sys:int=2) -> np.ndarray:    
+    """
+    Single TLS population operator sigma^+ sigma^-. 
+
+    Parameters
+    ----------
+    d_sys : int, default: 2 (for a TLS)
+        Size of the Hilbert space of the matter system.
+    
+    Returns
+    -------
+    Population operator for a TLS: np.ndarray
+    """ 
+    return np.real((sigmaplus() @ sigmaminus()))
+
+#-----------------------------
+# Time bin noise operators
+#-----------------------------
 
 def delta_b_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
@@ -214,7 +233,7 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
 #------------------------------
 # Normalized Bosonic Observable Operators
 #------------------------------
-def a_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
+def a_dag(params:InputParams) -> np.ndarray:  
     """
     Creation operator for observables in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
@@ -232,9 +251,9 @@ def a_dag(delta_t:float, d_t:int=2) -> np.ndarray:
     oper : ndarray
         ndarray creation operator observable.
     """
-    return delta_b_dag(delta_t, d_t) / delta_t
+    return delta_b_dag(params.delta_t, np.prod(params.d_t_total)) / params.delta_t
 
-def a(delta_t:float, d_t:int=2) -> np.ndarray:  
+def a(params:InputParams) -> np.ndarray:  
     """
     Annihilation operator for observables in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
@@ -252,9 +271,9 @@ def a(delta_t:float, d_t:int=2) -> np.ndarray:
     oper : ndarray
         ndarray annihilation operator observable.
     """      
-    return delta_b(delta_t, d_t) / delta_t
+    return delta_b(params.delta_t, np.prod(params.d_t_total)) / params.delta_t
 
-def a_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+def a_dag_l(params:InputParams) -> np.ndarray:  
     """
     Left creation operator for a system with two field channels in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
@@ -272,9 +291,9 @@ def a_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
     oper : ndarray
         ndarray left creation operator observable.
     """ 
-    return delta_b_dag_l(delta_t, d_t_total) / delta_t   
+    return delta_b_dag_l(params.delta_t, params.d_t_total) / params.delta_t   
 
-def a_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray: 
+def a_dag_r(params:InputParams) -> np.ndarray: 
     """
     Right creation operator for a system with two field channels, in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
@@ -292,9 +311,9 @@ def a_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     oper : ndarray
         ndarray right creation operator observable.
     """ 
-    return delta_b_dag_r(delta_t, d_t_total) / delta_t    
+    return delta_b_dag_r(params.delta_t, params.d_t_total) / params.delta_t    
 
-def a_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+def a_l(params:InputParams) -> np.ndarray:  
     """
     Left annihilation operator for a system with two field channels in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
@@ -312,9 +331,9 @@ def a_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
     oper : ndarray
         ndarray left annihilation operator observable.
     """ 
-    return delta_b_l(delta_t, d_t_total) / delta_t
+    return delta_b_l(params.delta_t, params.d_t_total) / params.delta_t
 
-def a_r(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+def a_r(params:InputParams) -> np.ndarray:  
     """
     Right annihilation operator for a system with two field channels, in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
@@ -332,7 +351,66 @@ def a_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     oper : ndarray
         ndarray right annihilation operator observable.
     """ 
-    return delta_b_r(delta_t, d_t_total) / delta_t
+    return delta_b_r(params.delta_t, params.d_t_total) / params.delta_t
+
+def a_pop_r(params:InputParams) -> np.ndarray:
+    """
+    Right-channel photonic population operator (normalized by delta_t).
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+        
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
+    
+    Returns
+    -------
+    Population of the right-channel photons: np.ndarray
+    """ 
+    return np.real((delta_b_dag_r(params.delta_t, params.d_t_total)
+                     @ delta_b_r(params.delta_t, params.d_t_total))/params.delta_t**2)
+
+def a_pop_l(params:InputParams) -> np.ndarray:  
+    """
+    Left-channel photonic population operator (normalized by delta_t).
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+        
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
+    
+    Returns
+    -------
+    Population of the left-channel photons: np.ndarray
+    """ 
+    return np.real((delta_b_dag_l(params.delta_t, params.d_t_total)
+                     @ delta_b_l(params.delta_t, params.d_t_total))/params.delta_t**2)
+
+def a_pop(params:InputParams) -> np.ndarray:  
+    """
+    Single-channel photonic population operator (normalized by delta_t).
+
+    Parameters
+    ----------
+    delta_t : float
+        Time step for system evolution.
+        
+    d_t_total : ndarray
+        List of sizes of the photonic Hilbert spaces.
+    
+    Returns
+    -------
+    Photonic population fora single channel solution: np.ndarray
+    """ 
+    return np.real((delta_b_dag(params.delta_t, np.prod(params.d_t_total)) 
+                    @ delta_b(params.delta_t, np.prod(params.d_t_total)))/params.delta_t**2)
+
+
 
 #-------------------
 #Time evolution MPO
@@ -597,76 +675,3 @@ def entanglement(sch:list[np.ndarray]) -> list[float]:
         ent=-sum(prod)
         ent_list.append(ent)
     return ent_list
-
-#-----------------
-#Population MPOs
-#-----------------
-
-def tls_pop(d_sys:int=2) -> np.ndarray:    
-    """
-    Single TLS population operator sigma^+ sigma^-. 
-
-    Parameters
-    ----------
-    d_sys : int, default: 2 (for a TLS)
-        Size of the Hilbert space of the matter system.
-    
-    Returns
-    -------
-    Population operator for a TLS: np.ndarray
-    """ 
-    return np.real((sigmaplus() @ sigmaminus()))
-    
-def a_r_pop(delta_t:float, d_t_total:np.array) -> np.ndarray:
-    """
-    Right-channel photonic population operator (normalized by delta_t).
-
-    Parameters
-    ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-    
-    Returns
-    -------
-    Population of the right-channel photons: np.ndarray
-    """ 
-    return np.real((delta_b_dag_r(delta_t,d_t_total) @ delta_b_r(delta_t,d_t_total))/delta_t)
-
-def a_l_pop(delta_t:float, d_t_total:np.array) -> np.ndarray:  
-    """
-    Left-channel photonic population operator (normalized by delta_t).
-
-    Parameters
-    ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-    
-    Returns
-    -------
-    Population of the left-channel photons: np.ndarray
-    """ 
-    return np.real((delta_b_dag_l(delta_t,d_t_total) @ delta_b_l(delta_t,d_t_total))/delta_t)
-
-def a_pop(delta_t:float, d_t:int=2) -> np.ndarray:  
-    """
-    Single-channel photonic population operator (normalized by delta_t).
-
-    Parameters
-    ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-    
-    Returns
-    -------
-    Photonic population fora single channel solution: np.ndarray
-    """ 
-    return np.real((delta_b_dag(delta_t,d_t) @ delta_b(delta_t,d_t))/delta_t)

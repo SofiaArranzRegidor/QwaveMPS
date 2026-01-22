@@ -106,8 +106,8 @@ tls1_pop_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 tls2_pop_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
 # Create photonic flux operators in each direction
-photon_flux_l_op = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
-photon_flux_r_op = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+photon_flux_l_op = qmps.a_pop_l(input_params)
+photon_flux_r_op = qmps.a_pop_r(input_params)
 photon_flux_ops = [photon_flux_l_op, photon_flux_r_op]
 
 # Calculate time dependent TLS populations, and fluxes into/out of feedback loop
@@ -115,7 +115,7 @@ tls_pops = qmps.single_time_expectation(bins.system_states, [tls1_pop_op, tls2_p
 photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
 photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, photon_flux_ops)
 
-# Use helper function to integrate over the flux into the loop to get loop population
+# Use helper function to integrate over the flux into the loop in windows to get loop population
 loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
 loop_sum_r = qmps.loop_integrated_statistics(photon_fluxes_loop[1], input_params)
 
@@ -135,7 +135,7 @@ plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',lab
 plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
 plt.plot(tlist,np.real(photon_fluxes_out[1]),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(photon_fluxes_out[0]),linewidth = 3,color = 'b',linestyle=':',label='R')
-plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'magenta',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'magenta',linestyle=':',label=r'$N_{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')

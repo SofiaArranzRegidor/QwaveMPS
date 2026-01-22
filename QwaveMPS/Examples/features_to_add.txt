@@ -1,0 +1,13 @@
+Add spectral intensity and time dependent spectrum functions...
+
+Features to add on future versions:
+    Time dependent operator expectation values (to be implemented)
+    Coherent pulse (done, just needs copying)
+    Time restricted correlation calculations (pass parameters for tmin/tmax to calculate only a subspace)
+        Would also want to generalize the helper function that transforms to (t1,t2) domain to be able to work with
+        non-square spaces
+    Generalized nonmarkovian time evolution (done, just needs copying and adaption to current args)
+        Could also include the efficient chiral time evolution at this point maybe
+        ...eventually efficient symmetric time evolution when implemented (will require uniform tau)
+    Addition of general basis vector / transition operators?
+    Move gammas out of input_params (Hamiltonian independent class, params that are true for every system)

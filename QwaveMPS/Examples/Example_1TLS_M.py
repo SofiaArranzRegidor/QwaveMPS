@@ -150,20 +150,32 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Choose Observables"""
 tls_pop_op = qmps.tls_pop()
-a_l_pop = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
-a_r_pop = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
-photon_pop_ops = [a_l_pop, a_r_pop]
+a_pop_l = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
+a_pop_r = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
+
+# Can also call the population operators directly
+# a_pop_l = qmps.a_pop_l(input_params)
+# a_pop_r = qmps.a_pop_r(input_params)
+
+
+photon_pop_ops = [a_pop_l, a_pop_r]
 
 
 """Calculate population dynamics"""
 # Can calculate a single observable to get a time ordered ndarray of expectation values
+# Use the system_states to calculate observables having to do with the emitter system
 tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
 
 # Can also calculate a list of observables on the same states
+# Use output_field_states to calculate observables of the outgoing field
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
 
+# Net photons propagating in each direction is the cumulatively integrated fluxes
+net_flux_l = np.cumsum(photon_fluxes[0]) * delta_t
+net_flux_r = np.cumsum(photon_fluxes[1]) * delta_t
+
 # Integrate the flux leaving the system added with the TLS population for total quanta
-total_quanta = tls_pop + np.cumsum(np.sum(photon_fluxes,axis=0))*delta_t
+total_quanta = tls_pop + net_flux_l + net_flux_r
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -174,8 +186,8 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
+plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
@@ -213,13 +225,16 @@ bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
 tls_pop_ch = qmps.single_time_expectation(bins.system_states, tls_pop_op)
 photon_fluxes_ch = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
-total_quanta_ch = tls_pop_ch + np.cumsum(np.sum(photon_fluxes_ch, axis=0))*delta_t
+
+net_fluxes = np.cumsum(photon_fluxes_ch, axis=1) * delta_t
+total_quanta_ch = tls_pop_ch + np.sum(net_fluxes, axis=0)
+
 
 """Plotting the results"""
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(photon_fluxes_ch[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes_ch[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
+plt.plot(tlist,np.real(net_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(net_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop_ch),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total_quanta_ch),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')

@@ -100,8 +100,8 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Define relevant photonic operators"""
 tls_pop_op = qmps.tls_pop()
-a_l_pop = qmps.a_dag_l(delta_t, d_t_total) @ qmps.a_l(delta_t, d_t_total)
-a_r_pop = qmps.a_dag_r(delta_t, d_t_total) @ qmps.a_r(delta_t, d_t_total)
+a_l_pop = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
+a_r_pop = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
 photon_pop_ops = [a_l_pop, a_r_pop]
 
 
@@ -139,18 +139,18 @@ start_time=t.time()
 
 # Choose operators of which to take steady state correlations
 a_op_list = []; b_op_list = []
-a_dag_l = qmps.a_dag_l(delta_t, d_t_total); a_l = qmps.a_l(delta_t, d_t_total)
-a_dag_r = qmps.a_dag_r(delta_t, d_t_total); a_r = qmps.a_r(delta_t, d_t_total)
+a_dag_l = qmps.a_dag_l(input_params); a_l = qmps.a_l(input_params)
+a_dag_r = qmps.a_dag_r(input_params); a_r = qmps.a_r(input_params)
 
-# Add op <a_R^\dag(t) a_R(t+tau)>
+# Add op <a_R^\dag(t) a_R(t+t')>
 a_op_list.append(a_dag_r)
 b_op_list.append(a_r)
 
-# Add op <a_L^\dag(t) a_L(t+tau)>
+# Add op <a_L^\dag(t) a_L(t+t')>
 a_op_list.append(a_dag_l)
 b_op_list.append(a_l)
 
-# Add op <a_L^\dag(t) a_R(t+tau)>
+# Add op <a_L^\dag(t) a_R(t+t')>
 a_op_list.append(a_dag_l)
 b_op_list.append(a_r)
 
@@ -171,7 +171,7 @@ fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_R$') 
 plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_R$') 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel(r'Time, $\gamma \tau$',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t^\prime$',fontsize=fonts)
 plt.ylabel('Correlations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,None])
@@ -193,13 +193,13 @@ correlation_4op_1t, tau_list_4op_1t = qmps.correlation_4op_1t(bins.correlation_b
 print("Full single time correlation --- %s seconds ---" %(t.time() - start_time))
 #%%% Graphing of these single time dynamics
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}(\tau)$') 
-plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}(\tau)$') 
-plt.plot(tau_list_1t,np.real(correlations_1t[0]),linewidth = 3, color = 'skyblue',linestyle=':',label=r'$g^{(1)}_R(\tau)$') 
-plt.plot(tau_list_4op_1t,np.real(correlation_4op_1t),linewidth = 3, color = 'orange',linestyle=':',label=r'$g^{(2)}_R(\tau)$') 
+plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}$') 
+plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}$') 
+plt.plot(tau_list_1t,np.real(correlations_1t[0]),linewidth = 3, color = 'skyblue',linestyle=':',label=r'$g^{(1)}_R$') 
+plt.plot(tau_list_4op_1t,np.real(correlation_4op_1t),linewidth = 3, color = 'orange',linestyle=':',label=r'$g^{(2)}_R$') 
 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel(r'Time, $\gamma \tau$',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t^\prime$',fontsize=fonts)
 plt.ylabel('Correlations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,None])
@@ -224,7 +224,7 @@ print("spectrum --- %s seconds ---" %(t.time() - start_time))
 # Plot the spectrum
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
-plt.xlabel('$(\omega - \omega_L)/g$',fontsize=fonts)
+plt.xlabel('$(\omega - \omega_L)/\Omega$',fontsize=fonts)
 plt.ylabel('Spectrum',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
