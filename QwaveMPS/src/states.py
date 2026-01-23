@@ -38,15 +38,15 @@ def wg_ground(d_t:int, bond0:int=1) -> np.ndarray:
     Returns
     -------
     state : ndarray
-        ndarray vacuum state.
+        Waveguide vacuum state.
     """ 
-    i= np.zeros([bond0,d_t,bond0],dtype=complex) 
-    i[:,0,:]=1.
-    return i
+    state = np.zeros([bond0,d_t,bond0],dtype=complex) 
+    state[:,0,:]=1.
+    return state
 
 def tls_ground(bond0:int=1) -> np.ndarray:
     """
-    TLS ground state tensor.
+    Two level system ground state tensor.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def tls_ground(bond0:int=1) -> np.ndarray:
     Returns
     -------
     state : ndarray
-        ndarray ground state atom.
+        Ground state of the two level system.
     """ 
     i_s = np.zeros([bond0,2,bond0],dtype=complex) 
     i_s[:,0,:]=1.
@@ -64,7 +64,7 @@ def tls_ground(bond0:int=1) -> np.ndarray:
     
 def tls_excited(bond0:int=1) -> np.ndarray:
     """
-    TLS excited state tensor.
+    Two level system excited state tensor.
 
     Parameters
     ----------
@@ -74,13 +74,13 @@ def tls_excited(bond0:int=1) -> np.ndarray:
     Returns
     -------
     state : ndarray
-        ndarray excited state atom.
+        Excited state of the two level system.
     """ 
     i_s = np.zeros([bond0,2,bond0],dtype=complex) 
     i_s[:,1,:]=1.
     return i_s
 
-def vacuum(time_length:float, params:InputParams) -> np.ndarray:
+def vacuum(time_length:float, params:InputParams) -> list[np.ndarray]:
     """
     Produces an array of vacuum time bins for a given time_length.
 
@@ -88,15 +88,15 @@ def vacuum(time_length:float, params:InputParams) -> np.ndarray:
     ----------
 
     time_length : float
-        Length of the vacuum pulse.
+        Length of the vacuum pulse (units of inverse coupling).
 
-    params:InputParams
-        Class containing the input parameters
+    params : InputParams
+        Class containing the input parameters.
 
     Returns
     -------
-    state : ndarray
-        ndarray vacuum state.
+    state : list[np.ndarray]
+        List of vacuum states for time_length.
     """ 
     delta_t = params.delta_t
     d_t_total = params.d_t_total
@@ -124,7 +124,8 @@ def input_state_generator(d_t_total:list[int], input_bins:list[np.ndarray]=None,
         Size of the initial bond dimension.
 
     default_state : ndarray, default: None
-        Default time bin state yielded as an input state after all input_bins are exhusted. If None then vacuum states are yielded.
+        Default time bin state yielded as an input state after all input_bins are exhusted. 
+        If None then vacuum states are yielded.
     
     Returns
     -------
@@ -132,7 +133,7 @@ def input_state_generator(d_t_total:list[int], input_bins:list[np.ndarray]=None,
         A generator for the input field time bins.
     """ 
     d_t = np.prod(d_t_total)
-    if input_bins == None:
+    if input_bins is None:
         input_bins = []
         
     for i in range(len(input_bins)):
@@ -155,21 +156,22 @@ def coupling(coupl:str='symmetrical', gamma:float=1,gamma_r=None,gamma_l=None) -
     
     Parameters
     ----------
-    coupl : str, default: 'symmetrical'
-       Coupling options: 'symmetrical', 'chiral_r', 'chiral_l', 'other' 
+    coupl : {'symmetrical', 'chiral_r', 'chiral_l', 'other'}, default: 'symmetrical'
+       Coupling option.
     
     gamma : float, default:1
         Total coupling. Code in units of coupling, hence, the default is 1.
     
-    gamma_r : None or float, default : None
+    gamma_r : None/float, default: None
         Left coupling. If coupl = 'other' define explicitly.
         
-    gamma_l : None or float, default : None
+    gamma_l : None/float, default: None
         Right coupling. If coupl = 'other' define explicitly.
+    
     Returns
     -------
     gamma_l,gamma_r : tuple[float,float]
-        A tuple with the values of the left and right coupling
+        Values of the left and right coupling
     """   
     if coupl == 'chiral_r': 
         gamma_r=gamma
@@ -191,15 +193,15 @@ def coupling(coupl:str='symmetrical', gamma:float=1,gamma_r=None,gamma_l=None) -
 
 def tophat_envelope(pulse_time:float, params:InputParams)->np.ndarray:
     """
-    Create a top hat pulse envelope given by the time length of the pulse.
+    Create an unnormalized top hat pulse envelope given by the time length of the pulse.
 
     Parameters
     ----------
     pulse_time : float
-        Duration time of the pulse.
+        Duration time of the pulse (units of inverse coupling).
 
-    params:InputParams
-        Class containing the input parameters
+    params : InputParams
+        Class containing the input parameters.
         
     Returns
     -------
@@ -210,38 +212,35 @@ def tophat_envelope(pulse_time:float, params:InputParams)->np.ndarray:
     m = int(round(pulse_time/delta_t))
     return np.ones(m)
 
-def gaussian_envelope(pulse_time:float, params:InputParams, gaussian_width:float, gaussian_center:float, initial_time:int=0)->np.ndarray:
+def gaussian_envelope(pulse_time:float, params:InputParams, gaussian_width:float, gaussian_center:float)->np.ndarray:
     """
     Create a gaussian pulse envelope given by the time length of the pulse 
-    and the mean and variance parameters.
+    and the mean and standard deviation parameters.
 
     Parameters
     ----------
     pulse_time : float
-        Duration time of the pulse.
+        Duration time of the pulse (units of inverse coupling).
 
     params:InputParams
         Class containing the input parameters
         
     gaussian_width : float
-        Variance of the gaussian.
+        Variance of the gaussian (units of inverse coupling).
     
     gaussian_center : float
-        Mean of the gaussian.
+        Mean of the gaussian (units of inverse coupling).
 
-    initial_time : float, default: 0
-        Initial time of the returned pulse envelope function.
-    
     Returns
     -------
-    pulse_envelope : list[float]
+    pulse_envelope : np.ndarray[float]
         List of amplitude values of the pulse envelope.
     """ 
     
     delta_t=params.delta_t
     
     m = int(round(pulse_time/delta_t,0))
-    times = np.arange(initial_time, initial_time + m*delta_t, delta_t)
+    times = np.arange(0, m) * delta_t
     diffs = times - gaussian_center
     exponent = - (diffs ** 2) / (2 * gaussian_width ** 2) 
 
@@ -250,13 +249,13 @@ def gaussian_envelope(pulse_time:float, params:InputParams, gaussian_width:float
 
 def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, decay_center:float=0)->np.ndarray:
     """
-    Create a exponential decay pulse envelope given by the time length of the pulse 
+    Create a exponential decay pulse envelope (unnormalized) given by the time length of the pulse 
     and the decay rate and decay center parameters.
 
     Parameters
     ----------
     pulse_time : float
-        Duration time of the pulse.
+        Duration time of the pulse (units of inverse coupling).
 
     params:InputParams
         Class containing the input parameters
@@ -282,21 +281,21 @@ def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, d
     pulse_envelope = np.exp(-time_diffs * decay_rate)
     return pulse_envelope
 
-def normalize_pulse_envelope(delta_t:float, pulse_env:list[float])->np.ndarray:
+def normalize_pulse_envelope(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
     """
-    Normalized a given pulse envelope so that the integral of the square magnitude is 1.
+    Normalizes a given pulse envelope so that the integral of the square magnitude is 1.
 
     Parameters
     ----------
     delta_t : float
         Time step size for the simulation.
         
-    pulse_env : list[float]
+    pulse_env : np.ndarray[float]
         Time dependent pulse envelope that is being normalized.
 
     Returns
     -------
-    pulse_env : list[float]
+    pulse_env : np.ndarray[float]
         The normalized time dependent pulse envelope.
 
     """ 
@@ -307,41 +306,39 @@ def normalize_pulse_envelope(delta_t:float, pulse_env:list[float])->np.ndarray:
 #-------------------------
 # Fock pulse MPS generator
 #-------------------------
-def fock_pulse(pulse_env:list[float],pulse_time:float,params:InputParams, photon_num:int, direction:str='R', bond0:int=1)->list[np.ndarray]:
+def fock_pulse(pulse_env:list[float],pulse_time:float, photon_num:int, params:InputParams, direction:str='R', bond0:int=1)->list[np.ndarray]:
     """
     Creates an Fock pulse input field state with a normalized pulse envelope
 
     Parameters
     ----------
+    pulse_env : list[float]
+        Time dependent pulse envelope for the incident pulse (can be unnormalized). 
+        If None, uses a tophat pulse for the duration of the pulse_time.
+
     pulse_time : float
-        Time length of the pulse. If the pulse envelope is of greater length it will be truncated.
-    
-    delta_t : float
-        Time step size for the simulation.
-
-    d_t_total : list[int]
-        List of sizes of the photonic Hilbert spaces.
-
-    bond : int
-        Truncation for maximum bond dimension. 
-
-    pulse_env : list[float], default: None
-        Time dependent pulse envelope for the incident pulse. Default uses a tophat pulse for the duration of the pulse_time.
+        Time length of the pulse (units of inverse coupling). 
+        If the pulse envelope is of greater length it will be truncated from the tail.    
 
     photon_num : int
         Incident photon number.
 
-    direction : str, default: 'R'
+    params:InputParams
+        Class containing the input parameters
+        
+    direction : {'L','R'}, default: 'R'
         Flag to dictate the direction of the propagating pulse.
+        Ignored if only a single photonic channel (chiral) is present.
 
     bond0 : int, default: 1
         Default bond dimension of bins.
 
     Returns
     -------
-    apk_can : list[ndarray]
+    fock_pulse : list[ndarray]
         A list of the incident time bins of the Fock pulse, with the first bin in index 0.
-
+        Further uncorrelated fields can be appended to the end of the list.
+        
     Examples
     -------- 
 
@@ -362,36 +359,42 @@ def fock_pulse(pulse_env:list[float],pulse_time:float,params:InputParams, photon
     return _fock_pulse(pulse_env, pulse_time, params, pulse_env, photon_num_l, photon_num_r, bond0)
 
 
-def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float]=None, photon_num_l:int=0, photon_num_r:int=1, bond0:int=1)->list[np.ndarray]:    
+def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pulse_env_l:list[float], photon_num_l:int, photon_num_r:int, bond0:int=1)->list[np.ndarray]:    
     """
-    Creates an Fock pulse input field MPS with a normalized pulse envelope
+    Creates a Fock pulse input field MPS with a pulse envelope.
+
 
     Parameters
     ----------
+    pulse_env_r : list[float]
+        Time dependent pulse envelope for a right incident pulse.
+        If None, uses tophat pulse.
+
     pulse_time : float
-        Time length of the pulse. If the pulse envelope is of greater length it will be truncated.
+        Time length of the pulse (units of inverse coupling). 
+        If the pulse envelope is of greater length it will be truncated from the tail.
 
-    params:InputParams
+    params : InputParams
         Class containing the input parameters
-        
-    pulse_env_l : list[float], default: None
-        Time dependent pulse envelope for a left incident pulse. Default uses a tophat pulse for the duration of the pulse_time.
     
-    photon_num_l : int, default: 0
-        Left incident photon (figure out how to interpret)
+    pulse_env_l : list[float]
+        Time dependent pulse envelope for a left incident pulse.
+        If None, uses tophat pulse.
+    
+    photon_num_l : int
+        Left incident photon number. 
+        (Interpretation may be different if photon_num_r is nonzero)
 
-    pulse_env_r : list[float], default: None
-        Time dependent pulse envelope for a right incident pulse. Default uses a tophat pulse for the duration of the pulse_time.
-        
-    photon_num_r : int, default: 1
-        Right indident photon (same as above...)
+    photon_num_r : int
+        Right incident photon number. 
+        (Interpretation may be different if photon_num_l is nonzero)
     
     bond0 : int, default: 1
         Default bond dimension of bins.
     
     Returns
     -------
-    apk_can : list[ndarray]
+    fock_pulse : list[ndarray]
         A list of the incident time bins of the Fock pulse, with the first bin in index 0.
     
     """ 
@@ -406,6 +409,7 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
     channel_num=min(len(d_t_total), 2)
     
     # Lists created to track parameters for the L and R Hilbert spaces respectively
+    # Can be generalized in the future for N channels. Useful for beam splitter like experiments
     indices_untruncated = [np.arange(0,time_bin_dim, dt), np.arange(0,dt,1)]    #IndicesL and IndicesR
     indices_untruncated = indices_untruncated[-channel_num:] # Correct the size positions in single hilbert space case
     photon_nums = [photon_num_l, photon_num_r]
@@ -443,8 +447,9 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
         ap1[:,indices[i],dt_indices[i]] = np.sqrt(photon_nums[i]) * pulse_envs[0][i]**np.arange(photon_num_dims[i])
         ap1[:,indices[i][0],dt_indices[i][0]] = 1
 
-        combinatorialFactors = sci.special.comb(photon_nums[i],np.arange(photon_num_dims[i]))
-        apmVals = np.sqrt(combinatorialFactors)* pulse_envs[-1][i]**np.arange(photon_num_dims[i])
+        combinatorial_factors = sci.special.comb(photon_nums[i],np.arange(photon_num_dims[i]))
+        apmVals = np.sqrt(combinatorial_factors)* pulse_envs[-1][i]**np.arange(photon_num_dims[i])
+
         apm[dt_indices[i][::-1], indices[i],:] = apmVals[:,None]
         apm[dt_indices[i][0], indices[i][-1],:] = np.sqrt(photon_nums[i]) * pulse_envs[-1][i]**photon_nums[i]
 
@@ -455,6 +460,7 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
         for j in range(channel_num):
             for i in range(photon_num_dims[j]):
                 ak[dt_indices[j][:photon_num_dims[j]-i], indices[j][i], dt_indices[j][i:]] = np.sqrt(sci.special.comb(dt_indices[j][i:],i)) * pulse_envs_k[j]**i
+            # Treat end cases separately
             ak[0, indices[j], dt_indices[j]] = np.sqrt(photon_nums[j]) * pulse_envs_k[j]**np.arange(photon_num_dims[j])
             ak[dt_indices[j],0,dt_indices[j]] = 1
         return ak
@@ -481,7 +487,6 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
     
     apk_can.reverse()
     return apk_can
-
 
 
 

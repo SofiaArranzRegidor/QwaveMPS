@@ -112,8 +112,8 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Calculate population dynamics"""
 # Photonic operators
-left_flux_op = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
-right_flux_op = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
+left_flux_op = qmps.b_dag_l(input_params) @ qmps.a_l(input_params)
+right_flux_op = qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
 photon_flux_ops = [left_flux_op, right_flux_op]
 
 tls_pop = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
@@ -159,19 +159,19 @@ start_time=t.time()
 # Much faster to calculate using a list and a single correlation_2op_2t() function call then
 # Three separate calls
 a_op_list = []; b_op_list = []
-a_dag_l = qmps.a_dag_l(input_params); a_l = qmps.a_l(input_params)
-a_dag_r = qmps.a_dag_r(input_params); a_r = qmps.a_r(input_params)
+b_dag_l = qmps.b_dag_l(input_params); a_l = qmps.a_l(input_params)
+b_dag_r = qmps.b_dag_r(input_params); a_r = qmps.a_r(input_params)
 
 # Add op <a_R^\dag(t) a_R(t+t')>
-a_op_list.append(a_dag_r)
+a_op_list.append(b_dag_r)
 b_op_list.append(a_r)
 
 # Add op <a_L^\dag(t) a_L(t+t')>
-a_op_list.append(a_dag_l)
+a_op_list.append(b_dag_l)
 b_op_list.append(a_l)
 
 # Add op <a_L^\dag(t) a_R(t+t')>
-a_op_list.append(a_dag_l)
+a_op_list.append(b_dag_l)
 b_op_list.append(a_r)
 
 
@@ -256,7 +256,7 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Calculate population dynamics"""
 # Calculate same time G2 in transmission
-same_time_G2_op = qmps.a_dag_r(input_params) @ qmps.a_dag_r(input_params) @ qmps.a_r(input_params) @ qmps.a_r(input_params)
+same_time_G2_op = qmps.b_dag_r(input_params) @ qmps.b_dag_r(input_params) @ qmps.a_r(input_params) @ qmps.a_r(input_params)
 
 tls_pop = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
@@ -305,27 +305,27 @@ start_time=t.time()
 # For speed calculating several at once, but could also calculate all at once
 a_op_list = []; b_op_list = []; c_op_list = []; d_op_list = []
 # Add op <a_R^\dag(t) a_R^\dag(t+t') a_R^(t+t') a_R(t)>
-a_op_list.append(a_dag_r)
-b_op_list.append(a_dag_r)
+a_op_list.append(b_dag_r)
+b_op_list.append(b_dag_r)
 c_op_list.append(a_r)
 d_op_list.append(a_r)
 
 # Add op <a_L^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_L(t)>
-a_op_list.append(a_dag_l)
-b_op_list.append(a_dag_l)
+a_op_list.append(b_dag_l)
+b_op_list.append(b_dag_l)
 c_op_list.append(a_l)
 d_op_list.append(a_l)
 
 
 # Add op <a_R^\dag(t) a_L^\dag(t+tau) a_L^(t+tau) a_R(t)>
-a_op_list.append(a_dag_r)
-b_op_list.append(a_dag_l)
+a_op_list.append(b_dag_r)
+b_op_list.append(b_dag_l)
 c_op_list.append(a_l)
 d_op_list.append(a_r)
 
 # Add op <a_L^\dag(t) a_R^\dag(t+tau) a_R^(t+tau) a_L(t)>
-a_op_list.append(a_dag_l)
-b_op_list.append(a_dag_r)
+a_op_list.append(b_dag_l)
+b_op_list.append(b_dag_r)
 c_op_list.append(a_r)
 d_op_list.append(a_l)
 

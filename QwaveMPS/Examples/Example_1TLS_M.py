@@ -150,15 +150,15 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Choose Observables"""
 tls_pop_op = qmps.tls_pop()
-a_pop_l = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
-a_pop_r = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
+b_pop_l = qmps.b_dag_l(input_params) @ qmps.a_l(input_params)
+b_pop_r = qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
 
 # Can also call the population operators directly
-# a_pop_l = qmps.a_pop_l(input_params)
-# a_pop_r = qmps.a_pop_r(input_params)
+# b_pop_l = qmps.b_pop_l(input_params)
+# b_pop_r = qmps.b_pop_r(input_params)
 
 
-photon_pop_ops = [a_pop_l, a_pop_r]
+photon_pop_ops = [b_pop_l, b_pop_r]
 
 
 """Calculate population dynamics"""

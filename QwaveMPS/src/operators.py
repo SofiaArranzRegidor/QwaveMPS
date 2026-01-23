@@ -8,11 +8,12 @@ It provides the following functions:
     
     - Pauli raising/lowering operators
     - Bosonic creation/annihilation operators for the time bins
+    - Bosonic creation/annihilation operators for the user for flux calculations
     - Swap bin operators
-    - Expectation operators for 1 and 2 bins
-    - Simpel correlator operator constructors
-    - Steady state index helper 
-    
+    - Expectation operators for 1, 2, and N bins
+    - Entropy calculation
+    - Single time expectation function
+    - Helper function to integrate over feedback windows    
 Note 
 ----    
 It requires the module ncon (pip install --user ncon)
@@ -26,11 +27,22 @@ from ncon import ncon
 from QwaveMPS.src.parameters import InputParams
 
 #-----------------------------
-# 
+# Helper function to test 
 #-----------------------------
-def op_list_check(op_list):
+def op_list_check(op_list:object) -> bool:
     '''
     Checks if given variable is a list of operators (ndarrays), either [] or numpy list.
+    
+    Parameters
+    ----------
+    op_list : object
+        Possible list of operators to be tested.
+
+    Returns
+    -------
+    is_list : bool
+        Truth value of if the passed variable is a list/np.ndarray that may contain operators
+
     '''
     return isinstance(op_list, (list, tuple)) \
         or (isinstance(op_list, np.ndarray) and op_list.ndim > 2)
@@ -45,12 +57,12 @@ def sigmaplus() -> np.ndarray:
 
     Returns
     -------
-    oper : ndarray
-        ndarray for the Pauli spin raising operator.
+    sigma_plus : ndarray
+        The Pauli spin raising operator.
     """
-    a = np.zeros((2,2),dtype=complex)
-    a[1,0]=1.       
-    return a
+    op = np.zeros((2,2),dtype=complex)
+    op[1,0]=1.       
+    return op
 
 def sigmaminus() -> np.ndarray:  
     """
@@ -58,12 +70,12 @@ def sigmaminus() -> np.ndarray:
     
     Returns
     -------
-    oper : ndarray
-        ndarray for the Pauli spin lowering operator.
+    sigma_minus : ndarray
+        The Pauli spin lowering operator.
     """
-    a = np.zeros((2,2),dtype=complex)
-    a[0,1]=1.       
-    return a
+    op = np.zeros((2,2),dtype=complex)
+    op[0,1]=1.       
+    return op
 
 def e(d_sys:int=2) -> np.ndarray:
     """
@@ -71,13 +83,14 @@ def e(d_sys:int=2) -> np.ndarray:
 
     Parameters
     ----------
-    d_sys : int, default: 2 (for a TLS)
+    d_sys : int, default: 2
         Size of the Hilbert space of the matter system.
+        For a two level system have d_sys=2.
 
     Returns
     -------
     oper : ndarray
-        ndarray for the excited state projector
+        The excited state projector
     """ 
     exc = np.zeros((d_sys,d_sys),dtype=complex)
     exc[1,1]=1.      
@@ -89,12 +102,14 @@ def tls_pop(d_sys:int=2) -> np.ndarray:
 
     Parameters
     ----------
-    d_sys : int, default: 2 (for a TLS)
+    d_sys : int, default: 2
         Size of the Hilbert space of the matter system.
+        For a two level system have d_sys=2.
     
     Returns
     -------
-    Population operator for a TLS: np.ndarray
+    pop_operator : ndarray
+        Population operator for a TLS
     """ 
     return np.real((sigmaplus() @ sigmaminus()))
 
@@ -118,7 +133,7 @@ def delta_b_dag(delta_t:float, d_t:int=2) -> np.ndarray:
     Returns
     -------
     oper : ndarray
-        ndarray time bin noise creation operator.
+        Time bin noise creation operator.
     """
     return np.sqrt(delta_t) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), -1) 
 
@@ -138,11 +153,11 @@ def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:
     Returns
     -------
     oper : ndarray
-        ndarray time bin noise creation operator.
+        Time bin noise creation operator.
     """      
     return np.sqrt(delta_t) * np.diag(np.sqrt(np.arange(1, d_t, dtype=complex)), 1)    
 
-def delta_b_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+def delta_b_dag_l(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:  
     """
     Left time bin noise creation operator for a system with two field channels,
     scaled by sqrt(delta_t) in the truncated Fock basis.
@@ -158,13 +173,13 @@ def delta_b_dag_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
     Returns
     -------
     oper : ndarray
-        ndarray left time bin noise creation operator.
+        Left time bin noise creation operator.
     """ 
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
     return np.kron(delta_b_dag(delta_t, d_t_l),np.eye(d_t_r))     
 
-def delta_b_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray: 
+def delta_b_dag_r(delta_t:float, d_t_total:np.ndarray) -> np.ndarray: 
     """
     Right time bin noise creation operator for a system with two field channels,
     scaled by sqrt(delta_t) in the truncated Fock basis.
@@ -180,13 +195,13 @@ def delta_b_dag_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     Returns
     -------
     oper : ndarray
-        ndarray right time bin noise creation operator.
+        Right time bin noise creation operator.
     """ 
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
     return np.kron(np.eye(d_t_l), delta_b_dag(delta_t, d_t_r))     
 
-def delta_b_l(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+def delta_b_l(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:  
     """
     Left time bin noise annihilation operator for a system with two field channels,
     scaled by sqrt(delta_t) in the truncated Fock basis.
@@ -202,13 +217,13 @@ def delta_b_l(delta_t:float, d_t_total:np.array) -> np.ndarray:
     Returns
     -------
     oper : ndarray
-        ndarray left time bin noise annihilation operator.
+        Left time bin noise annihilation operator.
     """ 
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
     return np.kron(delta_b(delta_t, d_t_l),np.eye(d_t_r))     
 
-def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:  
+def delta_b_r(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:  
     """
     Right time bin noise annihilation operator for a system with two field channels,
     scaled by sqrt(delta_t) in the truncated Fock basis.
@@ -224,7 +239,7 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
     Returns
     -------
     oper : ndarray
-        ndarray right time bin noise annihilation operator (left and right channels).
+        Right time bin noise annihilation operator (left and right channels).
     """ 
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
@@ -233,190 +248,165 @@ def delta_b_r(delta_t:float, d_t_total:np.array) -> np.ndarray:
 #------------------------------
 # Normalized Bosonic Observable Operators
 #------------------------------
-def a_dag(params:InputParams) -> np.ndarray:  
+def b_dag(params:InputParams) -> np.ndarray:  
     """
     Creation operator for observables in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
     
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-
-    d_t : int, default: 2
-        Size of the truncated field Hilbert space
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
 
     Returns
     -------
     oper : ndarray
-        ndarray creation operator observable.
+        Creation operator observable.
     """
     return delta_b_dag(params.delta_t, np.prod(params.d_t_total)) / params.delta_t
 
-def a(params:InputParams) -> np.ndarray:  
+def b(params:InputParams) -> np.ndarray:  
     """
     Annihilation operator for observables in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-    
-    d_t : int, default: 2
-        Size of the truncated field Hilbert space
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
 
     Returns
     -------
     oper : ndarray
-        ndarray annihilation operator observable.
-    """      
+        Annihilation operator observable.
+    """
     return delta_b(params.delta_t, np.prod(params.d_t_total)) / params.delta_t
 
-def a_dag_l(params:InputParams) -> np.ndarray:  
+def b_dag_l(params:InputParams) -> np.ndarray:  
     """
     Left creation operator for a system with two field channels in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-    
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces (left and right channels).
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
 
     Returns
     -------
     oper : ndarray
-        ndarray left creation operator observable.
-    """ 
+        Creation operator observable for left channel.
+    """
     return delta_b_dag_l(params.delta_t, params.d_t_total) / params.delta_t   
 
-def a_dag_r(params:InputParams) -> np.ndarray: 
+def b_dag_r(params:InputParams) -> np.ndarray: 
     """
     Right creation operator for a system with two field channels, in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-    
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces (left and right channels).
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
 
     Returns
     -------
     oper : ndarray
-        ndarray right creation operator observable.
-    """ 
+        Creation operator observable for right channel.
+    """
     return delta_b_dag_r(params.delta_t, params.d_t_total) / params.delta_t    
 
-def a_l(params:InputParams) -> np.ndarray:  
+def b_l(params:InputParams) -> np.ndarray:  
     """
     Left annihilation operator for a system with two field channels in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-    
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces (left and right channels).
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
 
     Returns
     -------
     oper : ndarray
-        ndarray left annihilation operator observable.
-    """ 
+        Annihilation operator observable for left channel.
+    """
     return delta_b_l(params.delta_t, params.d_t_total) / params.delta_t
 
-def a_r(params:InputParams) -> np.ndarray:  
+def b_r(params:InputParams) -> np.ndarray:  
     """
     Right annihilation operator for a system with two field channels, in the truncated Fock basis.
     Normalized by 1/sqrt(delta_t).
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces (left and right channels).
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
 
     Returns
     -------
     oper : ndarray
-        ndarray right annihilation operator observable.
-    """ 
+        Annihlation operator observable for right channel.
+    """
     return delta_b_r(params.delta_t, params.d_t_total) / params.delta_t
 
-def a_pop_r(params:InputParams) -> np.ndarray:
+def b_pop(params:InputParams) -> np.ndarray:  
     """
-    Right-channel photonic population operator (normalized by delta_t).
+    Single-channel photonic population operator (normalized by 1/delta_t).
 
     Parameters
     ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-    
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
+
     Returns
     -------
-    Population of the right-channel photons: np.ndarray
-    """ 
-    return np.real((delta_b_dag_r(params.delta_t, params.d_t_total)
-                     @ delta_b_r(params.delta_t, params.d_t_total))/params.delta_t**2)
-
-def a_pop_l(params:InputParams) -> np.ndarray:  
+    oper : ndarray
+        Population operator observable.
     """
-    Left-channel photonic population operator (normalized by delta_t).
-
-    Parameters
-    ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-    
-    Returns
-    -------
-    Population of the left-channel photons: np.ndarray
-    """ 
-    return np.real((delta_b_dag_l(params.delta_t, params.d_t_total)
-                     @ delta_b_l(params.delta_t, params.d_t_total))/params.delta_t**2)
-
-def a_pop(params:InputParams) -> np.ndarray:  
-    """
-    Single-channel photonic population operator (normalized by delta_t).
-
-    Parameters
-    ----------
-    delta_t : float
-        Time step for system evolution.
-        
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-    
-    Returns
-    -------
-    Photonic population fora single channel solution: np.ndarray
-    """ 
     return np.real((delta_b_dag(params.delta_t, np.prod(params.d_t_total)) 
                     @ delta_b(params.delta_t, np.prod(params.d_t_total)))/params.delta_t**2)
 
+def b_pop_r(params:InputParams) -> np.ndarray:
+    """
+    Right-channel photonic population operator (normalized by 1/delta_t).
+
+    Parameters
+    ----------
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
+
+    Returns
+    -------
+    oper : ndarray
+        Population operator for the right channel
+    """
+    return np.real((delta_b_dag_r(params.delta_t, params.d_t_total)
+                     @ delta_b_r(params.delta_t, params.d_t_total))/params.delta_t**2)
+
+def b_pop_l(params:InputParams) -> np.ndarray:  
+    """
+    Left-channel photonic population operator (normalized by 1/delta_t).
+
+    Parameters
+    ----------
+    params : InputParams
+        Object that contains the simulation parameters (time step size and photonic tensor space sizes)
+
+    Returns
+    -------
+    oper : ndarray
+        Population operator observable for the left channel.
+    """
+    return np.real((delta_b_dag_l(params.delta_t, params.d_t_total)
+                     @ delta_b_l(params.delta_t, params.d_t_total))/params.delta_t**2)
 
 
 #-------------------
-#Time evolution MPO
+# Time evolution MPO
 #-------------------
 
-def u_evol(Hm:np.ndarray|list, d_sys_total:np.array, d_t_total:np.array, interacting_timebins_num:int=1) -> np.ndarray|list:
+def u_evol(Hm:np.ndarray|list, d_sys_total:np.ndarray, d_t_total:np.ndarray, interacting_timebins_num:int=1) -> np.ndarray:
     """
     Creates a time evolution operator exp(-1j H) for a given Hamiltonian,
     and reshape to expected tensor shape.
@@ -438,18 +428,12 @@ def u_evol(Hm:np.ndarray|list, d_sys_total:np.array, d_t_total:np.array, interac
     Returns
     -------
     oper : ndarray
-        ndarray time evolution operator of shape ((d_sys,) + (d_t,)*interacting_timebins_num)*2.
+        Time evolution operator of shape ((d_sys,) + (d_t,)*interacting_timebins_num)*2.
     """ 
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
     shape = ((d_sys,) + ((d_t,)*interacting_timebins_num)) * 2
-    #For the time dependent hamiltonian
-    if isinstance(Hm, list):
-        sol=[]
-        for h_i in Hm:
-           sol.append(expm(-1j*h_i).reshape(shape)) 
-    else:
-        sol= expm(-1j*Hm).reshape(shape)
+    sol= expm(-1j*Hm).reshape(shape)
     return sol
 
 #----------
@@ -465,7 +449,7 @@ def swap(dim1:int, dim2:int) -> np.ndarray:
     dim1 : int
         Size of the first Hilbert space.
             
-    dim2 : int, default: 2
+    dim2 : int
         Size of the second Hilbert space.
 
     Returns
@@ -490,7 +474,7 @@ def vectorized_swap(dim1:int, dim2:int) -> np.ndarray:
     dim1 : int
         Size of the first Hilbert space.
             
-    dim2 : int, default: 2
+    dim2 : int
         Size of the second Hilbert space.
 
     Returns
@@ -508,16 +492,16 @@ def vectorized_swap(dim1:int, dim2:int) -> np.ndarray:
 #Expectation MPOs
 #-----------------
 
-def expectation_1bin(a_list:np.ndarray, mpo:np.ndarray) -> complex:
+def expectation_1bin(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
     """
     The expectation value <A|MPO|A> of a single MPS bin with a given operator.
 
     Parameters
     ----------
-    AList : ndarray
+    bin_state : ndarray
         MPS bin defining the state having an expectation taken with respect to some operator.
 
-    MPO : ndarray
+    mpo : ndarray
         Operator whose expectation value is being taken.
     
     Returns
@@ -525,16 +509,16 @@ def expectation_1bin(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     expectation value : complex
         The expectation value of the operator for the given state.
     """ 
-    sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,4],[2,3],[1,3,4]])
+    sol = ncon([np.conj(bin_state),mpo,bin_state],[[1,2,4],[2,3],[1,3,4]])
     return sol
 
-def expectation_2bins(a_list:np.ndarray, mpo:np.ndarray) -> complex:
+def expectation_2bins(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
     """
     The expectation value <A|MPO|A> of a 2-bin MPS with a given operator.
 
     Parameters
     ----------
-    AList : ndarray
+    bin_state : ndarray
         MPS bin defining the state having an expectation taken with respect to some operator.
 
     MPO : ndarray
@@ -545,7 +529,7 @@ def expectation_2bins(a_list:np.ndarray, mpo:np.ndarray) -> complex:
     expectation value : complex
         The expectation value of the operator for the given state.
     """ 
-    sol = ncon([np.conj(a_list),mpo,a_list],[[1,2,5,4],[2,3,5,6],[1,3,6,4]])
+    sol = ncon([np.conj(bin_state),mpo,bin_state],[[1,2,5,4],[2,3,5,6],[1,3,6,4]])
     return sol
 
 def expectation_nbins(ket:np.ndarray, mpo:np.ndarray) -> complex:
@@ -589,7 +573,7 @@ expectation_nbins.prev_rank = None
 # Single Time Observables
 #-----------------
 
-def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.ndarray]) -> np.ndarray:
+def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:np.ndarray|list[np.ndarray]) -> np.ndarray:
     """
     Compute expectation values of a list of operators on a list of OC normalized bins.
 
@@ -598,13 +582,15 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
     normalized_bins : list[ndarray]
         List of OC normalized bins in order of time to have localized expectation values taken.
 
-    ops_list : list[ndarray]
-        List of operators to take expectation values.
+    ops_list : ndarray/list[ndarray]
+        List of operators or a single operator to take expectation values.
         Each operator must be compatible with the bin physical space.
+    
     Returns
     -------
-    np.ndarray
-        2D array shaped (len(ops_list), len(normalized_bins)) with expectation
+    expectation_values: np.ndarray[complex] | np.ndarray[np.ndarray[complex]]
+        In the case of a single operator returns a list of expectation values for each time point.
+        For a list of operators returns a 2D array shaped (len(ops_list), len(normalized_bins)) with expectation
         values for each operator at each time.
     """
     # Check if the operator is a list of operators, if  so return only the 0th element of the list
@@ -621,8 +607,9 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:list[np.n
 
 def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:InputParams) -> np.ndarray:
     """
-    Calculates the time dependent integral of the function over all of the time points in the feedback loop.
-    For t<tau assumes initial integration over loop time points will be 0.
+    Calculates the time dependent integral of the function over all points in the feedback loop at each time point of the system evolution.
+    This is a moving windowed integral over the function, with the window size of length tau (the feedback time)
+    For t<tau assumes time points yet to be reached in the loop will initially be 0.
 
     Parameters
     ----------
@@ -636,6 +623,7 @@ def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:I
     -------
     observable_integrated_in_loop : np.ndarray
         List of values for the integration of time_dependent_func over the feedback loop at each time point.
+        This is a moving integral over the function, for a window of length tau.
     """
 
     tau = params.tau
@@ -663,7 +651,7 @@ def entanglement(sch:list[np.ndarray]) -> list[float]:
 
     Returns
     -------
-    list[float]
+    time_dependent_entanglement : list[float]
         Entanglement entropies computed as -sum(p * log2 p) where p = s**2.
     """
     ent_list=[]

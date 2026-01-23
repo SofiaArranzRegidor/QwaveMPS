@@ -114,8 +114,8 @@ bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 pop_tls1_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 pop_tls2_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
-flux_l_op = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
-flux_r_op = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
+flux_l_op = qmps.b_dag_l(input_params) @ qmps.a_l(input_params)
+flux_r_op = qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
 
 """Calculate population dynamics"""
 tls_pops = qmps.single_time_expectation(bins.system_states, [pop_tls1_op, pop_tls2_op])
@@ -170,7 +170,7 @@ start_time=t.time()
 
 #Define the operator we want to calculate,
 #in this case the single time first order correlation function
-single_t_g1=qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
+single_t_g1=qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
 
 #Use the general one time expectation function to get the observable
 #Note here that noise operators are not normalized so /delta_t**2 is required

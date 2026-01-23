@@ -108,19 +108,19 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Calculate G1 in transmission and reflection, though use 4 op to calculate G2 at same time"""
 a_ops = []; b_ops = []; c_ops = []; d_ops = []
-a_dag_r = qmps.a_dag_r(input_params) ; a_r = qmps.a_r(input_params)
-a_dag_l = qmps.a_dag_l(input_params); a_l = qmps.a_l(input_params)
+b_dag_r = qmps.b_dag_r(input_params) ; a_r = qmps.a_r(input_params)
+b_dag_l = qmps.b_dag_l(input_params); a_l = qmps.a_l(input_params)
 dim = a_r.shape[0]
 
 # Add Right moving (transmission) first
-a_ops.append(a_dag_r)
+a_ops.append(b_dag_r)
 b_ops.append(a_r)
 c_ops.append(np.eye(dim))
 d_ops.append(np.eye(dim))
 
 
 # Add left moving correlation operators
-a_ops.append(a_dag_l)
+a_ops.append(b_dag_l)
 b_ops.append(a_l)
 c_ops.append(np.eye(dim))
 d_ops.append(np.eye(dim))
@@ -128,20 +128,20 @@ d_ops.append(np.eye(dim))
 
 """Also calculate the G2"""
 # Add Right moving (transmission) first
-a_ops.append(a_dag_r)
-b_ops.append(a_dag_r)
+a_ops.append(b_dag_r)
+b_ops.append(b_dag_r)
 c_ops.append(a_r)
 d_ops.append(a_r)
 
 
 # Add left moving correlation operators
-a_ops.append(a_dag_l)
-b_ops.append(a_dag_l)
+a_ops.append(b_dag_l)
+b_ops.append(b_dag_l)
 c_ops.append(a_l)
 d_ops.append(a_l)
 
 """Consider also a kind of two time squeezing operators in transmission"""
-X = a_dag_r + a_r
+X = b_dag_r + a_r
 a_ops.append(X)
 b_ops.append(X)
 c_ops.append(np.eye(dim))

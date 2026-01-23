@@ -100,8 +100,8 @@ bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Define relevant photonic operators"""
 tls_pop_op = qmps.tls_pop()
-a_l_pop = qmps.a_dag_l(input_params) @ qmps.a_l(input_params)
-a_r_pop = qmps.a_dag_r(input_params) @ qmps.a_r(input_params)
+a_l_pop = qmps.b_dag_l(input_params) @ qmps.a_l(input_params)
+a_r_pop = qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
 photon_pop_ops = [a_l_pop, a_r_pop]
 
 
@@ -139,19 +139,19 @@ start_time=t.time()
 
 # Choose operators of which to take steady state correlations
 a_op_list = []; b_op_list = []
-a_dag_l = qmps.a_dag_l(input_params); a_l = qmps.a_l(input_params)
-a_dag_r = qmps.a_dag_r(input_params); a_r = qmps.a_r(input_params)
+b_dag_l = qmps.b_dag_l(input_params); a_l = qmps.a_l(input_params)
+b_dag_r = qmps.b_dag_r(input_params); a_r = qmps.a_r(input_params)
 
 # Add op <a_R^\dag(t) a_R(t+t')>
-a_op_list.append(a_dag_r)
+a_op_list.append(b_dag_r)
 b_op_list.append(a_r)
 
 # Add op <a_L^\dag(t) a_L(t+t')>
-a_op_list.append(a_dag_l)
+a_op_list.append(b_dag_l)
 b_op_list.append(a_l)
 
 # Add op <a_L^\dag(t) a_R(t+t')>
-a_op_list.append(a_dag_l)
+a_op_list.append(b_dag_l)
 b_op_list.append(a_r)
 
 
@@ -163,7 +163,7 @@ correlations_ss,tau_list_ss,t_steady = qmps.correlation_ss_2op(bins.correlation_
 ## Test out the case of a single 4op steady state correlation
 # Calculate for the op<a_R^\dag(t) a_R^\dag(t+tau) a_R(t+tau) a_R(t)>
 correlation_ss_4op, tau_list_ss_4op, t_steady_4op = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
-                                                                      a_dag_r, a_dag_r, a_r, a_r, input_params)
+                                                                      b_dag_r, b_dag_r, a_r, a_r, input_params)
 
 print("ss correl --- %s seconds ---" %(t.time() - start_time))
 
@@ -188,7 +188,7 @@ start_time=t.time()
 
 # Note that the optimally efficient code would use identity matrices to make only a single function call
 correlations_1t,tau_list_1t = qmps.correlation_2op_1t(bins.correlation_bins,a_op_list, b_op_list, t_steady,input_params)
-correlation_4op_1t, tau_list_4op_1t = qmps.correlation_4op_1t(bins.correlation_bins,a_dag_r, a_dag_r, a_r, a_r, t_steady_4op, input_params)
+correlation_4op_1t, tau_list_4op_1t = qmps.correlation_4op_1t(bins.correlation_bins,b_dag_r, b_dag_r, a_r, a_r, t_steady_4op, input_params)
 
 print("Full single time correlation --- %s seconds ---" %(t.time() - start_time))
 #%%% Graphing of these single time dynamics

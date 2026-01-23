@@ -1,5 +1,3 @@
-Add spectral intensity and time dependent spectrum functions...
-
 Features to add on future versions:
     Time dependent operator expectation values (to be implemented)
     Coherent pulse (done, just needs copying)
@@ -11,3 +9,6 @@ Features to add on future versions:
         ...eventually efficient symmetric time evolution when implemented (will require uniform tau)
     Addition of general basis vector / transition operators?
     Move gammas out of input_params (Hamiltonian independent class, params that are true for every system)
+    Change time evolution/hamiltonians structure so that all time bins are to the left of the system bin (including input bin)
+        Makes generalized algorithm for the nonmarkovian n-loops easier
+        (This change is probably easier than working through the algorithm again. Also organizes Hamiltonians so the system Hilbert space is always far right)

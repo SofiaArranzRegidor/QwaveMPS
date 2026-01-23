@@ -2,12 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-This module contains data classes for variables that
-are often repeated throughout the QwaveMPS repository.
-
-It collects lightweight data containers that hold
-parameters, binning information and 
-precomputed correlation/population arrays.
+This module contains data classes for the input parameters (which are used to specify the overall simulation environment)
+and the Bins class (which includes the results of a simulation).
 
 """
 
@@ -17,27 +13,42 @@ import numpy as np
 @dataclass
 class InputParams:
     """Input / simulation parameters:
-        
-    - delta_t: float
+    
+    Parameters
+    ----------
+    delta_t: float
         Time step used for time propagation.
-    - tmax: float
+
+    tmax: float
         Maximum simulation time.
-    - d_sys_total: np.ndarray
+
+    d_sys_total: np.ndarray
         Array describing the local physical dimensions of the system bins.
-    - d_t_total: np.ndarray
+        Each index is associated with the size of a tensor space.
+
+    d_t_total: np.ndarray
         Array with dimensions for the time bins.
-    - bond_max: int
+        Each index is associated with the size of a tensor space.
+        In the case of a two directional light channel will be a list of two values.
+
+    bond_max: int
         Maximum MPS bond dimension (chi) to use for truncation.
-    - gamma_l, gamma_r: float, (is deprecated and will be removed in future versions)
+
+    gamma_l, gamma_r: float
         Coupling (decay) rates to the left and right channels respectively.
-    - gamma_l2, gamma_r2: float, optional, (is deprecated and will be removed in future versions)
+        (may be removed from this class in future versions)
+
+    gamma_l2, gamma_r2: float, default: 0
         Optional second set of coupling rates (e.g. for a second TLS).
         Default 0 means only one system.
-    - tau: float, optional
+        (may be removed from this class in future versions)
+
+    tau: float, default: 0
         Delay time if modelling non-Markovian dynamics.
-        Default 0.
-    - phase: float, optional, (is deprecated and will be removed in future versions)
-        Relative delayed phase. Default 0.
+
+    phase: float, defulat: 0
+        Relative delayed phase.
+        (may be removed from this class in future versions)
     """
     delta_t: float
     tmax: float
@@ -54,22 +65,31 @@ class InputParams:
     
 @dataclass
 class Bins:
-    """Bin metadata used for analysing time-dependent quantities.
-   - system_states: list
+    """Bin data used for analysing time-dependent quantities.
+    
+    Parameters
+    ----------
+    system_states: list
        List of system bins used when calculating single time system observables.
-   - output_field_states: list
+    
+    output_field_states: list
        Time bins used when calculating single time field observables.
-    - input_field_states: list
+    
+    input_field_states: list
         List of input time bins used for calculating single time field observables incident the system resulting from
-        defined initial field state.
-   - correlation_bins: list
-       Correlation bins used when computing output field photon correlation functions.
-   - schmidt: list
+        the defined initial field state.
+
+    correlation_bins: list   
+       Correlation bins used when computing output field photon correlation functions at two time points.
+
+    schmidt: list
        Schmidt decomposition system bins usen when calculating entanglement entropy.
-   - loop_field_states: list, optional
+ 
+    loop_field_states: list, default: None
        Tau (delay) bins used when calculating delayed field observables. This is the list of 
        field states entering the feedback loop at each time point.
-   - schmidt_tau: list, optional
+   
+    schmidt_tau: list, default: None
        Schmidt decomposition tau bins usen when calculating delayed entanglement entropy.
    """
     system_states: list     

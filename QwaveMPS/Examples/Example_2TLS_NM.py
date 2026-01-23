@@ -106,8 +106,8 @@ tls1_pop_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 tls2_pop_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
 # Create photonic flux operators in each direction
-photon_flux_l_op = qmps.a_pop_l(input_params)
-photon_flux_r_op = qmps.a_pop_r(input_params)
+photon_flux_l_op = qmps.b_pop_l(input_params)
+photon_flux_r_op = qmps.b_pop_r(input_params)
 photon_flux_ops = [photon_flux_l_op, photon_flux_r_op]
 
 # Calculate time dependent TLS populations, and fluxes into/out of feedback loop

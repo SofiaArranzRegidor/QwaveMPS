@@ -2,7 +2,7 @@
 This module contains the functions used to calculate two time point correlation functions
 and supporting functions that might be used on such calculated correlation functions
 
-It provides full two time point correlation calculation, calculation of a single cross section
+It provides full two time point correlation calculation, calculation of a single cross sections
 of a two time correlation function, steady state correlation functions, and spectra.
 
 It requires the module ncon (pip install --user ncon)
@@ -22,7 +22,7 @@ from QwaveMPS.src.parameters import InputParams
 # ----------------------
 
 
-def spectrum_w(delta_t:float, g1_list: np.ndarray) -> list[np.ndarray, np.ndarray]:
+def spectrum_w(delta_t:float, g1_list: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute the (discrete) spectrum in the long-time limit via Fourier transform 
     of the two-time first-order correlation (steady-state solution).
@@ -52,15 +52,16 @@ def transform_t_tau_to_t1_t2(positive_tau_results:np.ndarray, negative_tau_resul
     Transforms two time correlations from a (t,tau) representation to a (t1,t2) representation.
     Takes the computed correlation function with operators ordered for the positive and negative tau (t>t+tau) cases.
     Note that this truncates the result to maintain the same overall shape by having t2 have the same domain as t1 (truncates cases where t+tau>t1_max).
-    If only given one matrix assumes symmetry over the tau axis,
+    If only given one matrix assumes symmetry over the tau axis.
 
     Parameters
     ----------
     positive_tau_results : np.ndarray
         Computed two time correlation function in the case of operators ordered for positive tau data.
    
-    negative_tau_results : np.ndarray
+    negative_tau_results : np.ndarray, default: None
         Computed two time correlation function in the case of operators ordered for negative tau data.
+        If None, uses the positive_tau_results, treating the observable as symmetric over the tau axis.
 
     Returns
     -------
@@ -71,10 +72,13 @@ def transform_t_tau_to_t1_t2(positive_tau_results:np.ndarray, negative_tau_resul
         negative_tau_results = positive_tau_results
 
     transformed_t1_t2_data = np.zeros(negative_tau_results.shape, dtype=complex)
-    t_size, tau_size = negative_tau_results.shape # Shape is square, requires equal number of values for t/tau
+    t_size, tau_size = negative_tau_results.shape 
+    
+    # Shape is square, this indexing requires equal number of values for t/tau
+    # TODO: If adding ability to measure subsections of the two time correlation have to update this
+    i, j = np.triu_indices(t_size)
     
     # Add contributions from both t>= tau and t<= tau (diagonal is equal)
-    i, j = np.triu_indices(t_size)
     transformed_t1_t2_data[i, j] = positive_tau_results[i, j - i]
     transformed_t1_t2_data[j, i] = negative_tau_results[i, j - i]
 
