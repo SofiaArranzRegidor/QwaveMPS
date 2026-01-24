@@ -425,11 +425,11 @@ def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
         results = results[0]
     return results, t_list
 
-def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float]:
+def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5, window:int = 20, t_steady:float=None) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float|np.ndarray]:
     """ 
     Calculates the two time correlation function <A(t)B(t+t')> at a steady state value of t for either single operators, or each operator in the lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
-    for each operator.
+    for each operator. In that case calculates the steady states correlation from the greatest steady state time of the operators.
             
     Parameters
     ----------
@@ -448,18 +448,25 @@ def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:li
     tol : float, default: 1e-5
         The tolerance for which convergence of the operators is determined. Used to find the steady state time.    
     
+    window : int, default: 20
+        Number of recent points to analyze when determining the steady state time.
+        
+    t_steady : float, default: None
+        User defined steady state time. If not provided, steady state is determined by convergence
+        of the same time expectation values of the observables.
+
     Returns
     -------
-    correlations : list[np.ndarray]
+    correlations : list[ndarray]
         In the case of single operators a 1D array. In the case of a list of operators returns a
         list of 1D arrays, each a two time correlation function of fixed t at steady state, corresponding by index to the operators in the two operator lists.
         The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
     
-    t_list : np.ndarray
+    t_list : ndarray
         List of time points for the t' axis.
 
-    t_ss : float
-        Steady state time point value.
+    t_ss : float/ndarray
+        Steady state time point value for a single operator. Otherwise, list of steady state times for each single time observable.
     """
     list_flag = op_list_check(a_op_list)
 
@@ -476,18 +483,19 @@ def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:li
         ops_same_time.append(a_op_list @ b_op_list)
         ops_two_time.append(np.kron(a_op_list, b_op_list))
     
-    results, tau_list, t_ss =  correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params)
+    results, tau_list, t_ss =  correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params, window=window, tol=tol, t_steady=t_steady)
 
     if not list_flag:
         results = results[0]
+        t_ss = t_ss[0]
 
     return results, tau_list, t_ss
 
-def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float]:
+def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5, window:int=20, t_steady:float=None) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float|np.ndarray]:
     """ 
     Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> at a steady state value of t for either single operators, or each operator in the lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
-    for each operator.
+    for each operator. In that case calculates the steady states correlation from the greatest steady state time of the operators.
             
     Parameters
     ----------
@@ -512,18 +520,26 @@ def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:li
     tol : float, default: 1e-5
         The tolerance for which convergence of the operators is determined. Used to find the steady state time.    
     
+    window : int, default: 20
+        Number of recent points to analyze when determining the steady state time.
+        
+    t_steady : float, default: None
+        User defined steady state time. If not provided, steady state is determined by convergence
+        of the same time expectation values of the observables.
+
     Returns
     -------
-    correlations : list[np.ndarray]
+    correlations : list[ndarray]
         In the case of single operators a 1D array. In the case of a list of operators returns a
         list of 1D arrays, each a two time correlation function of fixed t at steady state, corresponding by index to the operators in the two operator lists.
         The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
     
-    t_list : np.ndarray
+    t_list : ndarray
         List of time points for the t' axis.
 
-    t_ss : float
-        Steady state time point value.
+    t_ss : float/ndarray
+        Steady state time point value for a single operator. Otherwise, list of steady state times for each single time observable.
+
     """
     list_flag = op_list_check(a_op_list)
 
@@ -541,11 +557,13 @@ def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:li
         ops_same_time.append(a_op_list @ b_op_list @ c_op_list @ d_op_list)
         ops_two_time.append(np.kron(a_op_list @ d_op_list, b_op_list @ c_op_list))
     
-    results, tau_list, t_ss = correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params, tol=tol)
+    results, tau_list, t_ss = correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params, tol=tol, window=window, t_steady=t_steady)
 
     # Don't return as list
     if not list_flag:
         results = results[0]
+        t_ss = t_ss[0]
+
     return results, tau_list, t_ss
 
 
@@ -754,11 +772,10 @@ def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
 #Steady-state index helper, and correlations
 #-------------------------------------------
 
-#TODO In future could have list of steady state times, one for each operator.
-def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[np.ndarray], tol: float=1e-5, window: int=10) -> int|None:
+def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[np.ndarray], tol: float=1e-5, window: int=10) -> np.ndarray[int]:
     """
     Steady-state index helper function to find the time step 
-    when the steady state is reached in the single time dynamics of the operators.
+    when the steady state is reached in the single time dynamics of each operator.
     
     Parameters
     ----------
@@ -767,7 +784,6 @@ def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[
 
     operator_list : list[np.ndarray]
         List of single time point operators to test convergence of their expectation values.
-        Convergence is only determined when all operators converge.
     
     tol : float, default: 1e-5
         Maximum deviation allowed in the final window
@@ -777,29 +793,37 @@ def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[
         
     Returns
     -------
-    int or None
-        The index of the start of the steady window, or None if none found.
+    steady_state_indices : ndarray[int]
+        The index of the start of the steady window for each operator.
+        For each operator that a steady state is not found, the array contains np.nan at that index.
     """
     op_num = len(operator_list)
     expectation_vals_list = single_time_expectation(output_field_states, operator_list)
+    steady_state_indices = np.zeros(op_num, dtype=int)
+    op_tracker = np.arange(op_num)
     
     for i in range(window, len(output_field_states)):
-        ss_found = True
-        for j in range(op_num):
+        for j in op_tracker:
             tail = expectation_vals_list[j][i-window:i]
             if tail.max() - tail.min() > tol:
-                ss_found = False
-                break
+                continue
             if np.max(np.abs(np.diff(tail))) > tol:
-                ss_found = False
-                break
+                continue
+            
+            # Steady state index has been found for the operator
+            steady_state_indices[j] = i - window
+            op_tracker = np.delete(op_tracker, np.where(op_tracker == j))     
         
-        if ss_found:
-            print('Steady state found at list index i = ', i - window)
-            return i - window
-    return None
+        # Check if all steady state times have been found
+        if len(op_tracker) == 0:
+            break
+    
+    # Replace places without steady state with None
+    for j in op_tracker:
+        steady_state_indices[j] = np.nan
+    return steady_state_indices
 
-def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, tol: float=1e-5, window: int=10) -> tuple[list[np.ndarray], np.ndarray, float]:
+def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, tol: float=1e-5, window: int=10, t_steady:float=None) -> tuple[list[np.ndarray], np.ndarray, np.ndarray]:
     """
     Efficient steady-state correlation calculation.
     This computes time differences starting from a convergence index (steady-state
@@ -829,12 +853,22 @@ def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:lis
     
     tol : float, default: 1e-5
         Maximum deviation allowed in the final window for the steady state time.
+
+    t_steady : float, default: None
+        User defined steady state time. If not provided, steady state is determined by convergence
+        of the same time expectation values of the observables.
         
     Returns
     -------
-    SSCorrel or SSCorrel1Channel
-        Dataclass with precomputed time correlation lists for steady-state
-        (for more info see the corresponding dataclasses in parameters.py)
+    correlations : list[ndarray]
+        A list of 1D arrays, each a two time correlation function of fixed t at steady state, corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
+    
+    t_list : ndarray
+        List of time points for the t' axis.
+
+    t_ss : ndarray
+        List of steady state times for each single time observable.
     """
     d_t_total=params.d_t_total
     bond=params.bond_max
@@ -848,10 +882,16 @@ def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:lis
     for i in range(len(ops_two_time)):
         ops_two_time[i] = ops_two_time[i].reshape((d_t,)*(2*2)) # One for factor for bin number, 2 point
     
-    #First check convergence of all correlations:
-    conv_index =  steady_state_index(output_field_states, ops_same_time,window=window, tol=tol)  
-    if conv_index is None:
-        raise ValueError("tmax not long enough for steady state of all given operators")
+    #First check convergence of all correlations if not given a time:
+    if t_steady is None:
+        conv_indices =  steady_state_index(output_field_states, ops_same_time,window=window, tol=tol)  
+        if np.isnan(conv_indices).any():
+            raise ValueError("tmax not long enough for steady state of all given operators")
+        
+        conv_index = conv_indices.max()
+    else:
+        conv_indices = np.array([np.nan]*len(ops_two_time))
+        conv_index = int(round(t_steady / delta_t))
     
     # Truncate to steady state index and create appropriate 
     time_bin_list_copy=time_bin_list_copy[conv_index:]
@@ -885,7 +925,7 @@ def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:lis
         # Now put OC in the right bin, i_t2, to move it up the chain
         time_bin_list_copy[i]= stemp[:,None,None] * i_t2 #OC on right bin
 
-    t_steady_state = conv_index * delta_t
+    t_steady_states = conv_indices * delta_t
     tau_list = np.arange(size) * delta_t
-    return correlations, tau_list, t_steady_state
+    return correlations, tau_list, t_steady_states
     

@@ -10,7 +10,8 @@ Computes time evolution, population dynamics, steady-state correlations,
 and the emission spectrum, with the following example plots:
         1. TLS population dynamics
         2. First and second-order steady-state correlations
-        3. Long-time emission spectrum
+        3. Comparison to first and second-order full correlations at two time points.
+        4. Long-time emission spectrum
 
 Requirements: 
     
@@ -47,7 +48,7 @@ def clean_ticks(x, pos):
 """"Choose the simulation parameters"""
 
 #Choose the bins:
-# Dimension chosen to be 3 to check observe second order photonic observables
+# Dimension chosen to be 3 to check second order photonic observables
 d_t_l=3 #Time right channel bin dimension
 d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -95,19 +96,21 @@ start_time=t.time()
 
 
 """Calculate time evolution of the system"""
-
 bins = qmps.simulation.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Define relevant photonic operators"""
 tls_pop_op = qmps.tls_pop()
 flux_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
 flux_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
+g2_same_time_op = qmps.b_dag_r(input_params) @ qmps.b_dag_r(input_params) @ qmps.b_r(input_params) @ qmps.b_r(input_params)
 photon_pop_ops = [flux_pop_l, flux_pop_r]
 
 
 """Calculate population dynamics"""
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
+g2_same_time = qmps.single_time_expectation(bins.output_field_states, g2_same_time_op)
+
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -118,8 +121,9 @@ pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(np.cumsum(photon_fluxes[1])*delta_t),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(np.cumsum(photon_fluxes[0])*delta_t),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons transmitted to the left channel
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n^{\rm out}_{R}$') # Photon flux transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n^{\rm out}_{L}$') # Photon flux transmitted to the left channel
+plt.plot(tlist,np.real(g2_same_time),linewidth = 3,color = 'cyan',linestyle='--',label=r'$G^{(2)}_{R}$') # G2, same time, right
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -154,10 +158,9 @@ b_op_list.append(b_l)
 a_op_list.append(b_dag_l)
 b_op_list.append(b_r)
 
-
 # Calculate the steady state correlation (returns the list of tau dependent correlation lists,
-# list of tau values for the correlation, and the initial t value of steady state)
-correlations_ss,tau_list_ss,t_steady = qmps.correlation_ss_2op(bins.correlation_bins,bins.output_field_states,a_op_list, b_op_list, input_params)
+# list of tau values for the correlation, and the initial t values of steady state)
+correlations_ss_2op,tau_lists_ss_2op,ts_steady_2op = qmps.correlation_ss_2op(bins.correlation_bins,bins.output_field_states,a_op_list, b_op_list, input_params)
 
 
 # Test out the case of a single 4op steady state correlation
@@ -165,11 +168,34 @@ correlations_ss,tau_list_ss,t_steady = qmps.correlation_ss_2op(bins.correlation_
 correlation_ss_4op, tau_list_ss_4op, t_steady_4op = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
                                                                       b_dag_r, b_dag_r, b_r, b_r, input_params)
 
-print("ss correl --- %s seconds ---" %(t.time() - start_time))
+print("Convergence of single time expectation: ", ts_steady_2op[0], t_steady_4op)
+print("SS correlations as two function calls --- %s seconds ---" %(t.time() - start_time))
+
+# Note that optimal coding would use identity matrices so that we would only have to make a single
+# function call to calculate the correlations (pad a c_op_list and d_op_list with identities)
+
+# This also ensures that if some operators converge later than others, the later time is used
+start_time=t.time()
+
+c_op_list = [np.eye(input_params.d_t)]*3
+d_op_list = [np.eye(input_params.d_t)]*3
+
+# Add in the last correlation, <b_R^\dag(t) b_R^\dag(t+tau) b_R(t+tau) b_R(t)>
+a_op_list.append(b_dag_r)
+b_op_list.append(b_dag_r)
+c_op_list.append(b_r)
+d_op_list.append(b_r)
+
+correlations_ss, tau_lists_ss, ts_steady = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
+                                                        a_op_list, b_op_list, c_op_list, d_op_list, input_params)
+
+print("Convergence of single time expectations: ",ts_steady[0], ts_steady[-1])
+print("SS correlation as single function call --- %s seconds ---" %(t.time() - start_time))
+
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_R$') 
-plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_R$') 
+plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$G^{(1)}_R$') 
+plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$G^{(2)}_R$') 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t^\prime$',fontsize=fonts)
 plt.ylabel('Correlations',fontsize=fonts)
@@ -186,17 +212,19 @@ plt.show()
 """Test the whole single time correlation function calculation for the previous operators"""
 start_time=t.time()
 
-# Note that the optimally efficient code would use identity matrices to make only a single function call
-correlations_1t,tau_list_1t = qmps.correlation_2op_1t(bins.correlation_bins,a_op_list, b_op_list, t_steady,input_params)
-correlation_4op_1t, tau_list_4op_1t = qmps.correlation_4op_1t(bins.correlation_bins,b_dag_r, b_dag_r, a_r, a_r, t_steady_4op, input_params)
+# Determine the full single time correlation at the steady state time (including negative tau)
+correlations_1t, tau_list_1t = qmps.correlation_4op_1t(bins.correlation_bins,
+                                    a_op_list, b_op_list, c_op_list, d_op_list, ts_steady.max(), input_params)
 
-print("Full single time correlation --- %s seconds ---" %(t.time() - start_time))
+
+print("Full single time correlations --- %s seconds ---" %(t.time() - start_time))
+
 #%%% Graphing of these single time dynamics
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tau_list_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}$') 
-plt.plot(tau_list_ss_4op,np.real(correlation_ss_4op),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}$') 
+plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}$') 
+plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}$') 
 plt.plot(tau_list_1t,np.real(correlations_1t[0]),linewidth = 3, color = 'skyblue',linestyle=':',label=r'$g^{(1)}_R$') 
-plt.plot(tau_list_4op_1t,np.real(correlation_4op_1t),linewidth = 3, color = 'orange',linestyle=':',label=r'$g^{(2)}_R$') 
+plt.plot(tau_list_1t,np.real(correlations_1t[-1]),linewidth = 3, color = 'orange',linestyle=':',label=r'$g^{(2)}_R$') 
 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t^\prime$',fontsize=fonts)
