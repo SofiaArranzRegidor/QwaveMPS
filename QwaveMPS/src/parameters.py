@@ -16,29 +16,29 @@ class InputParams:
     
     Parameters
     ----------
-    delta_t: float
+    delta_t : float
         Time step used for time propagation.
 
-    tmax: float
+    tmax : float
         Maximum simulation time.
 
-    d_sys_total: np.ndarray
+    d_sys_total : np.ndarray
         Array describing the local physical dimensions of the system bins.
         Each index is associated with the size of a tensor space.
 
-    d_t_total: np.ndarray
+    d_t_total : np.ndarray
         Array with dimensions for the time bins.
         Each index is associated with the size of a tensor space.
         In the case of a two directional light channel will be a list of two values.
 
-    bond_max: int
+    bond_max : int
         Maximum MPS bond dimension (chi) to use for truncation.
 
-    gamma_l, gamma_r: float
+    gamma_l, gamma_r : float
         Coupling (decay) rates to the left and right channels respectively.
         (may be removed from this class in future versions)
 
-    gamma_l2, gamma_r2: float, default: 0
+    gamma_l2, gamma_r2 : float, default: 0
         Optional second set of coupling rates (e.g. for a second TLS).
         Default 0 means only one system.
         (may be removed from this class in future versions)
@@ -46,9 +46,13 @@ class InputParams:
     tau: float, default: 0
         Delay time if modelling non-Markovian dynamics.
 
-    phase: float, defulat: 0
+    phase : float, defulat: 0
         Relative delayed phase.
         (may be removed from this class in future versions)
+
+    d_t : int
+        Total size of the photonic tensor space.
+        This is the product of the sizes of the indvidual tensor spaces.
     """
     delta_t: float
     tmax: float
@@ -62,6 +66,9 @@ class InputParams:
     tau: float = 0
     phase: float = 0
     
+    @property
+    def d_t(self) -> int:
+        return np.prod(self.d_t_total)
     
 @dataclass
 class Bins:

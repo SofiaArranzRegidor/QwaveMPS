@@ -430,6 +430,7 @@ def u_evol(Hm:np.ndarray|list, d_sys_total:np.ndarray, d_t_total:np.ndarray, int
     oper : ndarray
         Time evolution operator of shape ((d_sys,) + (d_t,)*interacting_timebins_num)*2.
     """ 
+    #TODO In future version restructure so that system dimension is to the far right of the system bins (easier in general case)
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
     shape = ((d_sys,) + ((d_t,)*interacting_timebins_num)) * 2

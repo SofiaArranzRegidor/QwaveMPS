@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This is an example of a single two-level system (TLS)
-driven by a classical continuous-wave (CW) field. 
+driven by a classical continuous-wave (CW) field from above the waveguide. 
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
@@ -44,10 +44,10 @@ def clean_ticks(x, pos):
 
 #%% Parameters, Simulations, and single time expectations values
 
-
 """"Choose the simulation parameters"""
 
 #Choose the bins:
+# Dimension chosen to be 3 to check observe second order photonic observables
 d_t_l=3 #Time right channel bin dimension
 d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -87,7 +87,7 @@ wg_initial_state = None# qmps.states.vacuum(tmax,input_params)
 cw_pump=2*np.pi
 
 # Hamiltonian is 1TLS pumped (from above) by CW
-Hm=qmps.hamiltonian_1tls(input_params,cw_pump)
+Hm=qmps.hamiltonians.hamiltonian_1tls(input_params,cw_pump)
 
 
 #To track computational time
@@ -96,13 +96,13 @@ start_time=t.time()
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+bins = qmps.simulation.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Define relevant photonic operators"""
 tls_pop_op = qmps.tls_pop()
-a_l_pop = qmps.b_dag_l(input_params) @ qmps.a_l(input_params)
-a_r_pop = qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
-photon_pop_ops = [a_l_pop, a_r_pop]
+flux_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
+flux_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
+photon_pop_ops = [flux_pop_l, flux_pop_r]
 
 
 """Calculate population dynamics"""
@@ -118,10 +118,10 @@ pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
+plt.plot(tlist,np.real(np.cumsum(photon_fluxes[1])*delta_t),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(np.cumsum(photon_fluxes[0])*delta_t),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons transmitted to the left channel
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel('Time, $\gamma t$',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
@@ -139,20 +139,20 @@ start_time=t.time()
 
 # Choose operators of which to take steady state correlations
 a_op_list = []; b_op_list = []
-b_dag_l = qmps.b_dag_l(input_params); a_l = qmps.a_l(input_params)
-b_dag_r = qmps.b_dag_r(input_params); a_r = qmps.a_r(input_params)
+b_dag_l = qmps.b_dag_l(input_params); b_l = qmps.b_l(input_params)
+b_dag_r = qmps.b_dag_r(input_params); b_r = qmps.b_r(input_params)
 
-# Add op <a_R^\dag(t) a_R(t+t')>
+# Add op <b_R^\dag(t) b_R(t+t')>
 a_op_list.append(b_dag_r)
-b_op_list.append(a_r)
+b_op_list.append(b_r)
 
-# Add op <a_L^\dag(t) a_L(t+t')>
+# Add op <b_L^\dag(t) b_L(t+t')>
 a_op_list.append(b_dag_l)
-b_op_list.append(a_l)
+b_op_list.append(b_l)
 
-# Add op <a_L^\dag(t) a_R(t+t')>
+# Add op <b_L^\dag(t) b_R(t+t')>
 a_op_list.append(b_dag_l)
-b_op_list.append(a_r)
+b_op_list.append(b_r)
 
 
 # Calculate the steady state correlation (returns the list of tau dependent correlation lists,
@@ -160,10 +160,10 @@ b_op_list.append(a_r)
 correlations_ss,tau_list_ss,t_steady = qmps.correlation_ss_2op(bins.correlation_bins,bins.output_field_states,a_op_list, b_op_list, input_params)
 
 
-## Test out the case of a single 4op steady state correlation
-# Calculate for the op<a_R^\dag(t) a_R^\dag(t+tau) a_R(t+tau) a_R(t)>
+# Test out the case of a single 4op steady state correlation
+# Calculate for the op <b_R^\dag(t) b_R^\dag(t+tau) b_R(t+tau) b_R(t)>
 correlation_ss_4op, tau_list_ss_4op, t_steady_4op = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
-                                                                      b_dag_r, b_dag_r, a_r, a_r, input_params)
+                                                                      b_dag_r, b_dag_r, b_r, b_r, input_params)
 
 print("ss correl --- %s seconds ---" %(t.time() - start_time))
 
@@ -224,7 +224,7 @@ print("spectrum --- %s seconds ---" %(t.time() - start_time))
 # Plot the spectrum
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
-plt.xlabel('$(\omega - \omega_L)/\Omega$',fontsize=fonts)
+plt.xlabel(r'$(\omega - \omega_L)/\Omega$',fontsize=fonts)
 plt.ylabel('Spectrum',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])

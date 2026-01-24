@@ -6,16 +6,23 @@ in the non-Markovian regime (with feedback).
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
-Computes time evolution, and population dynamics, with an example plot.
+Computes time evolution, population dynamics, and entanglement entropies.
+Example plots:
+        1. TLS population dynamics
+        2. Entanglement entropy with the flux
+
 
 Requirements: 
     
 ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
     
     pip install ncon 
-        
-"""
 
+References:
+    Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
+
+"""
+#%% Imports
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -90,13 +97,11 @@ sys_initial_state=np.kron(tls1_initial_state,tls2_initial_state)
 wg_initial_state = qmps.states.vacuum(tmax,input_params)
 
 start_time=t.time()
-"""Choose the Hamiltonian"""
 
+"""Choose the Hamiltonian"""
 hm=qmps.hamiltonian_2tls_nmar(input_params)
 
-
 """ Time evolution of the system"""
-
 bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 
@@ -119,6 +124,8 @@ photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, photon
 loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
 loop_sum_r = qmps.loop_integrated_statistics(photon_fluxes_loop[1], input_params)
 
+# Sum the population of the 2 TLS's, the integral of the flux out of the total system, and the population
+#  in the loop between the TLS's.
 total_quanta = np.sum(tls_pops, axis=0) + np.cumsum(np.sum(photon_fluxes_out, axis=0))*delta_t\
       + loop_sum_l + loop_sum_r
 
@@ -131,14 +138,17 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
-plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(photon_fluxes_out[1]),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(photon_fluxes_out[0]),linewidth = 3,color = 'b',linestyle=':',label='R')
-plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'magenta',linestyle=':',label=r'$N_{\rm loop}$')
-plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, $\gamma t$')
+plt.plot(tlist, np.real(tls_pops[0]), linewidth=3, color='k', linestyle='-',label=r'$n_{\rm TLS1}$')
+plt.plot(tlist, np.real(tls_pops[1]), linewidth=3, color='skyblue', linestyle='--',label=r'$n_{\rm TLS2}$')
+
+# Graphing the fluxes out this time
+plt.plot(tlist, np.real(photon_fluxes_out[1]), linewidth=3, color='orange',linestyle='-',label=r'$n_{R}$') 
+plt.plot(tlist, np.real(photon_fluxes_out[0]), linewidth=3, color='b',linestyle=':',label=r'$n_{L}$')
+
+plt.plot(tlist, np.real(loop_sum_l + loop_sum_r), linewidth=3,color='magenta',linestyle=':',label=r'$N_{\rm loop}$')
+plt.plot(tlist, np.real(total_quanta), linewidth=3, color='g',linestyle='-',label='Total')
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95), labelspacing=0.2)
+plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 formatter = FuncFormatter(clean_ticks)
@@ -148,3 +158,41 @@ plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
 plt.show()
+
+
+#%% Entropy Calculation and Graphing
+
+#To track computational time
+start_time=t.time()
+
+"""Calculate entanglement entropy"""
+# Use given function with the schmidt coefficients saved from the simulation in the Bins object
+# Determine the entanglement entropy between the 2 TLS's and the whole waveguide
+ent_s=qmps.entanglement(bins.schmidt)
+
+# Determine the entanglement entropy between the 2 TLS's with the section of the waveguide
+# between them and with the rest of the waveguide.
+ent_s_tau=qmps.entanglement(bins.schmidt_tau)
+
+
+print("Entanglement--- %s seconds ---" %(t.time() - start_time))
+
+#%% Plot with entanglement entropies and total quanta in the loop
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
+plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm system}$')
+plt.plot(tlist,np.real(ent_s_tau),linewidth = 3,color = 'lime',linestyle='-',label=r'$S_{\rm circuit}$')
+plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'b',linestyle='-',label=r'$N_{\rm loop}$')
+plt.legend(loc='right', bbox_to_anchor=(1, 0.5),labelspacing=0.2)
+plt.xlabel(r'Time, $\gamma t$')
+plt.ylabel('Entropy/Population')
+plt.grid(True, linestyle='--', alpha=0.6)
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+plt.ylim([0.,1.05])
+plt.xlim([0.,tmax])
+plt.tight_layout()
+plt.show()
+
+# %%

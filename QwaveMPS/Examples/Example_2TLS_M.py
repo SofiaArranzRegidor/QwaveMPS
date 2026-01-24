@@ -6,12 +6,10 @@ in the Markovian regime.
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
-Computes time evolution, population dynamics, the entanglement entropy,
-and an example of a single-time observable, in this case the single time 
-first-order correlation. 
+Computes time evolution, population dynamics, and the entanglement entropy,
 Example plots:
         1. TLS population dynamics
-        2. Single time first-order correlation + the entanglement entropy
+        2. Entanglement entropy with the flux
 
 Requirements: 
     
@@ -20,7 +18,7 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
     pip install ncon 
         
 """
-
+#%% Imports
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -46,7 +44,7 @@ def clean_ticks(x, pos):
 
 """"Choose the simulation parameters"""
 
-#Choose the bins:
+#Choose the Hilbert space sizes:
 d_t_l=2 #Time right channel bin dimension
 d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
@@ -114,8 +112,9 @@ bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 pop_tls1_op = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 pop_tls2_op = np.kron(np.eye(d_sys1), qmps.tls_pop())
 
-flux_l_op = qmps.b_dag_l(input_params) @ qmps.a_l(input_params)
-flux_r_op = qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
+# Left and right population/flux operators for the output field
+flux_l_op = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
+flux_r_op = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
 
 """Calculate population dynamics"""
 tls_pops = qmps.single_time_expectation(bins.system_states, [pop_tls1_op, pop_tls2_op])
@@ -138,11 +137,11 @@ pic_style(fonts)
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
 plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label='R')
+plt.plot(tlist,np.real(np.cumsum(fluxes[0])*delta_t),linewidth = 3,color = 'b',linestyle=':',label=r'$N_R^{\rm out}') # Net flux out right
+plt.plot(tlist,np.real(np.cumsum(fluxes[1])*delta_t),linewidth = 3,color = 'orange',linestyle='-',label=r'$N_L^{\rm out}$') # Net flux out left 
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, $\gamma t$')
+plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 formatter = FuncFormatter(clean_ticks)
@@ -159,32 +158,19 @@ plt.show()
 start_time=t.time()
 
 """Calculate entanglement entropy"""
+# Use given function with the schmidt coefficients saved from the simulation in the Bins object
 ent_s=qmps.entanglement(bins.schmidt)
 
 print("Entanglement--- %s seconds ---" %(t.time() - start_time))
 
-"""Calculate single time correlation"""
-
-#To track computational time
-start_time=t.time()
-
-#Define the operator we want to calculate,
-#in this case the single time first order correlation function
-single_t_g1=qmps.b_dag_r(input_params) @ qmps.a_r(input_params)
-
-#Use the general one time expectation function to get the observable
-#Note here that noise operators are not normalized so /delta_t**2 is required
-g1 = qmps.single_time_expectation(bins.output_field_states, single_t_g1)
-
-print("single time g1--- %s seconds ---" %(t.time() - start_time))
-
-#%% Plot with entanglement entropy and g1
+#%% Plot with entanglement entropy and G1 (flux)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm sys}$')
-plt.plot(tlist,np.real(g1),linewidth = 3,color = 'lime',linestyle='-',label=r'$G^{(1)}_{t,R/L}$') # Photons reflected to the left channel
+plt.plot(tlist,np.real(fluxes[0]),linewidth = 3,color = 'lime',linestyle='-',label=r'$G^{(1)}_{t,R/L}$') # Photon flux (same time G1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, $\gamma t$')
+plt.xlabel(r'Time, $\gamma t$')
+plt.ylabel("Entropy/Population")
 plt.grid(True, linestyle='--', alpha=0.6)
 formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
@@ -194,3 +180,4 @@ plt.xlim([0.,tmax])
 plt.tight_layout()
 plt.show()
 
+# %%

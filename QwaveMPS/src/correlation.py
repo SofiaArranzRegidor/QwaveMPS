@@ -147,7 +147,7 @@ def time_dependent_spectrum(correlation_matrix:np.ndarray, input_params:InputPar
         Frequency points at which the time dependent spectrum is calculated.
         If None, generates the frequency list using np.fft.fftfreq() on the length of the correlation_matrix.
 
-    padding : int, default=0
+    padding : int, default: 0
         Padding added to the frequency domain.
         
     Returns
@@ -194,30 +194,39 @@ def time_dependent_spectrum(correlation_matrix:np.ndarray, input_params:InputPar
 # Wrapper functions designed in qutip sytle (these are less general)
 # ----------------------
 
-def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> list[np.ndarray]|np.ndarray:
+def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
+    Calculates the two time correlation function <A(t)B(t+t')> for either single operators A and B, or each A/B in a_op_list/b_op_list.
+    Provides list functionality as a single function call with a list of operators is much faster than individual function calls
+    for each operator.
             
     Parameters
     ----------
     correlation_bins : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    a_op_list : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
-
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
-        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
+    a_op_list : ndarray/list[ndarray]
+        Single operator, A, or a list of operators.
+    
+    b_op_list : ndarray/list[ndarray]
+        Single operator, B, or a list of operators.
 
     params : InputParams
         Simulation parameters 
+    
+    completion_print_flag : bool, default: True
+        Prints the percent completion of the of the outer loop over t values for the calculation.
+        Note that each loop is shorter, resulting in the percents being weighted more heavily to the start of the calculation.
 
     Returns
     -------
-    result : [np.ndarray]
-        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    correlations : list[np.ndarray]
+        In the case of single A and B operators a 2D array. In the case of a list of operators returns a
+        list of 2D arrays, each a two time correlation function corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t,t'], with non-negative t' and time increments between points given by the simulation.
+    
+    t_list : np.ndarray
+        List of time points for the t and t' axes.
     """
     list_flag = op_list_check(a_op_list)
 
@@ -241,30 +250,45 @@ def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
 
     return results, t_list
 
-def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> list[np.ndarray]|np.ndarray:
+def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+tau)C(t+tau)D(t)> for each operator in the respective lists.
+    Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> for either single operators A/B/C/D, or each operator in the four lists.
+    Provides list functionality as a single function call with a list of operators is much faster than individual function calls
+    for each operator.
             
     Parameters
     ----------
     correlation_bins : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    a_op_list : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+    a_op_list : ndarray/list[ndarray]
+        Single operator, A, or a list of operators.
+    
+    b_op_list : ndarray/list[ndarray]
+        Single operator, B, or a list of operators.
+    
+    c_op_list : ndarray/list[ndarray]
+        Single operator, C, or a list of operators.
 
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
-        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
+    d_op_list : ndarray/list[ndarray]
+        Single operator, D, or a list of operators.
 
     params : InputParams
         Simulation parameters 
 
+    completion_print_flag : bool, default: True
+        Prints the percent completion of the of the outer loop over t values for the calculation.
+        Note that each loop is shorter, resulting in the percents being weighted more heavily to the start of the calculation.
+
     Returns
     -------
-    result : [np.ndarray]
-        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    correlations : list[np.ndarray]
+        In the case of single operators a 2D array. In the case of a list of operators returns a
+        list of 2D arrays, each a two time correlation function corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t,t'], with non-negative t' and time increments between points given by the simulation.
+    
+    t_list : np.ndarray
+        List of time points for the t and t' axes.
     """
     list_flag = op_list_check(a_op_list)
 
@@ -289,31 +313,35 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
         results = results[0]
     return results, t_list
 
-
-def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], t:float, params:InputParams) -> list[np.ndarray]|np.ndarray:
+def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], t:float, params:InputParams) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
+    Calculates the two time correlation function <A(t)B(t+t')> at a fixed t for either single operators A/B, or each operator in the lists.
+    Provides list functionality as a single function call with a list of operators is much faster than individual function calls
+    for each operator.
             
     Parameters
     ----------
     correlation_bins : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    a_op_list : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
-
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
-        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
-
+    a_op_list : ndarray/list[ndarray]
+        Single operator, A, or a list of operators.
+    
+    b_op_list : ndarray/list[ndarray]
+        Single operator, B, or a list of operators.
+    
     params : InputParams
         Simulation parameters 
 
     Returns
     -------
-    result : [np.ndarray]
-        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    correlations : list[np.ndarray]
+        In the case of single operators a 1D array. In the case of a list of operators returns a
+        list of 1D arrays, each a two time correlation function of fixed t, corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
+    
+    t_list : np.ndarray
+        List of time points for the t' axis.
     """
     list_flag = op_list_check(a_op_list)
 
@@ -337,31 +365,43 @@ def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
 
     return results, t_list
 
-def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], t:float, params:InputParams) -> list[np.ndarray]|np.ndarray:
+def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], t:float, params:InputParams) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+tau)C(t+tau)D(t)> for each operator in the respective lists.
+    Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> at a fixed t for either single operators, or each operator in the lists.
+    Provides list functionality as a single function call with a list of operators is much faster than individual function calls
+    for each operator.
             
     Parameters
     ----------
     correlation_bins : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    a_op_list : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+    a_op_list : ndarray/list[ndarray]
+        Single operator, A, or a list of operators.
+    
+    b_op_list : ndarray/list[ndarray]
+        Single operator, B, or a list of operators.
+    
+    c_op_list : ndarray/list[ndarray]
+        Single operator, C, or a list of operators.
 
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
-        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
-
+    d_op_list : ndarray/list[ndarray]
+        Single operator, D, or a list of operators.
+    
     params : InputParams
         Simulation parameters 
 
     Returns
     -------
-    result : [np.ndarray]
-        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    correlations : list[np.ndarray]
+        In the case of single operators a 1D array. In the case of a list of operators returns a
+        list of 1D arrays, each a two time correlation function of fixed t, corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
+    
+    t_list : np.ndarray
+        List of time points for the t' axis.
     """
+
     list_flag = op_list_check(a_op_list)
 
     if list_flag and not (len(a_op_list) == len(b_op_list) == len(c_op_list) == len(d_op_list)):
@@ -385,32 +425,41 @@ def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:list[np.ndar
         results = results[0]
     return results, t_list
 
-
-
-def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], params:InputParams) -> list[np.ndarray]|np.ndarray:
+def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+tau)> for each A/B in a_op_list/b_op_list.
+    Calculates the two time correlation function <A(t)B(t+t')> at a steady state value of t for either single operators, or each operator in the lists.
+    Provides list functionality as a single function call with a list of operators is much faster than individual function calls
+    for each operator.
             
     Parameters
     ----------
     correlation_bins : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    a_op_list : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
-
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
-        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
-
+    a_op_list : ndarray/list[ndarray]
+        Single operator, A, or a list of operators.
+    
+    b_op_list : ndarray/list[ndarray]
+        Single operator, B, or a list of operators.
+        
     params : InputParams
         Simulation parameters 
 
+    tol : float, default: 1e-5
+        The tolerance for which convergence of the operators is determined. Used to find the steady state time.    
+    
     Returns
     -------
-    result : [np.ndarray]
-        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    correlations : list[np.ndarray]
+        In the case of single operators a 1D array. In the case of a list of operators returns a
+        list of 1D arrays, each a two time correlation function of fixed t at steady state, corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
+    
+    t_list : np.ndarray
+        List of time points for the t' axis.
+
+    t_ss : float
+        Steady state time point value.
     """
     list_flag = op_list_check(a_op_list)
 
@@ -434,30 +483,47 @@ def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:li
 
     return results, tau_list, t_ss
 
-def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:list[np.ndarray], b_op_list:list[np.ndarray], c_op_list:list[np.ndarray], d_op_list:list[np.ndarray], params:InputParams) -> list[np.ndarray]|np.ndarray:
+def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+tau)C(t+tau)D(t)> for each operator in the respective lists.
+    Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> at a steady state value of t for either single operators, or each operator in the lists.
+    Provides list functionality as a single function call with a list of operators is much faster than individual function calls
+    for each operator.
             
     Parameters
     ----------
     correlation_bins : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    a_op_list : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+    a_op_list : ndarray/list[ndarray]
+        Single operator, A, or a list of operators.
+    
+    b_op_list : ndarray/list[ndarray]
+        Single operator, B, or a list of operators.
+    
+    c_op_list : ndarray/list[ndarray]
+        Single operator, C, or a list of operators.
 
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
-        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
-
+    d_op_list : ndarray/list[ndarray]
+        Single operator, D, or a list of operators.
+    
     params : InputParams
         Simulation parameters 
 
+    tol : float, default: 1e-5
+        The tolerance for which convergence of the operators is determined. Used to find the steady state time.    
+    
     Returns
     -------
-    result : [np.ndarray]
-        List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+    correlations : list[np.ndarray]
+        In the case of single operators a 1D array. In the case of a list of operators returns a
+        list of 1D arrays, each a two time correlation function of fixed t at steady state, corresponding by index to the operators in the two operator lists.
+        The two time correlation function is stored as f[t'], with time increments between points given by the simulation.
+    
+    t_list : np.ndarray
+        List of time points for the t' axis.
+
+    t_ss : float
+        Steady state time point value.
     """
     list_flag = op_list_check(a_op_list)
 
@@ -475,7 +541,7 @@ def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:li
         ops_same_time.append(a_op_list @ b_op_list @ c_op_list @ d_op_list)
         ops_two_time.append(np.kron(a_op_list @ d_op_list, b_op_list @ c_op_list))
     
-    results, tau_list, t_ss = correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params)
+    results, tau_list, t_ss = correlation_ss_1t(correlation_bins, output_field_states, ops_same_time, ops_two_time, params, tol=tol)
 
     # Don't return as list
     if not list_flag:
@@ -486,13 +552,13 @@ def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:li
 #-------------------------------------------
 # The functional code used for correlation calculations.
 # This is the logic, and are also more general functions 
-# (can calculate ANY arbitrary two time correlation functions)
+# (can calculate ANY arbitrary two time correlation functions on the output field)
 #-------------------------------------------
-def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, oc_end_list_flag:bool=True, completion_print_flag:bool=False) -> tuple[list[np.ndarray], np.ndarray]:
+def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, completion_print_flag:bool=False) -> tuple[list[np.ndarray], np.ndarray]:
     """ 
     General two-time correlation calculator.
     Take in list of time ordered normalized (with OC) time bins at position of relevance.
-    Calculate a list of arbitrary two time point correlation functions at t and t+tau for nonnegative tau. 
+    Calculate a list of arbitrary two time point correlation functions at t and t+t' for nonnegative t'. 
         
     Parameters
     ----------
@@ -500,26 +566,26 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         List of time bins with the OC in either the initial or final bin in the list.
     
     ops_same_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+        List of operators of which correlation functions should be calculated in the case that t'=0 (same time). These should exist in a single time-bin tensor space.
 
     ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+        List of operators of which correlation functions should be calculated in the case that t' > 0. These should be ordered in a corresponding order to
         ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
 
     params : InputParams
         Simulation parameters 
-
-    oc_end_list_flag : bool, default=True 
-        Leaves the chain of bins unchanged for the calculation if the OC is at the end of the chain. Else assumes it is at the beginning and moves it to the end at start of calculation.
        
     completion_print_flag : bool, default=True
         Flag to print completion loop number percent of the calculation (note this is not the percent completion, and later loops complete faster than earlier ones). 
 
     Returns
     -------
-    result : [np.ndarray]
+    result : list[np.ndarray]
         List of 2D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+        The two time correlation function is stored as f[t,t'], with non-negative t' and time increments between points given by the simulation.
+
+    correaltion_times : np.ndarray[float]
+        List of time points for the t and t' axes for the calculated correlation functions.
     """
     d_t_total=params.d_t_total
     bond=params.bond_max
@@ -535,12 +601,11 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
     correlations = np.array([np.zeros((len(time_bin_list_copy), len(time_bin_list_copy)), dtype=complex) for i in ops_two_time])
     
     # If the OC is at end of the time bin list, move it to the start (shifts OC from one end to other, index 0)
-    if oc_end_list_flag:
-        for i in range(len(time_bin_list_copy)-1,0,-1):
-            bin_contraction = ncon([time_bin_list_copy[i-1],time_bin_list_copy[i]],[[-1,-2,1],[1,-3,-4]])
-            left_bin, stemp, right_bin = _svd_tensors(bin_contraction, bond, d_t, d_t)
-            time_bin_list_copy[i] = right_bin #right normalized system bin    
-            time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
+    for i in range(len(time_bin_list_copy)-1,0,-1):
+        bin_contraction = ncon([time_bin_list_copy[i-1],time_bin_list_copy[i]],[[-1,-2,1],[1,-3,-4]])
+        left_bin, stemp, right_bin = _svd_tensors(bin_contraction, bond, d_t, d_t)
+        time_bin_list_copy[i] = right_bin #right normalized system bin    
+        time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
     
     # Loop over to fill in correlation matrices values
     print('Correlation Calculation Completion:')
@@ -551,7 +616,7 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         i_1=time_bin_list_copy[0]
         i_2=time_bin_list_copy[1] 
         
-        #for the first raw (tau=0)
+        #for the first row (tau=0)
         for k in range(len(correlations)):
             correlations[k][i,0] = expectation_1bin(i_1, ops_same_time[k]) #this means I'm storing [t,tau] 
         
@@ -593,32 +658,38 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
     t_list = np.arange(len(correlation_bins)) * params.delta_t
     return correlations, t_list
 
-def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], t, params:InputParams) -> list[np.ndarray]:
+def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], t:float, params:InputParams) -> tuple[list[np.ndarray], np.ndarray]:
     """ 
     General two-time correlation calculator along a single axis.
     Take in list of time ordered normalized (with OC) time bins at position of relevance.
-    Calculate a list of arbitrary two time point correlation functions at t and t+tau for nonnegative tau. 
+    Calculate a list of arbitrary two time point correlation functions at t and t+tau for nonnegative t'. 
         
     Parameters
     ----------
-    time_bin_list : [ndarray]
+    time_bin_list : list[ndarray]
         List of time bins with the OC in either the initial or final bin in the list.
     
-    ops_same_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+    ops_same_time : list[ndarray]
+        List of operators of which correlation functions should be calculated in the case that t'=0 (same time). These should exist in a single time-bin tensor space.
 
-    ops_two_time : [ndarray]
-        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+    ops_two_time : list[ndarray]
+        List of operators of which correlation functions should be calculated in the case that t' > 0. These should be ordered in a corresponding order to
         ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
 
+    t : float
+        Time point for fixed t at which to take the two time point correlation.
+        
     params : InputParams
         Simulation parameters 
 
     Returns
     -------
-    result : [np.ndarray]
+    correlations : ndarray[ndarray[complex]]
         List of 1D arrays, each a two time correlation function corresponding by index to the operators in ops_same_time and ops_two_time.
-        The two time correlation function is stored as f[t,tau], with non-negative tau and time increments between points given by the simulation.
+        The two time correlation function is stored as f[t,t'], with non-negative t' and time increments between points given by the simulation.
+
+    ts_correlation : ndarray[float]
+        List of time points for the t' axis at which the two time point correlation functions are taken.
     """
     d_t_total=params.d_t_total
     bond=params.bond_max
@@ -683,22 +754,27 @@ def correlations_1t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
 #Steady-state index helper, and correlations
 #-------------------------------------------
 
-def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[np.ndarray],window: int=10, tol: float=1e-5) -> int|None:
+#TODO In future could have list of steady state times, one for each operator.
+def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[np.ndarray], tol: float=1e-5, window: int=10) -> int|None:
     """
     Steady-state index helper function to find the time step 
-    when the steady state is reached in the population dynamics.
+    when the steady state is reached in the single time dynamics of the operators.
     
     Parameters
     ----------
-    pop : list
-        List of population values
-    
-    window : int, default: 10
-        Number of recent points to analyze
+    output_field_states : list[np.ndarray]
+        List of OC normalized output_field_states/bins.
+
+    operator_list : list[np.ndarray]
+        List of single time point operators to test convergence of their expectation values.
+        Convergence is only determined when all operators converge.
     
     tol : float, default: 1e-5
         Maximum deviation allowed in the final window
     
+    window : int, default: 10
+        Number of recent points to analyze
+        
     Returns
     -------
     int or None
@@ -723,25 +799,36 @@ def steady_state_index(output_field_states:list[np.ndarray], operator_list:list[
             return i - window
     return None
 
-def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, tol: float=1e-5, convergence_window: int=10) -> tuple[list[np.ndarray], np.ndarray]:
+def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, tol: float=1e-5, window: int=10) -> tuple[list[np.ndarray], np.ndarray, float]:
     """
     Efficient steady-state correlation calculation.
     This computes time differences starting from a convergence index (steady-state
     index). It returns a list of the 1D correlation arrays corresponding to the operator list, 
-    a list of tau points, and the initial t point at which steady state is considered
+    a list of tau points, and the initial t point at which steady state is considered.
     
     Parameters
     ----------
-    bins : Bins
-        Bins returned by time evolution functions
-        cor_b field must contain the correlation tensors.
+    correlation_bins : list[np.ndarray]
+        Correlation bins of the outputfield states used to determine multi-timepoint correlation functions of the output field.
+    
+    output_field_states : list[np.ndarray]
+        OC normalized output field states.
+
+    ops_same_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau=0 (same time). These should exist in a single time-bin tensor space.
+
+    ops_two_time : [ndarray]
+        List of operators of which correlation functions should be calculated in the case that tau > 0. These should be ordered in a corresponding order to
+        ops_same_time and should exist in a tensor space that is the outer product of two time bin tensor spaces, with the right space corresponding to the greater time.
     
     params : InputParams
         Simulation parameters 
     
-    pop : Pop1TLS
-        Population dataclass used to detect steady-state   
-        (it can be extended for other cases)
+    window : int, default: 10
+        Number of recent points to analyze when determining the steady state time.
+    
+    tol : float, default: 1e-5
+        Maximum deviation allowed in the final window for the steady state time.
         
     Returns
     -------
@@ -756,12 +843,13 @@ def correlation_ss_1t(correlation_bins:list[np.ndarray], output_field_states:lis
     
     time_bin_list_copy = copy.deepcopy(correlation_bins) # Work on deep copy to not risk altering initial
     swap_matrix = swap(d_t, d_t)
+    
     # Resize two_time_ops if needed
     for i in range(len(ops_two_time)):
         ops_two_time[i] = ops_two_time[i].reshape((d_t,)*(2*2)) # One for factor for bin number, 2 point
     
     #First check convergence of all correlations:
-    conv_index =  steady_state_index(output_field_states, ops_same_time,window=convergence_window, tol=tol)  
+    conv_index =  steady_state_index(output_field_states, ops_same_time,window=window, tol=tol)  
     if conv_index is None:
         raise ValueError("tmax not long enough for steady state of all given operators")
     

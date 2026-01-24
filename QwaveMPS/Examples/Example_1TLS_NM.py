@@ -3,7 +3,7 @@
 """
 This is an example of a single two-level system (TLS) decaying into a semi-infinite 
 waveguide with a side mirror. This is calculated in the non-Markovian regime with a 
-delay time tau, that in this case it is the roundtrip time of the feedback loop (back 
+delay time tau, that in this case is the roundtrip time of the feedback loop (back 
 and forth from the mirror), and a phase that can be constructive or destructive.
  
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
@@ -17,9 +17,12 @@ Requirements:
 ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
     
     pip install ncon 
-        
-"""
 
+References:
+    Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
+
+"""
+#%% Imports
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -102,12 +105,19 @@ bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 # Use single channel bosonic operators, chiral waveguide Hilbert space
 # This is because len(d_t_total) == 1
 flux_op = qmps.b_pop(input_params)
+
 # Another way to define the same op
 #flux_op = qmps.b_dag(input_params) @ qmps.b(input_params)
 
 tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 
-transmitted = qmps.single_time_expectation(bins.output_field_states, flux_op)
+# Calculate the flux out of the system (exiting the loop)
+transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
+
+# If we want to calculate the net transmitted quanta have to integrate the flux
+net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
+
+# Calculate the flux into the feedback loop
 loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
 # Helper function to integrate an operator over the feedback loop time points
@@ -115,7 +125,7 @@ loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 #  in the feedback loop
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 
-total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
+total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
 #%%
@@ -125,13 +135,13 @@ pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(transmitted),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
-plt.xlabel('Time, $\gamma t$')
+plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
@@ -141,7 +151,6 @@ plt.show()
 
 
 #%%
-
 """ Example with destructive feedback
 
 Choose a destructive feedback phase"""
@@ -160,14 +169,14 @@ bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 
 """ Calculate population dynamics"""
-
 tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
-transmitted = qmps.single_time_expectation(bins.output_field_states, flux_op)
+transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
 loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
-# Integrate again over the total quanta in the feedback loop
+"""Integrate again over the total quanta in the feedback loop"""
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
-total_quanta = tls_pops + loop_sum + np.cumsum(transmitted)*delta_t
+new_transmitted_flux = np.cumsum(transmitted_flux) * delta_t
+total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 
 
 #%%
@@ -177,11 +186,11 @@ pic_style(fonts)
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(transmitted),linewidth = 3,color = 'orange',linestyle='-',label='T')
+plt.plot(tlist,np.real(new_transmitted_flux),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
-plt.xlabel('Time, $\gamma t$')
+plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])

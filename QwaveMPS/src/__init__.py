@@ -11,6 +11,7 @@ from .operators import *
 from .states import *
 from .simulation import *
 from .correlation import *
+from .parameters import *
 
 def cite():
     """Print BibTeX citation for the `QwaveMPS' package."""
