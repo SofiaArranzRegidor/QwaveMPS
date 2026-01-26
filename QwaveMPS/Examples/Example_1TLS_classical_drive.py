@@ -48,9 +48,9 @@ def clean_ticks(x, pos):
 """"Choose the simulation parameters"""
 
 #Choose the bins:
-# Dimension chosen to be 3 to check second order photonic observables
-d_t_l=3 #Time right channel bin dimension
-d_t_r=3 #Time left channel bin dimension
+# Dimension chosen to be 2 to as TLS only results in emission in single quanta subspace per unit time
+d_t_l=2 #Time right channel bin dimension
+d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_l,d_t_r])
 
 d_sys1=2 # tls bin dimension
@@ -159,8 +159,8 @@ a_op_list.append(b_dag_l)
 b_op_list.append(b_r)
 
 # Calculate the steady state correlation (returns the list of tau dependent correlation lists,
-# list of tau values for the correlation, and the initial t values of steady state)
-correlations_ss_2op,tau_lists_ss_2op,ts_steady_2op = qmps.correlation_ss_2op(bins.correlation_bins,bins.output_field_states,a_op_list, b_op_list, input_params)
+# list of tau values for the correlation, and the initial t value of steady state)
+correlations_ss_2op,tau_lists_ss_2op,t_steady_2op = qmps.correlation_ss_2op(bins.correlation_bins,bins.output_field_states,a_op_list, b_op_list, input_params)
 
 
 # Test out the case of a single 4op steady state correlation
@@ -168,13 +168,11 @@ correlations_ss_2op,tau_lists_ss_2op,ts_steady_2op = qmps.correlation_ss_2op(bin
 correlation_ss_4op, tau_list_ss_4op, t_steady_4op = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
                                                                       b_dag_r, b_dag_r, b_r, b_r, input_params)
 
-print("Convergence of single time expectation: ", ts_steady_2op[0], t_steady_4op)
+print("Convergence of steady state: ", t_steady_2op)
 print("SS correlations as two function calls --- %s seconds ---" %(t.time() - start_time))
 
 # Note that optimal coding would use identity matrices so that we would only have to make a single
 # function call to calculate the correlations (pad a c_op_list and d_op_list with identities)
-
-# This also ensures that if some operators converge later than others, the later time is used
 start_time=t.time()
 
 c_op_list = [np.eye(input_params.d_t)]*3
@@ -186,10 +184,9 @@ b_op_list.append(b_dag_r)
 c_op_list.append(b_r)
 d_op_list.append(b_r)
 
-correlations_ss, tau_lists_ss, ts_steady = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
+correlations_ss, tau_lists_ss, t_steady = qmps.correlation_ss_4op(bins.correlation_bins, bins.output_field_states,
                                                         a_op_list, b_op_list, c_op_list, d_op_list, input_params)
 
-print("Convergence of single time expectations: ",ts_steady[0], ts_steady[-1])
 print("SS correlation as single function call --- %s seconds ---" %(t.time() - start_time))
 
 
@@ -214,7 +211,7 @@ start_time=t.time()
 
 # Determine the full single time correlation at the steady state time (including negative tau)
 correlations_1t, tau_list_1t = qmps.correlation_4op_1t(bins.correlation_bins,
-                                    a_op_list, b_op_list, c_op_list, d_op_list, ts_steady.max(), input_params)
+                                    a_op_list, b_op_list, c_op_list, d_op_list, t_steady, input_params)
 
 
 print("Full single time correlations --- %s seconds ---" %(t.time() - start_time))
