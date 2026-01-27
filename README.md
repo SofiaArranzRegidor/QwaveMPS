@@ -90,4 +90,4 @@ QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more inf
 Add acknowledgements here.
 
 ## Contact
-For questions or support, open an issue or email [18sar4@queensu.ca](mailto:18sar4@queensu.ca).
+For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).
