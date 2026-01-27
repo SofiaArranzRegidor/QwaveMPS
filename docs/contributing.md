@@ -2,7 +2,7 @@
 
 Thank you for considering contributing to QwaveMPS!
 
-## Guidelines
+<!---## Guidelines
 
 To ensure a smooth and collaborative process, please review the guidelines below.
 
@@ -30,7 +30,7 @@ To ensure a smooth and collaborative process, please review the guidelines below
   make test
   ```
 - Open a pull request describing your changes. In your pull request, provide a clear description of the problem you are solving or the feature you are adding.
-
+--->
 ## Reporting Issues
 
 If you encounter a bug or have a feature request, please open an issue on the [issue tracker](https://github.com/SofiaArranzRegidor/QwaveMPS/issues) to report it. 
