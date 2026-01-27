@@ -66,7 +66,7 @@ In this diagram, $i_s i_1...i_N$ represent the physical indices of the MPS.
 As an example, let us say that our system contains a single TLS that starts excited, the TLS bin is represented by,  
 
 ```sh
-def i_se(d_sys1:int=2, bond0:int=1) -> np.ndarray:
+def tls_excited(d_sys1:int=2, bond0:int=1) -> np.ndarray:
     i_s = np.zeros([bond0,d_sys1,bond0],dtype=complex) 
     i_s[:,1,:]=1.
     return i_s
@@ -74,7 +74,7 @@ def i_se(d_sys1:int=2, bond0:int=1) -> np.ndarray:
 And if the waveguide field starts in vacuum, each time bin will follow,
 
 ```sh
-def i_ng(d_t:int, bond0:int=1) -> np.ndarray:
+def wg_ground(d_t:int, bond0:int=1) -> np.ndarray:
     i= np.zeros([bond0,d_t,bond0],dtype=complex) 
     i[:,0,:]=1.
     return i

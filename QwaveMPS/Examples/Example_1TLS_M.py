@@ -37,7 +37,7 @@ Structure:
         
     2. Initial state and coupling configuration.    
         - Choice the system initial state (i_s0). Here, initially excited, 
-            i_s0 = qmps.states.i_se()
+            i_s0 = qmps.states.tls_excited()
         - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
           and considering that there is vacuum before the interaction until tmax.  
             i_n0 = qmps.states.vacuum(tmax,input_params) 
@@ -46,10 +46,17 @@ Structure:
     
     4. Time evolution calculation (bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)).
     
-    5. Observables calculation (time dyanamics populations, pop = qmps.pop_dynamics(bins,input_params)).
+    5. Choose Relevant observables.
+        - Get the TLS population with the tls_pop_op = qmps.tls_pop()
+        - Can get bosonic fluxes similarly with b_pop_op_r = qmps.b_pop_r(input_params)
+
+    6. Calculate Observables.
+        - Get time dependent expectation values by acting on the relevant states (system/field) with
+            your operators.
+        - tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
+        - flux_r = qmps.single_time_expectation(bins.output_field_states, b_pop_op_r)
     
-    6. Example plot containing,
-    
+    7. Example plot containing,
         - Integrated photon flux traveling to the right
         - Integrated photon flux traveling to the left
         - TLS population
@@ -59,15 +66,12 @@ Repeat for both cases (symmetrical and chiral).
 
 """
 
-
 """    
-
 Requirements: 
     
 ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
     
-    pip install ncon 
-    
+    pip install ncon   
 """
 
 #%%
@@ -109,17 +113,17 @@ d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
-gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1) # same as gamma_l, gamma_r = (0.5,0.5)
 
 #Define input parameters (dataclass)
 input_params = qmps.parameters.InputParams(
-    delta_t=0.05,
-    tmax = 8,
+    delta_t=0.05, # Time step of the simulation
+    tmax = 8, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond=4
+    bond_max=4 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
 
 #Make a tlist for plots:
@@ -130,27 +134,52 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 """ Choose the initial state"""
 
-i_s0=qmps.states.i_se() #TLS initially excited
+sys_initial_state=qmps.states.tls_excited() #TLS initially excited
 
 #waveguide initially vacuum for as long as calculation (tmax)
-i_n0 = qmps.states.vacuum(tmax,input_params) 
+wg_initial_state = qmps.states.vacuum(tmax,input_params) 
+#wg_initial_state = None # Another equivalent way to set the initial vacuum state
 
 #To track computational time
 start_time=t.time()
 
 """Choose the Hamiltonian"""
-
-Hm=qmps.hamiltonian_1tls(input_params)
-
+Hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
 
 """Calculate time evolution of the system"""
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
-bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)
+
+"""Choose Observables"""
+# Calculate the two level system population
+tls_pop_op = qmps.tls_pop() 
+
+# Calculate the fluxes out of the TLS to the left and right
+b_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
+b_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
+
+# Can also call the population operators directly
+# b_pop_l = qmps.b_pop_l(input_params)
+# b_pop_r = qmps.b_pop_r(input_params)
+
+photon_pop_ops = [b_pop_l, b_pop_r]
 
 
 """Calculate population dynamics"""
+# Can calculate a single observable to get a time ordered ndarray of expectation values
+# Use the system_states to calculate observables having to do with the emitter system
+tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
 
-pop = qmps.pop_dynamics(bins,input_params)
+# Can also calculate a list of observables on the same states
+# Use output_field_states to calculate observables of the outgoing field
+photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
+
+# Net photons propagating in each direction is the cumulatively integrated fluxes over time
+net_flux_l = np.cumsum(photon_fluxes[0]) * delta_t
+net_flux_r = np.cumsum(photon_fluxes[1]) * delta_t
+
+# Add the integrated flux leaving the system with the TLS population for total quanta
+total_quanta = tls_pop + net_flux_l + net_flux_r
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
@@ -161,12 +190,12 @@ pic_style(fonts)
 
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(pop.int_n_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(pop.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
+plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
+plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel('Time, $\gamma t$',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
@@ -194,22 +223,26 @@ hm=qmps.hamiltonian_1tls(input_params)
 
 """Calculate time evolution of the system"""
 
-bins = qmps.t_evol_mar(hm,i_s0,i_n0,input_params)
+bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
 """Calculate population dynamics"""
 
-pop_ch=qmps.pop_dynamics(bins,input_params)
+tls_pop_ch = qmps.single_time_expectation(bins.system_states, tls_pop_op)
+photon_fluxes_ch = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
+
+net_fluxes = np.cumsum(photon_fluxes_ch, axis=1) * delta_t
+total_quanta_ch = tls_pop_ch + np.sum(net_fluxes, axis=0)
 
 
 """Plotting the results"""
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-plt.plot(tlist,np.real(pop_ch.int_n_r),linewidth = 3,color = 'orange',linestyle='-',label='Transmission') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(pop_ch.int_n_l),linewidth = 3,color = 'b',linestyle=':',label='Reflection') # Photons reflected to the left channel
-plt.plot(tlist,np.real(pop_ch.pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(pop_ch.total),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
+plt.plot(tlist,np.real(net_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
+plt.plot(tlist,np.real(net_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
+plt.plot(tlist,np.real(tls_pop_ch),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(total_quanta_ch),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend(loc='center right')
-plt.xlabel('Time, $\gamma t$')
+plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])

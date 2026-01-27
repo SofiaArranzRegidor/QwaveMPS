@@ -3,10 +3,10 @@
 
 """
 This module contains Hamiltonian constructors for different cases:
-    - Single TLS coupled to an infinite waveguide
-    - Single TLS with a mirror (feedback / semi-infinite waveguide)
-    - Two TLSs in the waveguide: Markovian regime (mar)
-    - Two TLSs in the waveguide: non-Markovian regime (nmar)
+    - Single two-level system coupled to an infinite waveguide
+    - Single two-level system with a mirror (feedback / semi-infinite waveguide)
+    - Two two-level systems in the waveguide: Markovian regime (mar)
+    - Two two-level systems in the waveguide: non-Markovian regime (nmar)
 
 """
 
@@ -15,12 +15,12 @@ from QwaveMPS.src.operators import *
 from QwaveMPS.src.parameters import InputParams
 from typing import Callable, TypeAlias
 
-# Type alias: Hamiltonian can be either a single ndarray or a callable indexed by time for time dependent cases
+# Type alias: Hamiltonian can be either a single ndarray or a callable indexed by time point for time dependent cases
 Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
 def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
-    Hamiltonian for 1 TLS coupled to an infinite waveguide.
+    Hamiltonian for 1 two-level system coupled to an infinite waveguide.
     The returned Hamiltonian includes:
     - A classical pump term (omega) acting on the TLS (sigma^+ + sigma^-)
     - A detuning term delta * |e><e| for the TLS
@@ -28,10 +28,10 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     
     Parameters
     ----------
-    params:InputParams
+    params : InputParams
         Class containing the input parameters.
 
-    omega : float or np.ndarray, optional
+    omega : float/np.ndarray, default: 0
        Classical pump amplitude. 
        If a float is provided (CW pump) a single Hamiltonian ndarray is returned. 
        If a 1D np.ndarray is given (pulsed light), the
@@ -39,7 +39,7 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
        at discrete time index t_k using omega[t_k].
 
     delta : float, optional
-        Detuning between the pump and TLS transition frequency.
+        Detuning between the pump and two-level system transition frequency.
 
     Returns
     -------
@@ -72,7 +72,7 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     
 def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
-    Hamiltonian for 1 TLS in a semi-infinite waveguide with a side mirror (with feedback).   
+    Hamiltonian for 1 two-level system in a semi-infinite waveguide with a side mirror (with feedback).   
     
     The returned Hamiltonian includes:
     - A classical pump term (omega) acting on the TLS (sigma^+ + sigma^-)
@@ -82,18 +82,18 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
     
     Parameters
     ----------
-    params:InputParams
+    params : InputParams
         Class containing the input parameters.
         (It must include the phase)
         
-    omega : float or np.ndarray, optional
+    omega : float or np.ndarray, default: 0
        Classical pump amplitude. 
        If a float is provided (CW pump) a single Hamiltonian ndarray is returned. 
        If a 1D np.ndarray is given (pulsed light), the
        function returns a callable hm_total(t_k) that yields the Hamiltonian
        at discrete time index t_k using omega[t_k].
 
-    delta : float, optional
+    delta : float, default: 0
         Detuning between the pump and TLS transition frequency.
 
     Returns
@@ -128,7 +128,7 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
 
 def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:float=0, omega2:float|np.ndarray=0, delta2:float=0) -> Hamiltonian:
     """
-    Hamiltonian for 2 TLSs in an infinite waveguide in the Markovian regime.
+    Hamiltonian for 2 two-level systems in an infinite waveguide in the Markovian regime.
     
     The returned Hamiltonian includes:
     - Classical pump terms (omega1/omega2) acting on TLS1/TLS2
@@ -137,15 +137,22 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
     
     Parameters
     ----------
-    params:InputParams
+    params : InputParams
         Class containing the input parameters.
 
-    omega1, omega2 : float or np.ndarray, optional
-        Drives for TLS 1 and TLS 2 
-        (can be floats for CW pumps or time-dependent arrays for pulsed light).
+    omega1 : float/np.ndarray, default: 0
+        Drive for two-level system 1 
+        (can be a float for CW pumps or a time-dependent array for pulsed light).
 
-    delta1, delta2 : float, optional
-        Detunings for TLS 1 and TLS 2.
+    delta1 : float, default: 0
+        Detuning for two-level system 1.
+
+    omega2 : float/np.ndarray, default: 0
+        Drive for two-level system 2
+        (can be a float for CW pumps or a time-dependent array for pulsed light).
+
+    delta2 : float, default: 0
+        Detuning for two-level system 1.
 
     Returns
     -------
@@ -226,12 +233,12 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
 
 def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:float=0, omega2:float|np.ndarray=0, delta2:float=0) -> Hamiltonian:
     """
-    Hamiltonian for 2 TLSs in an infinite waveguide in the non-Markovian regime (feedback).
+    Hamiltonian for 2 two-level systems in an infinite waveguide in the non-Markovian regime (feedback).
     
     The returned Hamiltonian includes:
     - Classical pump terms (omega1/omega2) acting on TLS1/TLS2
     - A detuning term delta1/delta2 * |e><e| for the TLS1/TLS2
-    - Interaction terms between the TLSs and left/right photonic modes
+    - Interaction terms between the two-level systems and left/right photonic modes
     (on the present and feedback bins).
     
     Parameters
@@ -239,12 +246,19 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
     params:InputParams
         Class containing the input parameters.
         
-    omega1, omega2 : float or np.ndarray, optional
-        Drives for TLS 1 and TLS 2 
-        (can be floats for CW pumps or time-dependent arrays for pulsed light).
+    omega1 : float/np.ndarray, default: 0
+        Drive for two-level system 1 
+        (can be a float for CW pumps or a time-dependent array for pulsed light).
 
-    delta1, delta2 : float, optional
-        Detunings for TLS 1 and TLS 2.
+    delta1 : float, default: 0
+        Detuning for two-level system 1.
+
+    omega2 : float/np.ndarray, default: 0
+        Drive for two-level system 2
+        (can be a float for CW pumps or a time-dependent array for pulsed light).
+
+    delta2 : float, default: 0
+        Detuning for two-level system 1.
 
     Returns
     -------
