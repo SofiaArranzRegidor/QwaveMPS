@@ -10,8 +10,7 @@ Computes time evolution, population dynamics, steady-state correlations,
 and the emission spectrum, with the following example plots:
         1. TLS population dynamics
         2. First and second-order steady-state correlations
-        3. Comparison to first and second-order full correlations at two time points.
-        4. Long-time emission spectrum
+        3. Long-time emission spectrum
 
 Requirements: 
     
@@ -91,14 +90,12 @@ bins = qmps.simulation.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_pa
 tls_pop_op = qmps.tls_pop()
 flux_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
 flux_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
-# g2_same_time_op = qmps.b_dag_r(input_params) @ qmps.b_dag_r(input_params) @ qmps.b_r(input_params) @ qmps.b_r(input_params)
 photon_pop_ops = [flux_pop_l, flux_pop_r]
 
 
 """Calculate population dynamics"""
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
-# g2_same_time = qmps.single_time_expectation(bins.output_field_states, g2_same_time_op)
 
 
 print("--- %s seconds ---" %(t.time() - start_time))
@@ -108,8 +105,8 @@ print("--- %s seconds ---" %(t.time() - start_time))
 fonts=15
 
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n^{\rm out}_{R}$') # Photon flux transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n^{\rm out}_{L}$') # Photon flux transmitted to the left channel
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n^{\rm out}_{R}$') # Photon flux transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle=':',label=r'$n^{\rm out}_{L}$') # Photon flux transmitted to the left channel
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
@@ -171,26 +168,6 @@ correlations_ss, tau_lists_ss, t_steady = qmps.correlation_ss_4op(bins.correlati
 
 print("SS correlation as single function call --- %s seconds ---" %(t.time() - start_time))
 
-plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$G^{(1)}_R$') 
-plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$G^{(2)}_R$') 
-plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
-plt.xlabel(r'Time, $\gamma t^\prime$',fontsize=fonts)
-plt.ylabel('Correlations',fontsize=fonts)
-plt.grid(True, linestyle='--', alpha=0.6)
-plt.ylim([0.,None])
-plt.xlim([0.,10])
-plt.show()
-
-#%% Full single time Correlation functions about the steady state time
-"""Test the whole single time correlation function calculation for the previous operators"""
-# start_time=t.time()
-
-# # Determine the full single time correlation at the steady state time (including negative tau)
-# correlations_1t, tau_list_1t = qmps.correlation_4op_1t(bins.correlation_bins,
-#                                     a_op_list, b_op_list, c_op_list, d_op_list, t_steady, input_params)
-
-
-# print("Full single time correlations --- %s seconds ---" %(t.time() - start_time))
 
 #%%% Graphing of these single time dynamics
 

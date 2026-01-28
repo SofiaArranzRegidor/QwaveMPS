@@ -122,8 +122,8 @@ print("--- %s seconds ---" %(t.time() - start_time))
 fonts=15
 
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$')
+plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right')
 plt.grid(True, linestyle='--', alpha=0.6)
@@ -167,8 +167,8 @@ total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 fonts=15
 
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
-plt.plot(tlist,np.real(new_transmitted_flux),linewidth = 3,color = 'orange',linestyle='-',label='T')
-plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
+plt.plot(tlist,np.real(new_transmitted_flux),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$')
+plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right')
 plt.xlabel(r'Time, $\gamma t$')

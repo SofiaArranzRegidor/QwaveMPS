@@ -32,17 +32,14 @@ import QwaveMPS.src as qmps
 import time as t
 
 
-
-
 #%% Parameters, Simulations, and single time expectations values
 
 """"Choose the simulation parameters"""
 
 #Choose the bins:
 # Dimension chosen to be 2 to as TLS only results in emission in single quanta subspace per unit time
-d_t_l=2 #Time right channel bin dimension
-d_t_r=2 #Time left channel bin dimension
-d_t_total=np.array([d_t_l,d_t_r])
+d_t=2 #Time channel bin dimension
+d_t_total=np.array([d_t])
 
 d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
@@ -58,7 +55,9 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond_max=4
+    bond_max=4,
+    tau=1,
+    phase=np.pi
 )
 
 #Make a tlist for plots:
@@ -82,7 +81,7 @@ gaussian_width = 0.5
 pulsed_pump = np.pi * qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
 
 # Hamiltonian is 1TLS pumped (from above) by a pi pulse
-Hm=qmps.hamiltonians.hamiltonian_1tls(input_params,pulsed_pump)
+Hm=qmps.hamiltonians.hamiltonian_1tls_feedback(input_params,pulsed_pump)
 
 
 #To track computational time
@@ -90,35 +89,40 @@ start_time=t.time()
 
 
 """Calculate time evolution of the system"""
-bins = qmps.simulation.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+bins = qmps.simulation.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 """Define relevant photonic operators"""
-tls_pop_op = qmps.tls_pop()
-flux_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
-flux_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
-photon_pop_ops = [flux_pop_l, flux_pop_r]
 
+flux_op= qmps.b_pop(input_params)
 
 """Calculate population dynamics"""
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
-photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
 
-# Integrated fluxes
-net_flux_l = np.cumsum(photon_fluxes[0]) * delta_t
-net_flux_r = np.cumsum(photon_fluxes[1]) * delta_t
+# Calculate the flux out of the system (exiting the loop)
+transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
+
+# If we want to calculate the net transmitted quanta have to integrate the flux
+net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
+
+# If we want to calculate the net transmitted quanta have to integrate the flux
+net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
+
+# Calculate the flux into the feedback loop
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
+#  in the feedback loop
+loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
 #%%% Population dynamics Graphing
 
-fonts=15
 
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photon flux transmitted to the right channel
-plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photon flux transmitted to the left channel
+plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$') # Photon flux transmitted to the right channel
+plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$') # Photon flux transmitted to the left channel
 plt.legend()
-plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
-plt.ylabel('Populations',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t$')
+plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,10])
@@ -131,21 +135,21 @@ start_time=t.time()
 
 # Choose operators of which to correlations
 a_op_list = []; b_op_list = []; c_op_list = []; d_op_list = []
-b_dag_r = qmps.b_dag_r(input_params); b_r = qmps.b_r(input_params)
-dim = b_r.shape[0]
+b_dag = qmps.b_dag(input_params); b = qmps.b(input_params)
+dim = b.shape[0]
 
 # Add op <b_R^\dag(t) b_R(t+t')>
-a_op_list.append(b_dag_r)
-b_op_list.append(b_r)
+a_op_list.append(b_dag)
+b_op_list.append(b)
 c_op_list.append(np.eye(dim))
 d_op_list.append(np.eye(dim))
 
 
 # Add op <b_R^\dag(t) b_R^\dag(t+tau) b_R(t+tau) b_R(t)>
-a_op_list.append(b_dag_r)
-b_op_list.append(b_dag_r)
-c_op_list.append(b_r)
-d_op_list.append(b_r)
+a_op_list.append(b_dag)
+b_op_list.append(b_dag)
+c_op_list.append(b)
+d_op_list.append(b)
 
 # Calculate the correlation
 correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bins,
@@ -170,7 +174,7 @@ ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma t^\prime$')
 ax.set_xlim([0,6])
 ax.set_ylim([0,6])
-cbar.set_label(r'$G^{(1)}_{RR}(t,t^\prime)\ [\gamma]$')
+cbar.set_label(r'$G^{(1)}_{RR}\ [\gamma]$')
 plt.show()
 
 """Example graphing G1_{RR}"""
@@ -187,5 +191,5 @@ ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
 ax.set_xlim([0,6])
 ax.set_ylim([0,6])
-cbar.set_label(r'$G^{(2)}_{RR}(t,t^\prime)\ [\gamma^{2}]$')
+cbar.set_label(r'$G^{(2)}_{RR}\ [\gamma^{2}]$')
 plt.show()
