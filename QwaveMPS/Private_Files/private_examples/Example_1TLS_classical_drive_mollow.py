@@ -22,6 +22,8 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
 """
 #%% Imports and plot functions
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -31,6 +33,15 @@ sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 import time as t
 
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 #%% Parameters, Simulations, and single time expectations values
 
@@ -91,14 +102,14 @@ bins = qmps.simulation.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_pa
 tls_pop_op = qmps.tls_pop()
 flux_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
 flux_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
-# g2_same_time_op = qmps.b_dag_r(input_params) @ qmps.b_dag_r(input_params) @ qmps.b_r(input_params) @ qmps.b_r(input_params)
+g2_same_time_op = qmps.b_dag_r(input_params) @ qmps.b_dag_r(input_params) @ qmps.b_r(input_params) @ qmps.b_r(input_params)
 photon_pop_ops = [flux_pop_l, flux_pop_r]
 
 
 """Calculate population dynamics"""
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
-# g2_same_time = qmps.single_time_expectation(bins.output_field_states, g2_same_time_op)
+g2_same_time = qmps.single_time_expectation(bins.output_field_states, g2_same_time_op)
 
 
 print("--- %s seconds ---" %(t.time() - start_time))
@@ -106,16 +117,23 @@ print("--- %s seconds ---" %(t.time() - start_time))
 #%%% Population dynamics Graphing
 
 fonts=15
+pic_style(fonts)
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n^{\rm out}_{R}$') # Photon flux transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n^{\rm out}_{L}$') # Photon flux transmitted to the left channel
-plt.legend()
+plt.plot(tlist,np.real(g2_same_time),linewidth = 3,color = 'cyan',linestyle='--',label=r'$G^{(2)}_{R}$') # G2, same time, right
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,10])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 #%% Steady state correlation dynamics
@@ -171,6 +189,8 @@ correlations_ss, tau_lists_ss, t_steady = qmps.correlation_ss_4op(bins.correlati
 
 print("SS correlation as single function call --- %s seconds ---" %(t.time() - start_time))
 
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$G^{(1)}_R$') 
 plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$G^{(2)}_R$') 
 plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
@@ -179,30 +199,40 @@ plt.ylabel('Correlations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,None])
 plt.xlim([0.,10])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 #%% Full single time Correlation functions about the steady state time
 """Test the whole single time correlation function calculation for the previous operators"""
-# start_time=t.time()
+start_time=t.time()
 
-# # Determine the full single time correlation at the steady state time (including negative tau)
-# correlations_1t, tau_list_1t = qmps.correlation_4op_1t(bins.correlation_bins,
-#                                     a_op_list, b_op_list, c_op_list, d_op_list, t_steady, input_params)
+# Determine the full single time correlation at the steady state time (including negative tau)
+correlations_1t, tau_list_1t = qmps.correlation_4op_1t(bins.correlation_bins,
+                                    a_op_list, b_op_list, c_op_list, d_op_list, t_steady, input_params)
 
 
-# print("Full single time correlations --- %s seconds ---" %(t.time() - start_time))
+print("Full single time correlations --- %s seconds ---" %(t.time() - start_time))
 
 #%%% Graphing of these single time dynamics
+fig, ax = plt.subplots(figsize=(4.5, 4))
+plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$g^{(1)}_{R,SS}$') 
+plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$g^{(2)}_{R,SS}$') 
+plt.plot(tau_list_1t,np.real(correlations_1t[0]),linewidth = 3, color = 'skyblue',linestyle=':',label=r'$g^{(1)}_R$') 
+plt.plot(tau_list_1t,np.real(correlations_1t[-1]),linewidth = 3, color = 'orange',linestyle=':',label=r'$g^{(2)}_R$') 
 
-plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$G^{(1)}_{R,SS}$') 
-plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$G^{(2)}_{R,SS}$') 
-plt.legend()
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t^\prime$',fontsize=fonts)
 plt.ylabel('Correlations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,None])
-plt.xlim([0,10])
+plt.xlim([-5,10])
 plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 
@@ -217,11 +247,16 @@ spect,w_list=qmps.spectrum_w(input_params.delta_t,correlations_ss[0])
 print("spectrum --- %s seconds ---" %(t.time() - start_time))
 
 # Plot the spectrum
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
 plt.xlabel(r'$(\omega - \omega_L)/\Omega$',fontsize=fonts)
 plt.ylabel('Spectrum',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([-3.,3])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.show()
 

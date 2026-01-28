@@ -77,6 +77,8 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
 #%%
 
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -85,6 +87,16 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 import time as t
+
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 
 #%% Symmetrical Solution
@@ -174,18 +186,25 @@ print("--- %s seconds ---" %(t.time() - start_time))
 """Plotting the results"""
 
 fonts=15
+pic_style(fonts)
 
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
 plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend()
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+# plt.savefig('TLS_sym_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -217,16 +236,21 @@ total_quanta_ch = tls_pop_ch + np.sum(net_fluxes, axis=0)
 
 """Plotting the results"""
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(net_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
 plt.plot(tlist,np.real(net_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
 plt.plot(tlist,np.real(tls_pop_ch),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total_quanta_ch),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend()
+plt.legend(loc='center right')
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+# plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 

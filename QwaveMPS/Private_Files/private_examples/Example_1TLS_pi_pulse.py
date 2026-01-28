@@ -22,6 +22,8 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
 """
 #%% Imports and plot functions
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -32,7 +34,14 @@ import QwaveMPS.src as qmps
 import time as t
 
 
+#Parameters for plots style
 
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 #%% Parameters, Simulations, and single time expectations values
 
@@ -112,16 +121,22 @@ print("--- %s seconds ---" %(t.time() - start_time))
 #%%% Population dynamics Graphing
 
 fonts=15
+pic_style(fonts)
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photon flux transmitted to the right channel
 plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm out}_{L}$') # Photon flux transmitted to the left channel
-plt.legend()
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2,fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,10])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 #%% Two time correlation
@@ -154,23 +169,35 @@ correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bins,
 print("Correlation time --- %s seconds ---" %(t.time() - start_time))
 
 #%%% Plot the correlation results
+from matplotlib import colormaps
+from matplotlib.colors import LinearSegmentedColormap
 
 """Example graphing G1_{RR}"""
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
 
 # Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
-z = np.real(qmps.transform_t_tau_to_t1_t2(correlations[0]))
+z = np.real(correlations[0])
 abs_max = np.abs(z).max()
 
+# Just take top half of the seismic cmap, only have positive values
+base_cmap = colormaps.get_cmap('seismic')
+cmap = LinearSegmentedColormap.from_list('seismic_half',base_cmap(np.linspace(0.5, 1.0, 256)))
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='Reds', vmin=0, vmax=abs_max,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=abs_max,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma t^\prime$')
 ax.set_xlim([0,6])
 ax.set_ylim([0,6])
-cbar.set_label(r'$G^{(1)}_{RR}(t,t^\prime)\ [\gamma]$')
+
+cbar.set_label(r'$G^{(1)}_{RR}(t,t^\prime)\ [\gamma]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()
 
 """Example graphing G1_{RR}"""
@@ -181,11 +208,18 @@ z = np.real(qmps.transform_t_tau_to_t1_t2(correlations[1]))
 abs_max = np.abs(z).max()
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='Reds', vmin=0, vmax=abs_max,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=abs_max,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
 ax.set_xlim([0,6])
 ax.set_ylim([0,6])
-cbar.set_label(r'$G^{(2)}_{RR}(t,t^\prime)\ [\gamma^{2}]$')
+
+cbar.set_label(r'$G^{(2)}_{RR}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()

@@ -24,6 +24,8 @@ References:
 """
 #%% Imports
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -32,6 +34,15 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 import time as t
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 
 #%%
@@ -120,16 +131,22 @@ print("--- %s seconds ---" %(t.time() - start_time))
 #%%
 
 fonts=15
+pic_style(fonts)
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend(loc='upper right')
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+plt.tight_layout()
 plt.show()
 
 
@@ -165,14 +182,20 @@ total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 #%%
 
 fonts=15
+pic_style(fonts)
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(new_transmitted_flux),linewidth = 3,color = 'orange',linestyle='-',label='T')
 plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend(loc='upper right')
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.,tmax])
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+plt.tight_layout()
 plt.show()

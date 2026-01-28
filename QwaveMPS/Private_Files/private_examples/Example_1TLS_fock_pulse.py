@@ -28,6 +28,8 @@ References:
 
 #%% Imports
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -36,6 +38,15 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 import time as t
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 
 #%% 1 photon Tophat Pulse
@@ -54,7 +65,7 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
-
+#gamma_l,gamma_r = 0,1
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
@@ -73,10 +84,10 @@ delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
 
-""" Choose the initial state and tophat pulse parameters"""
+""" Choose the initial state and pulse parameters"""
 
 # Pulse parameters por a 1-photon tophat pulse
-pulse_time = 1 #length of the pulse in time units of gamma
+pulse_time = 2 #length of the pulse in time units of gamma
 photon_num = 1 #number of photons
 
 sys_initial_state=qmps.states.tls_ground()
@@ -118,18 +129,26 @@ print("--- %s seconds ---" %(t.time() - start_time))
 
 #%%
 fonts=15
+pic_style(fonts)
 
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n_{R}$') # Photon flux transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{L}$') # Photon flux reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
+plt.plot(tlist,np.real(flux_in[0]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm pulse,L}$') # Photon flux in from Left
 plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'magenta',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend()
+plt.legend(loc='center right', bbox_to_anchor=(1,0.5), labelspacing=0.25, fontsize=fonts)
 plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
 plt.ylabel('Populations',fontsize=fonts)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.show()
 
 #%%
@@ -166,50 +185,53 @@ print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 #%%% Graph an example in the t,t' plane
 
 """Example graphing G1_{RR}"""
-
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
-# Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
-z = np.real(qmps.transform_t_tau_to_t1_t2(g1_correlations[0]))
+z = np.real(g1_correlations[0])
 absMax = np.abs(z).max()
 
-
+cmap = 'seismic'
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='seismic', vmin=-absMax, vmax=absMax,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma t^\prime$')
 ax.set_xlim((0,4))
 ax.set_ylim((0,4))
-cbar.set_label(r'$G^{(1)}_{RR}(t,t^\prime)\ [\gamma]$')
+
+cbar.set_label(r'$G^{(1)}_{RR}(t,t^\prime)\ [\gamma]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()
 
 
 """ Example graphing G1_{LL} """
-# Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
-z = np.real(qmps.transform_t_tau_to_t1_t2(g1_correlations[1]))
+z = np.real(g1_correlations[1])
 absMax = np.abs(z).max()
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='seismic', vmin=-absMax, vmax=absMax,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma t^\prime$')
 ax.set_xlim((0,4))
 ax.set_ylim((0,4))
-cbar.set_label(r'$G^{(1)}_{LL}(t,t^\prime)\ [\gamma]$')
+
+cbar.set_label(r'$G^{(1)}_{LL}(t,t^\prime)\ [\gamma]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()
 
 #%% 2 photon Gaussian pulse
-
-
 """ Update photonic space size input field, simulation length"""
-
-# Set it channel to 3 to accommodate 2 photons
-d_t_l=3 #Time right channel bin dimension
-d_t_r=3 #Time left channel bin dimension
-
-input_params.d_t_total = np.array([d_t_l,d_t_r])
+# Set to 3 to accommodate 2 photons
+input_params.d_t_total = np.array([3,3])
 
 input_params.tmax=10
 tmax=input_params.tmax
@@ -260,18 +282,28 @@ print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 #%%% Plot single time dynamics
 
 fonts=15
+pic_style(fonts)
 
+
+fig, ax = plt.subplots(figsize=(6, 4))
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n_{R}$') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{L}$') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'magenta',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(same_time_G2),linewidth = 3,color = 'magenta',linestyle='-',label=r'$G_{RR}^{(2)}(t,0)$') # Same time G2 in transmission (Right)
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-plt.legend()
+
+plt.legend(loc='center', bbox_to_anchor=(1,0.5))
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,2.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+# plt.savefig('TLS_chiral_decay.pdf', format='pdf', dpi=600, bbox_inches='tight')
 plt.show()
 
 #%%% G2 Calculation
@@ -324,40 +356,57 @@ g2_correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bi
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))
 
 #%%% Plot an example
-
-X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
-
+import matplotlib.ticker as ticker
+from matplotlib import colormaps
+from matplotlib.colors import LinearSegmentedColormap
 
 """Example graphing G2_{RR}"""
+X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
 
 # Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[0]))
 absMax = np.abs(z).max()
 
+# Just take top half of the seismic cmap, only have positive values
+base_cmap = colormaps.get_cmap('seismic')
+cmap = LinearSegmentedColormap.from_list('seismic_half',base_cmap(np.linspace(0.5, 1.0, 256)))
+
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='Reds', vmin=0, vmax=absMax,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
-cbar.set_label(r'$G^{(2)}_{RR}(t,t^\prime)\ [\gamma^{2}]$')
+
+cbar.set_label(r'$G^{(2)}_{RR}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()
 
 
 """Example graphing G2_{LL}"""
-
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[1]))
 absMax = np.abs(z).max()
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='Reds', vmin=0, vmax=absMax,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
-cbar.set_label(r'$G^{(2)}_{LL}(t,t^\prime)\ [\gamma^{2}]$')
+
+cbar.set_label(r'$G^{(2)}_{LL}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()
 
 """Example graphing G2_{LR}"""
-
 # Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
 # Since the correlation isn't symmetric w.r.t. t', need both G2_{LR} and G2_{RL}
 # Arguments below would be reversed for G2_{RL}
@@ -365,9 +414,16 @@ z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[3],g2_correlations[2])
 absMax = np.abs(z).max()
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
-cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap='Reds', vmin=0, vmax=absMax,rasterized=True)
-cbar = fig.colorbar(cf,ax=ax)
+cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
+cbar = fig.colorbar(cf,ax=ax, pad=0)
+
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
-cbar.set_label(r'$G^{(2)}_{LR}(t,t^\prime)\ [\gamma^{2}]$')
+
+cbar.set_label(r'$G^{(2)}_{LR}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
+cbar.ax.yaxis.set_major_formatter(formatter)
+
+cbar.ax.tick_params(width=0.75)
 plt.show()

@@ -20,7 +20,8 @@ ncon https://pypi.org/project/ncon/. To install it, write the following on your 
 """
 #%% Imports
 import matplotlib.pyplot as plt
-
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -30,6 +31,14 @@ sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 import time as t
 
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 #%%
 
@@ -122,19 +131,25 @@ print("--- %s seconds ---" %(t.time() - start_time))
 #%% Plot with population dynamics
 
 fonts=15
+pic_style(fonts)
 
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
 plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(np.cumsum(fluxes[0])*delta_t),linewidth = 3,color = 'b',linestyle=':',label=r'$N_R^{\rm out}$') # Net flux out right
+plt.plot(tlist,np.real(np.cumsum(fluxes[0])*delta_t),linewidth = 3,color = 'b',linestyle=':',label=r'$N_R^{\rm out}') # Net flux out right
 plt.plot(tlist,np.real(np.cumsum(fluxes[1])*delta_t),linewidth = 3,color = 'orange',linestyle='-',label=r'$N_L^{\rm out}$') # Net flux out left 
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend()
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
 plt.show()
 
 #%% 
@@ -150,13 +165,19 @@ print("Entanglement--- %s seconds ---" %(t.time() - start_time))
 
 #%% Plot with entanglement entropy and G1 (flux)
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm sys}$')
 plt.plot(tlist,np.real(fluxes[0]),linewidth = 3,color = 'lime',linestyle='-',label=r'$G^{(1)}_{t,R/L}$') # Photon flux (same time G1)
-plt.legend()
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
 plt.xlabel(r'Time, $\gamma t$')
+plt.ylabel("Entropy/Population")
 plt.grid(True, linestyle='--', alpha=0.6)
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
 plt.show()
 
-
+# %%

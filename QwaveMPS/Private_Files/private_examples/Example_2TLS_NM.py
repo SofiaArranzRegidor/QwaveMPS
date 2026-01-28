@@ -24,6 +24,8 @@ References:
 """
 #%% Imports
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 
 import sys
@@ -32,6 +34,15 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import QwaveMPS.src as qmps
 import time as t
+
+#Parameters for plots style
+
+def pic_style(fontsize):
+    rc('font',size=fontsize)
+
+def clean_ticks(x, pos):
+    # Only show decimals if not an integer
+    return f'{x:g}'
 
 
 #%%
@@ -122,19 +133,30 @@ print("--- %s seconds ---" %(t.time() - start_time))
 
 #%% Plot with population dynamics
 
+fonts=20
+pic_style(fonts)
+
+
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist, np.real(tls_pops[0]), linewidth=3, color='k', linestyle='-',label=r'$n_{\rm TLS1}$')
 plt.plot(tlist, np.real(tls_pops[1]), linewidth=3, color='skyblue', linestyle='--',label=r'$n_{\rm TLS2}$')
+
 # Graphing the fluxes out this time
 plt.plot(tlist, np.real(photon_fluxes_out[1]), linewidth=3, color='orange',linestyle='-',label=r'$n_{R}$') 
 plt.plot(tlist, np.real(photon_fluxes_out[0]), linewidth=3, color='b',linestyle=':',label=r'$n_{L}$')
+
 plt.plot(tlist, np.real(loop_sum_l + loop_sum_r), linewidth=3,color='magenta',linestyle=':',label=r'$N_{\rm loop}$')
 plt.plot(tlist, np.real(total_quanta), linewidth=3, color='g',linestyle='-',label='Total')
-plt.legend()
+plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95), labelspacing=0.2)
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
 plt.show()
 
 
@@ -157,14 +179,20 @@ print("Entanglement--- %s seconds ---" %(t.time() - start_time))
 
 #%% Plot with entanglement entropies and total quanta in the loop
 
+fig, ax = plt.subplots(figsize=(4.5, 4))
 plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm system}$')
 plt.plot(tlist,np.real(ent_s_tau),linewidth = 3,color = 'lime',linestyle='-',label=r'$S_{\rm circuit}$')
 plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'b',linestyle='-',label=r'$N_{\rm loop}$')
-plt.legend()
+plt.legend(loc='right', bbox_to_anchor=(1, 0.5),labelspacing=0.2)
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Entropy/Population')
 plt.grid(True, linestyle='--', alpha=0.6)
+formatter = FuncFormatter(clean_ticks)
+ax.xaxis.set_major_formatter(formatter)
+ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
+plt.tight_layout()
 plt.show()
 
+# %%
