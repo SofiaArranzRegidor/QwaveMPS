@@ -133,7 +133,7 @@ print("--- %s seconds ---" %(t.time() - start_time))
 
 #%% Plot with population dynamics
 
-fonts=15
+fonts=20
 pic_style(fonts)
 
 
