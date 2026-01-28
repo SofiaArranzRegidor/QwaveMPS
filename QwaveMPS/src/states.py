@@ -244,7 +244,7 @@ def gaussian_envelope(pulse_time:float, params:InputParams, gaussian_width:float
     diffs = times - gaussian_center
     exponent = - (diffs ** 2) / (2 * gaussian_width ** 2) 
 
-    pulse_envelope = np.exp(exponent)         
+    pulse_envelope = np.exp(exponent) / (gaussian_width * np.sqrt(2*np.pi))     
     return pulse_envelope
 
 def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, decay_center:float=0)->np.ndarray:

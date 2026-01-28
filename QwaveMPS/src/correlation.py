@@ -624,9 +624,10 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
     
     # Loop over to fill in correlation matrices values
-    print('Correlation Calculation Completion:')
+    if completion_print_flag:
+        print('Correlation Calculation Completion:')
     loop_num = len(time_bin_list_copy) - 1
-    print_rate = max(round(loop_num / 100.0), 1)
+    print_rate = max(round(loop_num / 20.0), 1) # Print every 5%, 20/100
     for i in range(len(time_bin_list_copy)-1):
 
         i_1=time_bin_list_copy[0]
@@ -668,8 +669,8 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
                time_bin_list_copy[j] = stemp[:,None,None] * right_bin
         time_bin_list_copy=time_bin_list_copy[1:]    #Truncating the start of the list now that are done with that bin (t=i)
         
-        if i % print_rate == 0 and completion_print_flag == True:
-            print(round((float(i)/loop_num)*100,2), '%')
+        if i % print_rate == 0 and completion_print_flag:
+            print(round((float(i)/loop_num)*100,1), '%')
     
     t_list = np.arange(len(correlation_bins)) * params.delta_t
     return correlations, t_list
