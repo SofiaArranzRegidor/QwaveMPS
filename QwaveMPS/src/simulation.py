@@ -275,7 +275,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         
         #swap system and i_n
         phi2=ncon([i_s,i_n,swap_sys_t],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
-        i_n,stemp,i_stemp=_svd_tensors(phi2, bond,d_sys,d_t)   
+        i_n,stemp,i_stemp=_svd_tensors(phi2, bond,d_t,d_sys)   
         i_n=i_n*stemp[None,None,:] #the OC in time bin     
         
         cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) 

@@ -38,7 +38,7 @@ import time as t
 
 #Choose the bins:
 # Dimension chosen to be 2 to as TLS only results in emission in single quanta subspace per unit time
-d_t=2 #Time channel bin dimension
+d_t=3 #Time channel bin dimension
 d_t_total=np.array([d_t])
 
 d_sys1=2 # tls bin dimension
@@ -55,7 +55,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=d_t_total,
     gamma_l=gamma_l,
     gamma_r = gamma_r,  
-    bond_max=4,
+    bond_max=18,
     tau=1,
     phase=np.pi
 )

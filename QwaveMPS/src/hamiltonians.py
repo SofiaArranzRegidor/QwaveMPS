@@ -111,10 +111,10 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
     
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t)*np.exp(-1j*phase),sigmaplus()),np.eye(d_t))
-    t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaplus()),delta_b(delta_t))
-    t3=np.sqrt(gamma_l)*np.kron(np.kron(delta_b_dag(delta_t)*np.exp(1j*phase),sigmaminus()),np.eye(d_t))
-    t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaminus()),delta_b_dag(delta_t))   
+    t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t,d_t)*np.exp(-1j*phase),sigmaplus()),np.eye(d_t))
+    t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaplus()),delta_b(delta_t,d_t))
+    t3=np.sqrt(gamma_l)*np.kron(np.kron(delta_b_dag(delta_t,d_t)*np.exp(1j*phase),sigmaminus()),np.eye(d_t))
+    t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaminus()),delta_b_dag(delta_t,d_t))   
     if isinstance(omega, np.ndarray):
         omegas = tuple(omega)
         def hm_total(t_k):  
