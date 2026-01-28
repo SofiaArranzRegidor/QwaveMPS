@@ -192,7 +192,6 @@ print("Time dependent spectra--- %s seconds ---" %(t.time() - start_time))
 
 
 """Graph Examples"""
-import cmasher as cmr
 fonts=15
 pic_style(fonts)
 
@@ -202,7 +201,7 @@ X,Y = np.meshgrid(w_list_intensity,correlation_tlist)
 z = spectral_intensity
 absMax = np.abs(z).max()
 
-cmap = cmr.get_sub_cmap('seismic', 0, 1)
+cmap = 'seismic'
 fig, ax = plt.subplots(figsize=(4.5, 4))
 cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
 cbar = fig.colorbar(cf,ax=ax, pad=0)

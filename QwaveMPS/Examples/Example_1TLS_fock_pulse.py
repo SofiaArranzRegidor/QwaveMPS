@@ -183,14 +183,13 @@ g1_correlations, correlation_tlist = qmps.correlation_2op_2t(bins.correlation_bi
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
 #%%% Graph an example in the t,t' plane
-import cmasher as cmr
 
 """Example graphing G1_{RR}"""
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
 z = np.real(g1_correlations[0])
 absMax = np.abs(z).max()
 
-cmap = cmr.get_sub_cmap('seismic', 0, 1)
+cmap = 'seismic'
 fig, ax = plt.subplots(figsize=(4.5, 4))
 cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=-absMax, vmax=absMax,rasterized=True)
 cbar = fig.colorbar(cf,ax=ax, pad=0)
@@ -357,8 +356,9 @@ g2_correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bi
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))
 
 #%%% Plot an example
-import cmasher as cmr
 import matplotlib.ticker as ticker
+from matplotlib import colormaps
+from matplotlib.colors import LinearSegmentedColormap
 
 """Example graphing G2_{RR}"""
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
@@ -367,7 +367,10 @@ X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[0]))
 absMax = np.abs(z).max()
 
-cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
+# Just take top half of the seismic cmap, only have positive values
+base_cmap = colormaps.get_cmap('seismic')
+cmap = LinearSegmentedColormap.from_list('seismic_half',base_cmap(np.linspace(0.5, 1.0, 256)))
+
 fig, ax = plt.subplots(figsize=(4.5, 4))
 cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
 cbar = fig.colorbar(cf,ax=ax, pad=0)
@@ -388,7 +391,6 @@ plt.show()
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[1]))
 absMax = np.abs(z).max()
 
-cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
 fig, ax = plt.subplots(figsize=(4.5, 4))
 cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
 cbar = fig.colorbar(cf,ax=ax, pad=0)
@@ -411,7 +413,6 @@ plt.show()
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[3],g2_correlations[2]))
 absMax = np.abs(z).max()
 
-cmap = cmr.get_sub_cmap('seismic', 0.5, 1)
 fig, ax = plt.subplots(figsize=(4.5, 4))
 cf = ax.pcolormesh(X,Y,z,shading='gouraud',cmap=cmap, vmin=0, vmax=absMax,rasterized=True)
 cbar = fig.colorbar(cf,ax=ax, pad=0)
