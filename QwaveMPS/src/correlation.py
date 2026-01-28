@@ -670,7 +670,7 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         time_bin_list_copy=time_bin_list_copy[1:]    #Truncating the start of the list now that are done with that bin (t=i)
         
         if i % print_rate == 0 and completion_print_flag:
-            print(round((float(i)/loop_num)*100,2), '%')
+            print(round((float(i)/loop_num)*100,1), '%')
     
     t_list = np.arange(len(correlation_bins)) * params.delta_t
     return correlations, t_list
