@@ -11,17 +11,6 @@ QwaveMPS is an open-source Python library for simulating one-dimensional quantum
 
 Explore the sections below to get started, understand the theory, and use the code.
 
-```{toctree}
-:maxdepth: 2
-
-installation
-theory
-modules
-usage
-examples
-contributing
-references
-```
 
 ## Features
 
@@ -56,6 +45,17 @@ QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more inf
 ## Acknowledgements
 
 Add acknowledgements here.
+
+```{toctree}
+:maxdepth: 2
+
+installation
+theory
+modules
+usage
+examples
+contributing
+references
 
 ## Contact
 For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).
