@@ -44,7 +44,7 @@ $$M = U S V^\dagger,$$
 where $S$ is a diagonal matrix containing the Schmidt coefficients in descending order, $U$ is a left-normalized tensor, and $V$ is a right-normalized one. Afterwards, one of the side tensors can be contracted with the tensor containing the Schmidt coefficients. This receives the name of the orthogonality center (OC) and carries the system's information. Thus, we end up with 2 new tensors written as a tensor product. To better understand the process, this can be represented diagrammatically,
 
 <p align="center">
-  <img src="./images/OC.png" alt="OC Image" width="30%">
+  <img src="images/OC.png" alt="OC Image" width="30%">
 </p>
 
 Here, the vertical lines correspond to the physical dimensions of the system, while the horizontal ones represent the bond or virtual extra dimensions generated when performing the SVDs. 
