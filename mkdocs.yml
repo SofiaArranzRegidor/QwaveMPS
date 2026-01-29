@@ -5,21 +5,9 @@ nav:
   - Theory: theory.md
   - Modules: modules.md
   - Usage: usage.md
-  - Examples:
-    - Example Overview: examples/index.md
-    - Single Two Level System: examples/single_TLS.md
-    - Two Two Level Systems: examples/two_TLS.md
-    - Single Two Level System - Classical Drive: examples/two_TLS.md
-    - Single Two Level System - Fock Pulse: examples/two_TLS.md
+  - Examples: examples.md
   - Contributing: contributing.md
   - References: references.md
-  - Code Reference:
-    - project:
-      - lorem: reference/correlation.md
-      - ipsum: reference/hamiltonians.md
-      - dolor: reference/operators.md
-      - sit: reference/parameters.md
-      - amet: reference/simulation.md
 
 theme: readthedocs
 
@@ -27,19 +15,6 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
   - md_in_html
-
-plugins:
-  - search
-  - gen-files:
-      scripts:
-        - scripts/gen_ref_pages.py
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            docstring_style: numpy
-          paths:
-            - QwaveMPS
 
 extra_javascript:
   - "https://polyfill.io/v3/polyfill.min.js?features=es6"
