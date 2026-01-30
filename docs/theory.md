@@ -43,10 +43,11 @@ $$M = U S V^\dagger,$$
 
 where $S$ is a diagonal matrix containing the Schmidt coefficients in descending order, $U$ is a left-normalized tensor, and $V$ is a right-normalized one. Afterwards, one of the side tensors can be contracted with the tensor containing the Schmidt coefficients. This receives the name of the orthogonality center (OC) and carries the system's information. Thus, we end up with 2 new tensors written as a tensor product. To better understand the process, this can be represented diagrammatically,
 
-<p align="center">
-  <img src="/images/OC.png" alt="OC Image" width="30%">
-</p>
-
+```{image} images/OC.png
+:alt: OC Image
+:width: 30%
+:align: center
+```
 Here, the vertical lines correspond to the physical dimensions of the system, while the horizontal ones represent the bond or virtual extra dimensions generated when performing the SVDs. 
 
 ### Matrix product states
@@ -57,9 +58,11 @@ $$\ket{\psi}=\sum_{i_s i_1...i_N} A_{a_1}^{i_s}A_{a_1,a_2}^{i_1} ... A_{a_{N-1},
 
 where the first term represents the system (or quantum emitter) part, and the remaining $N$ terms represent the waveguide discretized in time. Here, each tensor can be represented as a 'bin' which corresponds to the boxes in the diagrammatic representation. This gives the possibility of at least $N$ photons in the waveguide.
 
-<p align="center">
-  <img src="/images/initial_state.png" alt="state Image" width="50%">
-</p>
+```{image} images/initial_state.png
+:alt: state Image
+:width: 50%
+:align: center
+```
 
 In this diagram, $i_s i_1...i_N$ represent the physical indices of the MPS.
 
@@ -87,9 +90,12 @@ An operator can be seen as a projector which projects one physical index $i$ to 
 
 For example, an MPO operating on a single site can be represented as,
 
-<p align="center">
-  <img src="/images/mpo.png" alt="mpo Image" width="10%">
-</p>
+
+```{image} images/mpo.png
+:alt: mpo Image
+:width: 10%
+:align: center
+```
 
 where $i_1$ and $j_1$ are the labels for the physical indices of the corresponding bra and ket. This can be directly applied on the MPS corresponding MPS bin.
 
@@ -106,15 +112,22 @@ where $d_t$ is 2 by default to allow one photon per time bin.
 
 The evolution of the system is performed by applying the time evolution operator on the relevant parts of the MPS at each time step. In the Markovian regime or when we do not have feedback effects, this is usually on the system bin and the present time bin. For example, at a time $t_k,
 
-<p align="center">
-  <img src="/images/mark_U.png" alt="mark U Image" width="20%">
-</p>
+
+```{image} images/mark_U.png
+:alt: mark U Image
+:width: 20%
+:align: center
+```
+
 
 where in this case the evolution operator is a 2-site MPO. However, in cases with feedback effects in the non-Markovian regime, we will have to consider also the feedback bins. For example, if we have a feedback bin, $i_\tau$, the time evolution operator is now a 3-site MPO,
 
-<p align="center">
-  <img src="/images/nomark_U.png" alt="no mark U Image" width="60%">
-</p>
+
+```{image} images/nomark_U.png
+:alt: no mark U Image
+:width: 60%
+:align: center
+```
 
 where we have first brought the feedback time bin next to the system bin $i_s$ and the present time bin $i_k$ by applying a swap operator, in order to then apply $U$ only in three sites. 
 

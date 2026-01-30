@@ -1,3 +1,4 @@
+
 # QwaveMPS
 
 Welcome to the documentation for **QwaveMPS**!
@@ -17,6 +18,18 @@ Explore the sections below to get started, understand the theory, and use the co
 - **Open-source Python package:** Python library with minimal dependencies on external packages.
 - **User-friendly framework:** Designed to be accessible for researchers and students.
 - **Comprehensive Resources:** Documentation and examples provided to support learning and usage.
+
+```{toctree}
+:maxdepth: 2
+
+installation
+theory
+modules
+usage
+auto_examples/index
+contributing
+references
+```
 
 ## Download and installation
 
@@ -38,7 +51,7 @@ Once we have the paper/arxiv, add here how to cite the repo
 
 ## License
 
-QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more information.
+QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](../LICENSE) for more information.
 
 ## Acknowledgements
 
@@ -46,4 +59,5 @@ Add acknowledgements here.
 
 ## Contact
 For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).
+
 
