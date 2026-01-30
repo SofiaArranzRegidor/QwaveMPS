@@ -26,6 +26,9 @@ from scipy.linalg import expm
 from ncon import ncon
 from QwaveMPS.parameters import InputParams
 
+__all__ = ['sigmaplus', 'sigmaminus', 'e', 'tls_pop', 'b_dag', 'b', 'b_dag_l', 'b_dag_r', 'b_l', 'b_r', 'b_pop', 'b_pop_r', 'b_pop_l',
+           'single_time_expectation', 'loop_integrated_statistics', 'entanglement']
+
 #-----------------------------
 # Helper function to test 
 #-----------------------------

@@ -17,6 +17,10 @@ from QwaveMPS.simulation import _svd_tensors
 from QwaveMPS.operators import op_list_check,expectation_1bin,expectation_nbins,swap,single_time_expectation
 from QwaveMPS.parameters import InputParams
 
+__all__ = ['spectrum_w', 'transform_t_tau_to_t1_t2', 'spectral_intensity', 'time_dependent_spectrum',
+           'correlation_2op_2t', 'correlation_4op_2t', 'correlation_2op_1t', 'correlation_4op_1t',
+           'correlation_ss_2op', 'correlation_ss_4op', 'correlations_2t', 'steady_state_index', 'correlation_ss_1t']
+
 # ----------------------
 # Functions acting on correlation results
 # ----------------------

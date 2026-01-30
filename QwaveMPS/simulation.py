@@ -25,6 +25,8 @@ from typing import Callable, TypeAlias
 from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *
 
+__all__ = ['t_evol_mar', 't_evol_nmar']
+
 # -----------------------------------
 # Singular Value Decomposition helper
 # -----------------------------------

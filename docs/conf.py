@@ -18,16 +18,15 @@ autoapi_dirs = ["../QwaveMPS/"]
 autoapi_type = "python"
 autoapi_add_toctree_entry = False
 autoapi_keep_files = False
-autodoc_typehints = "description"
-autodoc_typehints = "signature"
+
+#autodoc_typehints = "description" # No typehint in the function signature in the API, shorter
+autodoc_typehints = "signature" # Put the typehint in the function signature in the API
 autoapi_options = [
     "members",
     "show-inheritance",
     "show-module-summary",
     "imported-members",
 ]
-autoapi_ignore = ["__init__.py", ""]
-
 
 # Use index.md as the root
 master_doc = "index"

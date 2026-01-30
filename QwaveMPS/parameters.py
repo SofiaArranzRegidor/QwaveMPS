@@ -10,6 +10,8 @@ and the Bins class (which includes the results of a simulation).
 from dataclasses import dataclass
 import numpy as np
 
+__all__ = ['InputParams', 'Bins']
+
 @dataclass
 class InputParams:
     """Input / simulation parameters:

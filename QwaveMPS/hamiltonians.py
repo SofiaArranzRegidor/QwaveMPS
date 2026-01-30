@@ -18,6 +18,8 @@ from typing import Callable, TypeAlias
 # Type alias: Hamiltonian can be either a single ndarray or a callable indexed by time point for time dependent cases
 Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
+__all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_mar', 'hamiltonian_2tls_nmar', 'Hamiltonian']
+
 def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
     Hamiltonian for 1 two-level system coupled to an infinite waveguide.
@@ -68,8 +70,7 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
         hm_sys=omega/2*delta_t*(np.kron(sigmaplus(),np.eye(d_t_l*d_t_r)) + np.kron(sigmaminus(),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
         hm_total=hm_sys+t1+t2
     return hm_total
-
-    
+ 
 def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
     Hamiltonian for 1 two-level system in a semi-infinite waveguide with a side mirror (with feedback).   
