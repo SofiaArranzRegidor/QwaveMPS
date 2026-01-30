@@ -14,17 +14,19 @@ extensions = [
 
 # Config for autoapi
 autoapi_member_order = "alphabetical"
-autoapi_dirs = ["../QwaveMPS"]
+autoapi_dirs = ["../QwaveMPS/"]
 autoapi_type = "python"
-autoapi_add_toctree_entry = False#False
+autoapi_add_toctree_entry = False
 autoapi_keep_files = False
 autodoc_typehints = "description"
+autodoc_typehints = "signature"
 autoapi_options = [
     "members",
     "show-inheritance",
     "show-module-summary",
     "imported-members",
 ]
+autoapi_ignore = ["__init__.py", ""]
 
 
 # Use index.md as the root

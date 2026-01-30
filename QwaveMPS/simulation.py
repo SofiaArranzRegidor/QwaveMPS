@@ -18,9 +18,9 @@ import numpy as np
 import copy
 from ncon import ncon
 from scipy.linalg import svd,norm
-from . import states as states
+from QwaveMPS import states as states
 from collections.abc import Iterator
-from QwaveMPS.parameters import *
+from QwaveMPS.parameters import InputParams, Bins
 from typing import Callable, TypeAlias
 from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *

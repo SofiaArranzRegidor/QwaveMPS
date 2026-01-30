@@ -15,7 +15,7 @@ import numpy as np
 import scipy as sci
 from ncon import ncon
 from collections.abc import Iterator
-from . import simulation as sim
+from QwaveMPS import simulation as sim
 from QwaveMPS.parameters import InputParams
 
 
