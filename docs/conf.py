@@ -5,7 +5,27 @@ project = "QwaveMPS Documentation"
 extensions = [
     "myst_parser",
     "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
+    "autoapi.extension",
+    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.intersphinx",
+    "sphinx_copybutton",
 ]
+
+# Config for autoapi
+autoapi_member_order = "alphabetical"
+autoapi_dirs = ["../QwaveMPS"]
+autoapi_type = "python"
+autoapi_add_toctree_entry = False#False
+autoapi_keep_files = False
+autodoc_typehints = "description"
+autoapi_options = [
+    "members",
+    "show-inheritance",
+    "show-module-summary",
+    "imported-members",
+]
+
 
 # Use index.md as the root
 master_doc = "index"
@@ -34,8 +54,6 @@ html_theme = "sphinx_rtd_theme"   # pip install sphinx-rtd-theme
 # mathjax3_config = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]]}}
 
 
-extensions += ["sphinx_gallery.gen_gallery"]
-
 sphinx_gallery_conf = {
     # where your example scripts live (relative to conf.py)
     "examples_dirs": "../Examples",     # or "examples" if it’s inside docs/
@@ -46,3 +64,17 @@ sphinx_gallery_conf = {
     "filename_pattern": r"Example_.*\.py",
     "remove_config_comments": True,
 }
+
+
+#'''
+# -- Custom configuration ----------------------------------------------------
+# Skip modules in the autoapi extension to avoid duplication errors
+def skip_modules(app, what, name, obj, skip, options):
+    if what == "module":
+        skip = True
+    return skip
+
+def setup(app):
+    app.connect("autoapi-skip-member", skip_modules)
+    app.add_css_file("hide_links.css")  # Custom CSS to hide jupyter links
+#'''

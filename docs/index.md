@@ -29,6 +29,7 @@ usage
 auto_examples/index
 contributing
 references
+api-reference/index
 ```
 
 ## Download and installation
