@@ -152,7 +152,7 @@ References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
  .. code-block:: none
 
-    --- 0.44260191917419434 seconds ---
+    --- 0.44533419609069824 seconds ---
 
 
 
@@ -259,7 +259,7 @@ References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.968 seconds)
+   **Total running time of the script:** (0 minutes 0.961 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_1TLS_NM.py:

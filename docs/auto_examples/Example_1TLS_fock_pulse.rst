@@ -151,7 +151,7 @@ References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
 
  .. code-block:: none
 
-    --- 0.06572604179382324 seconds ---
+    --- 0.09471297264099121 seconds ---
 
 
 
@@ -250,7 +250,7 @@ References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
     85.5 %
     90.6 %
     95.6 %
-    G1 correl--- 4.13594388961792 seconds ---
+    G1 correl--- 3.885842800140381 seconds ---
 
 
 
@@ -387,7 +387,7 @@ References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
 
  .. code-block:: none
 
-    2-photon pop--- 0.23191308975219727 seconds ---
+    2-photon pop--- 0.17473530769348145 seconds ---
 
 
 
@@ -505,7 +505,7 @@ References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
     85.4 %
     90.5 %
     95.5 %
-    G2 correl--- 83.65069389343262 seconds ---
+    G2 correl--- 84.10436725616455 seconds ---
 
 
 
@@ -595,7 +595,7 @@ References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 28.875 seconds)
+   **Total running time of the script:** (1 minutes 29.049 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_1TLS_fock_pulse.py:

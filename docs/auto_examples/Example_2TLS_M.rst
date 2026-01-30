@@ -160,7 +160,7 @@ pip install ncon
 
  .. code-block:: none
 
-    --- 0.06376409530639648 seconds ---
+    --- 0.06374287605285645 seconds ---
 
 
 
@@ -220,7 +220,7 @@ pip install ncon
 
  .. code-block:: none
 
-    Entanglement--- 0.0014028549194335938 seconds ---
+    Entanglement--- 0.0013928413391113281 seconds ---
 
 
 
@@ -255,7 +255,7 @@ pip install ncon
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.415 seconds)
+   **Total running time of the script:** (0 minutes 0.421 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_2TLS_M.py:

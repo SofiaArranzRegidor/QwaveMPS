@@ -153,7 +153,7 @@ pip install ncon
 
  .. code-block:: none
 
-    --- 36.4739990234375 seconds ---
+    --- 36.134034156799316 seconds ---
 
 
 
@@ -248,7 +248,7 @@ pip install ncon
     85.2 %
     90.2 %
     95.2 %
-    Correlation time --- 134.459538936615 seconds ---
+    Correlation time --- 131.09018301963806 seconds ---
 
 
 
@@ -319,7 +319,7 @@ pip install ncon
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 51.681 seconds)
+   **Total running time of the script:** (2 minutes 47.935 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_1TLS_pi_pulse.py:

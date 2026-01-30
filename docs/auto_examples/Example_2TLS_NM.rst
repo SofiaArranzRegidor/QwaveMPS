@@ -158,7 +158,7 @@ References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
  .. code-block:: none
 
-    --- 0.4375331401824951 seconds ---
+    --- 0.42310070991516113 seconds ---
 
 
 
@@ -224,7 +224,7 @@ References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
  .. code-block:: none
 
-    Entanglement--- 0.0014159679412841797 seconds ---
+    Entanglement--- 0.00150299072265625 seconds ---
 
 
 
@@ -260,7 +260,7 @@ References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.514 seconds)
+   **Total running time of the script:** (0 minutes 0.504 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_2TLS_NM.py:

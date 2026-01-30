@@ -138,7 +138,7 @@ pip install ncon
 
  .. code-block:: none
 
-    --- 0.4861409664154053 seconds ---
+    --- 0.47733616828918457 seconds ---
 
 
 
@@ -239,8 +239,8 @@ pip install ncon
  .. code-block:: none
 
     Convergence of steady state:  10.540000000000001
-    SS correlations as two function calls --- 1.2868800163269043 seconds ---
-    SS correlation as single function call --- 0.7184238433837891 seconds ---
+    SS correlations as two function calls --- 1.5551600456237793 seconds ---
+    SS correlation as single function call --- 0.9291691780090332 seconds ---
 
 
 
@@ -309,7 +309,7 @@ pip install ncon
 
  .. code-block:: none
 
-    spectrum --- 0.0012891292572021484 seconds ---
+    spectrum --- 0.0009043216705322266 seconds ---
 
 
 
@@ -317,7 +317,7 @@ pip install ncon
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 2.607 seconds)
+   **Total running time of the script:** (0 minutes 3.077 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_1TLS_classical_drive_mollow.py:

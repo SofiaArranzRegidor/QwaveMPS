@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**04:25.283** total execution time for 7 files **from all galleries**:
+**00:00.466** total execution time for 7 files **from all galleries**:
 
 .. container::
 
@@ -32,24 +32,24 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_Example_1TLS_pi_pulse.py` (``../Examples/Example_1TLS_pi_pulse.py``)
-     - 02:51.681
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_Example_1TLS_fock_pulse.py` (``../Examples/Example_1TLS_fock_pulse.py``)
-     - 01:28.875
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_Example_1TLS_classical_drive_mollow.py` (``../Examples/Example_1TLS_classical_drive_mollow.py``)
-     - 00:02.607
+   * - :ref:`sphx_glr_auto_examples_Example_1TLS_M.py` (``../Examples/Example_1TLS_M.py``)
+     - 00:00.466
      - 0.0
    * - :ref:`sphx_glr_auto_examples_Example_1TLS_NM.py` (``../Examples/Example_1TLS_NM.py``)
-     - 00:00.968
+     - 00:00.000
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_Example_2TLS_NM.py` (``../Examples/Example_2TLS_NM.py``)
-     - 00:00.514
+   * - :ref:`sphx_glr_auto_examples_Example_1TLS_classical_drive_mollow.py` (``../Examples/Example_1TLS_classical_drive_mollow.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_Example_1TLS_fock_pulse.py` (``../Examples/Example_1TLS_fock_pulse.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_Example_1TLS_pi_pulse.py` (``../Examples/Example_1TLS_pi_pulse.py``)
+     - 00:00.000
      - 0.0
    * - :ref:`sphx_glr_auto_examples_Example_2TLS_M.py` (``../Examples/Example_2TLS_M.py``)
-     - 00:00.415
+     - 00:00.000
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_Example_1TLS_M.py` (``../Examples/Example_1TLS_M.py``)
-     - 00:00.224
+   * - :ref:`sphx_glr_auto_examples_Example_2TLS_NM.py` (``../Examples/Example_2TLS_NM.py``)
+     - 00:00.000
      - 0.0

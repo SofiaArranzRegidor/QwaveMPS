@@ -25,33 +25,29 @@ This is a basic example of a single two-level system (TLS) decaying into the wav
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
-.. GENERATED FROM PYTHON SOURCE LINES 12-13
-
 It covers two cases:
+    
+1. Symmetrical coupling into the waveguide
+2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
 
-.. GENERATED FROM PYTHON SOURCE LINES 13-79
+.. GENERATED FROM PYTHON SOURCE LINES 18-75
 
 .. code-block:: Python
 
-    
-    #1. Symmetrical coupling into the waveguide
-    #2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
+
 
     # Structure:    
     
     # 1. Setup of the bin size, coupling and input parameters.
-    
-    # - Size of each system bin (d_sys), this is the TLS Hilbert subspace, 
-    # and the total system bin (d_sys_total) containing all the emitters. 
+
+    # - Size of each system bin (d_sys), this is the TLS Hilbert subspace, and the total system bin (d_sys_total) containing all the emitters. 
     # For a single TLS, d_sys1=2 and d_sys_total=np.array([d_sys1]).
-    # - Size of the time bins (d_t_total). This contains the field Hilbert subspace 
-    # at each time step. In this case we allow one photon per time step and per right (d_t_r) 
-    # and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r]))
-    # - Choice of coupling. Here, it is first calculated with symmetrical coupling,
-    # \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
-    # and the with chiral coupling,         
-    # gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
-            
+    # - Size of the time bins (d_t_total). This contains the field Hilbert subspace at each time step. In this case we allow one photon per time step and per right (d_t_r) 
+    # and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r])
+    # - Choice of coupling. Here, it is first calculated with symmetrical coupling, \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
+    # and the with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
+
+
     # Input parameters (input_params). Define the data parameters that will be used in the calculation:
     # - Time step (delta_t)
     # - Maximum time (tmax)
@@ -88,9 +84,6 @@ It covers two cases:
     # - Conservation check (for one excitation it should be 1)
     
     # Repeat for both cases (symmetrical and chiral).
-
-
-
  
     # Requirements: 
     
@@ -105,8 +98,12 @@ It covers two cases:
 
 
 
+.. GENERATED FROM PYTHON SOURCE LINES 76-78
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-89
+Imports
+--------
+
+.. GENERATED FROM PYTHON SOURCE LINES 78-87
 
 .. code-block:: Python
 
@@ -126,13 +123,35 @@ It covers two cases:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 90-191
+.. GENERATED FROM PYTHON SOURCE LINES 88-108
+
+Symmetrical Solution
+---------------------
+
+Choose the simulation parameters:
+ 1. Setup of the bin size, coupling and input parameters.
+
+   Size of each system bin (d_sys), this is the TLS Hilbert subspace, and the total system bin (d_sys_total) containing all the emitters. 
+   For a single TLS, d_sys1=2 and d_sys_total=np.array([d_sys1]).
+   Size of the time bins (d_t_total). This contains the field Hilbert subspace at each time step. In this case we allow one photon per time step and per right (d_t_r) 
+   and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r])
+   Choice of coupling. Here, it is first calculated with symmetrical coupling, \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
+   and the with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
+
+   Input parameters (input_params). Define the data parameters that will be used in the calculation:
+   Time step (delta_t)
+   Maximum time (tmax)
+   d_sys_total (as defined above)
+   d_t_total (as defined above)
+   Maximum bond dimension (bond). bond >=d_t_total*(number of excitations).    
+   Starting with the TLS excited and field in vacuum, 1 excitation enough with bond=4
+
+.. GENERATED FROM PYTHON SOURCE LINES 108-208
 
 .. code-block:: Python
 
 
 
-    """"Choose the simulation parameters"""
 
     #Choose the bins:
     d_t_l=2 #Time right channel bin dimension
@@ -244,17 +263,41 @@ It covers two cases:
 
  .. code-block:: none
 
-    --- 0.050405025482177734 seconds ---
+    --- 0.060133934020996094 seconds ---
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 192-232
+.. GENERATED FROM PYTHON SOURCE LINES 209-211
+
+Right Chiral Solution
+----------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 211-216
 
 .. code-block:: Python
 
 
-    """ Updated coupling"""
+    """ 
+    Updated coupling
+
+    """
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+
+    ' \nUpdated coupling\n\n'
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 217-254
+
+.. code-block:: Python
 
     gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 
@@ -308,7 +351,7 @@ It covers two cases:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.224 seconds)
+   **Total running time of the script:** (0 minutes 0.466 seconds)
 
 
 .. _sphx_glr_download_auto_examples_Example_1TLS_M.py:
