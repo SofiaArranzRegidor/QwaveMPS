@@ -13,14 +13,20 @@ extensions = [
 ]
 
 # Config for autoapi
-autoapi_member_order = "alphabetical"
 autoapi_dirs = ["../QwaveMPS/"]
 autoapi_type = "python"
-autoapi_add_toctree_entry = False
 autoapi_keep_files = False
+
+autoapi_member_order = "alphabetical"
+#autoapi_member_order = "bysource"
+
+autoapi_add_toctree_entry = False
+autoapi_ignore_module_all = True
+#autoapi_ignore = ["__init__.py"]
 
 #autodoc_typehints = "description" # No typehint in the function signature in the API, shorter
 autodoc_typehints = "signature" # Put the typehint in the function signature in the API
+
 autoapi_options = [
     "members",
     "show-inheritance",

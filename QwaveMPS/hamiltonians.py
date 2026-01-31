@@ -23,10 +23,11 @@ __all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_ma
 def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
     Hamiltonian for 1 two-level system coupled to an infinite waveguide.
+    
     The returned Hamiltonian includes:
-    - A classical pump term (omega) acting on the TLS (sigma^+ + sigma^-)
-    - A detuning term delta * |e><e| for the TLS
-    - Interaction terms between the TLS and left/right photonic modes.
+        - A classical pump term (omega) acting on the TLS, :math:`\\Omega(\\sigma^+ + \\sigma^-)`
+        - A detuning term for the TLS, :math:`\\delta |e\\rangle\\langle e|`.
+        - Interaction terms between the TLS and left/right photonic modes.
     
     Parameters
     ----------
@@ -76,10 +77,9 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
     Hamiltonian for 1 two-level system in a semi-infinite waveguide with a side mirror (with feedback).   
     
     The returned Hamiltonian includes:
-    - A classical pump term (omega) acting on the TLS (sigma^+ + sigma^-)
-    - A detuning term delta * |e><e| for the TLS
-    - Interaction terms between the TLS and a single photonic mode 
-    (on the present and feedback bins).
+        - A classical pump term (omega) acting on the TLS, :math:`\\Omega(\\sigma^+ + \\sigma^-)`
+        - A detuning term for the TLS, :math:`\\delta |e\\rangle\\langle e|`.
+        - Interaction terms between the TLS and a single photonic mode (on the present and feedback bins).
     
     Parameters
     ----------
@@ -132,9 +132,9 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
     Hamiltonian for 2 two-level systems in an infinite waveguide in the Markovian regime.
     
     The returned Hamiltonian includes:
-    - Classical pump terms (omega1/omega2) acting on TLS1/TLS2
-    - A detuning term delta1/delta2 * |e><e| for the TLS1/TLS2
-    - Interaction terms between the TLSs and left/right photonic modes.
+        - Classical pump terms (omega1/omega2) acting on TLS1/TLS2, :math:`\\Omega_i(\\sigma_i^+ + \\sigma_i^-)`
+        - A detuning term delta1/delta2 for TLS1/TLS2, :math:`\\delta_i |e\\rangle_i\\langle e|_i`.
+        - Interaction terms between the TLSs and left/right photonic modes.
     
     Parameters
     ----------
@@ -237,10 +237,9 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
     Hamiltonian for 2 two-level systems in an infinite waveguide in the non-Markovian regime (feedback).
     
     The returned Hamiltonian includes:
-    - Classical pump terms (omega1/omega2) acting on TLS1/TLS2
-    - A detuning term delta1/delta2 * |e><e| for the TLS1/TLS2
-    - Interaction terms between the two-level systems and left/right photonic modes
-    (on the present and feedback bins).
+        - Classical pump terms (omega1/omega2) acting on TLS1/TLS2, :math:`\\Omega_i(\\sigma_i^+ + \\sigma_i^-)`
+        - A detuning term delta1/delta2 for TLS1/TLS2, :math:`\\delta_i |e\\rangle_i\\langle e|_i`.
+        - Interaction terms between the two-level systems and left/right photonic modes (on the present and feedback bins).
     
     Parameters
     ----------

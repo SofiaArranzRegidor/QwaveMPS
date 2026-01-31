@@ -19,7 +19,7 @@ from QwaveMPS.parameters import InputParams
 
 __all__ = ['spectrum_w', 'transform_t_tau_to_t1_t2', 'spectral_intensity', 'time_dependent_spectrum',
            'correlation_2op_2t', 'correlation_4op_2t', 'correlation_2op_1t', 'correlation_4op_1t',
-           'correlation_ss_2op', 'correlation_ss_4op', 'correlations_2t', 'steady_state_index', 'correlation_ss_1t']
+           'correlation_ss_2op', 'correlation_ss_4op', 'correlations_1t', 'correlations_2t', 'steady_state_index', 'correlation_ss_1t']
 
 # ----------------------
 # Functions acting on correlation results
@@ -90,7 +90,11 @@ def transform_t_tau_to_t1_t2(positive_tau_results:np.ndarray, negative_tau_resul
 
 def spectral_intensity(correlation_matrix:np.ndarray, input_params:InputParams, padding:int=0, hanning_filter:bool=False, taper_length:int=16) -> tuple[np.ndarray,np.ndarray]:
     """
-    Calculate the time dependent spectral intensity from a given two time correlation function.
+    Calculate the time dependent spectral intensity from a given two time correlation function. Given a correlation function of the form :math:`\\langle A(t)B(t+\\tau)\\rangle` this computes the function
+
+    .. math::
+
+        I(\\omega, t) = \\int_0^\\infty d\\tau \\langle A(t)B(t+\\tau) \\rangle e^{i\\Delta_{\\omega p}\\tau}
     
     Parameters
     ----------
@@ -137,8 +141,12 @@ def spectral_intensity(correlation_matrix:np.ndarray, input_params:InputParams, 
 
 def time_dependent_spectrum(correlation_matrix:np.ndarray, input_params:InputParams, w_list:np.ndarray=None, padding:int=0) -> tuple[np.ndarray, np.ndarray]:
     """
-    Calculate the time dependent spectra from a given two time correlation function.
+    Calculate the time dependent spectra from a given two time correlation function. Given a correlation function of the form :math:`\\langle A(t)B(t+\\tau)\\rangle` this computes the function
     
+    .. math::
+
+        S(\\omega, t) = \\int_0^t dt' \\int_0^{t-t'} d\\tau \\langle A(t)B(t+\\tau) \\rangle e^{i\\Delta_{\\omega p}\\tau}
+
     Parameters
     ----------
     correlation_matrix : np.ndarray
@@ -200,7 +208,7 @@ def time_dependent_spectrum(correlation_matrix:np.ndarray, input_params:InputPar
 
 def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+t')> for either single operators A and B, or each A/B in a_op_list/b_op_list.
+    Calculates the two time correlation function :math:`\\langle A(t)B(t+t')\\rangle` for either single operators :math:`A` and :math:`B`, or each :math:`A/B` in a_op_list/b_op_list.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
     for each operator.
             
@@ -256,7 +264,7 @@ def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
 
 def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> for either single operators A/B/C/D, or each operator in the four lists.
+    Calculates the two time correlation function :math:`\\langle A(t)B(t+t')C(t+t')D(t)\\rangle` for either single operators :math:`A/B/C/D`, or each operator in the four lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
     for each operator.
             
@@ -319,7 +327,7 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
 
 def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], t:float, params:InputParams) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+t')> at a fixed t for either single operators A/B, or each operator in the lists.
+    Calculates the two time correlation function :math:`\\langle A(t_0)B(t_0+t')\\rangle` at a fixed time :math:`t_0` for either single operators :math:`A/B`, or each operator in the lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
     for each operator.
             
@@ -334,6 +342,9 @@ def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
     b_op_list : ndarray/list[ndarray]
         Single operator, B, or a list of operators.
     
+    t : float
+        Fixed time point for the two time point correlation function calculation.
+        
     params : InputParams
         Simulation parameters 
 
@@ -371,7 +382,7 @@ def correlation_2op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
 
 def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], t:float, params:InputParams) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> at a fixed t for either single operators, or each operator in the lists.
+    Calculates the two time correlation function :math:`\\langle A(t_0)B(t_0+t')C(t_0+t')D(t_0)\\rangle` at a fixed time :math:`t_0` for either single operators, or each operator in the lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
     for each operator.
             
@@ -391,6 +402,9 @@ def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
 
     d_op_list : ndarray/list[ndarray]
         Single operator, D, or a list of operators.
+    
+    t : float
+        Fixed time point for the two time point correlation function calculation.
     
     params : InputParams
         Simulation parameters 
@@ -431,7 +445,7 @@ def correlation_4op_1t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
 
 def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5, window:int = 20, t_steady:float=None) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+t')> at a steady state value of t for either single operators, or each operator in the lists.
+    Calculates the two time correlation function :math:`\\langle A(t_{ss})B(t_{ss}+t')\\rangle` at a steady state value of t for either single operators, or each operator in the lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
     for each operator. In that case calculates the steady states correlation from the greatest steady state time of the operators.
             
@@ -496,7 +510,7 @@ def correlation_ss_2op(correlation_bins:list[np.ndarray], output_field_states:li
 
 def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, tol:float=1e-5, window:int=20, t_steady:float=None) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray, float]:
     """ 
-    Calculates the two time correlation function <A(t)B(t+t')C(t+t')D(t)> at a steady state value of t for either single operators, or each operator in the lists.
+    Calculates the two time correlation function :math:`\\langle A(t_{ss})B(t_{ss}+t')C(t_{ss}+t')D(t_{ss})\\rangle` at a steady state value of t for either single operators, or each operator in the lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
     for each operator. In that case calculates the steady states correlation from the greatest steady state time of the operators.
             

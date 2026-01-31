@@ -56,7 +56,7 @@ def op_list_check(op_list:object) -> bool:
 
 def sigmaplus() -> np.ndarray:  
     """
-    Raising operator for the Pauli spins (|e><g|).
+    Raising operator for the Pauli spins, :math:`|e\\rangle \\langle g|`.
 
     Returns
     -------
@@ -69,7 +69,7 @@ def sigmaplus() -> np.ndarray:
 
 def sigmaminus() -> np.ndarray:  
     """
-    Lowering operator for the Pauli spins  (|g><e|). 
+    Lowering operator for the Pauli spins, :math:`|g\\rangle\\langle e|`. 
     
     Returns
     -------
@@ -82,8 +82,8 @@ def sigmaminus() -> np.ndarray:
 
 def e(d_sys:int=2) -> np.ndarray:
     """
-    Projector onto the excited TLS state (|e><e|).
-
+    Projector onto the excited TLS state, :math:`|e\\rangle\\langle e|`.
+    
     Parameters
     ----------
     d_sys : int, default: 2
@@ -101,7 +101,7 @@ def e(d_sys:int=2) -> np.ndarray:
 
 def tls_pop(d_sys:int=2) -> np.ndarray:    
     """
-    Single TLS population operator sigma^+ sigma^-. 
+    Single TLS population operator, :math:`\\sigma^+ \\sigma^-`. 
 
     Parameters
     ----------
@@ -122,7 +122,7 @@ def tls_pop(d_sys:int=2) -> np.ndarray:
 
 def delta_b_dag(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
-    Time bin noise creation operator scaled by sqrt(delta_t) in the truncated Fock
+    Time bin noise creation operator scaled by :math:`\\sqrt{\\Delta t}` in the truncated Fock
     basis.
     
     Parameters
@@ -142,7 +142,7 @@ def delta_b_dag(delta_t:float, d_t:int=2) -> np.ndarray:
 
 def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:  
     """
-    Time bin noise annihilation operator scaled by sqrt(delta_t) in the truncated Fock
+    Time bin noise annihilation operator scaled by :math:`\\sqrt{\\Delta t}` in the truncated Fock
     basis.
 
     Parameters
@@ -163,7 +163,7 @@ def delta_b(delta_t:float, d_t:int=2) -> np.ndarray:
 def delta_b_dag_l(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:  
     """
     Left time bin noise creation operator for a system with two field channels,
-    scaled by sqrt(delta_t) in the truncated Fock basis.
+    scaled by :math:`\\sqrt{\\Delta t}` in the truncated Fock basis.
 
     Parameters
     ----------
@@ -185,7 +185,7 @@ def delta_b_dag_l(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:
 def delta_b_dag_r(delta_t:float, d_t_total:np.ndarray) -> np.ndarray: 
     """
     Right time bin noise creation operator for a system with two field channels,
-    scaled by sqrt(delta_t) in the truncated Fock basis.
+    scaled by :math:`\\sqrt{\\Delta t}` in the truncated Fock basis.
 
     Parameters
     ----------
@@ -207,7 +207,7 @@ def delta_b_dag_r(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:
 def delta_b_l(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:  
     """
     Left time bin noise annihilation operator for a system with two field channels,
-    scaled by sqrt(delta_t) in the truncated Fock basis.
+    scaled by :math:`\\sqrt{\\Delta t}` in the truncated Fock basis.
 
     Parameters
     ----------
@@ -229,7 +229,7 @@ def delta_b_l(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:
 def delta_b_r(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:  
     """
     Right time bin noise annihilation operator for a system with two field channels,
-    scaled by sqrt(delta_t) in the truncated Fock basis.
+    scaled by :math:`\\sqrt{\\Delta t}` in the truncated Fock basis.
 
     Parameters
     ----------
@@ -254,7 +254,7 @@ def delta_b_r(delta_t:float, d_t_total:np.ndarray) -> np.ndarray:
 def b_dag(params:InputParams) -> np.ndarray:  
     """
     Creation operator for observables in the truncated Fock basis.
-    Normalized by 1/sqrt(delta_t).
+    Normalized by :math:`\\frac{1}{\\sqrt{\\Delta t}}`.
     
     Parameters
     ----------
@@ -271,7 +271,7 @@ def b_dag(params:InputParams) -> np.ndarray:
 def b(params:InputParams) -> np.ndarray:  
     """
     Annihilation operator for observables in the truncated Fock basis.
-    Normalized by 1/sqrt(delta_t).
+    Normalized by :math:`\\frac{1}{\\sqrt{\\Delta t}}`.
 
     Parameters
     ----------
@@ -288,7 +288,7 @@ def b(params:InputParams) -> np.ndarray:
 def b_dag_l(params:InputParams) -> np.ndarray:  
     """
     Left creation operator for a system with two field channels in the truncated Fock basis.
-    Normalized by 1/sqrt(delta_t).
+    Normalized by :math:`\\frac{1}{\\sqrt{\\Delta t}}`.
 
     Parameters
     ----------
@@ -305,7 +305,7 @@ def b_dag_l(params:InputParams) -> np.ndarray:
 def b_dag_r(params:InputParams) -> np.ndarray: 
     """
     Right creation operator for a system with two field channels, in the truncated Fock basis.
-    Normalized by 1/sqrt(delta_t).
+    Normalized by :math:`\\frac{1}{\\sqrt{\\Delta t}}`.
 
     Parameters
     ----------
@@ -322,7 +322,7 @@ def b_dag_r(params:InputParams) -> np.ndarray:
 def b_l(params:InputParams) -> np.ndarray:  
     """
     Left annihilation operator for a system with two field channels in the truncated Fock basis.
-    Normalized by 1/sqrt(delta_t).
+    Normalized by :math:`\\frac{1}{\\sqrt{\\Delta t}}`.
 
     Parameters
     ----------
@@ -339,7 +339,7 @@ def b_l(params:InputParams) -> np.ndarray:
 def b_r(params:InputParams) -> np.ndarray:  
     """
     Right annihilation operator for a system with two field channels, in the truncated Fock basis.
-    Normalized by 1/sqrt(delta_t).
+    Normalized by :math:`\\frac{1}{\\sqrt{\\Delta t}}`.
 
     Parameters
     ----------
@@ -355,7 +355,7 @@ def b_r(params:InputParams) -> np.ndarray:
 
 def b_pop(params:InputParams) -> np.ndarray:  
     """
-    Single-channel photonic population operator (normalized by 1/delta_t).
+    Single-channel photonic population operator (normalized by :math:`\\frac{1}{\\Delta t}`).
 
     Parameters
     ----------
@@ -372,7 +372,7 @@ def b_pop(params:InputParams) -> np.ndarray:
 
 def b_pop_r(params:InputParams) -> np.ndarray:
     """
-    Right-channel photonic population operator (normalized by 1/delta_t).
+    Right-channel photonic population operator (normalized by :math:`\\frac{1}{\\Delta t}`).
 
     Parameters
     ----------
@@ -389,7 +389,7 @@ def b_pop_r(params:InputParams) -> np.ndarray:
 
 def b_pop_l(params:InputParams) -> np.ndarray:  
     """
-    Left-channel photonic population operator (normalized by 1/delta_t).
+    Left-channel photonic population operator (normalized by :math:`\\frac{1}{\\Delta t}`).
 
     Parameters
     ----------
@@ -411,7 +411,7 @@ def b_pop_l(params:InputParams) -> np.ndarray:
 
 def u_evol(Hm:np.ndarray|list, d_sys_total:np.ndarray, d_t_total:np.ndarray, interacting_timebins_num:int=1) -> np.ndarray:
     """
-    Creates a time evolution operator exp(-1j H) for a given Hamiltonian,
+    Creates a time evolution operator :math:`\\exp{-1j H}` for a given Hamiltonian,
     and reshape to expected tensor shape.
 
     Parameters
@@ -499,7 +499,7 @@ def vectorized_swap(dim1:int, dim2:int) -> np.ndarray:
 
 def expectation_1bin(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
     """
-    The expectation value <A|MPO|A> of a single MPS bin with a given operator.
+    The expectation value :math:`\\langle A|\\mathrm{MPO}|A\\rangle` of a single MPS bin with a given operator.
 
     Parameters
     ----------
@@ -519,7 +519,7 @@ def expectation_1bin(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
 
 def expectation_2bins(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
     """
-    The expectation value <A|MPO|A> of a 2-bin MPS with a given operator.
+    The expectation value :math:`\\langle A|\\mathrm{MPO}|A\\rangle` of a 2-bin MPS with a given operator.
 
     Parameters
     ----------
@@ -540,7 +540,7 @@ def expectation_2bins(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
 def expectation_nbins(ket:np.ndarray, mpo:np.ndarray) -> complex:
     """ 
     General expectation utility: expectation operation ket for larger/arbitrary tensor spaces.
-    Take the expectation value of an nth rank tensor ket with an nth rank MPO.
+    Take the expectation value of an nth rank tensor ket with an nth rank MPO, :math:`\\langle A|\\mathrm{MPO}|A\\rangle`.
     
     This helper caches index ordering logic depending on the operator rank to avoid
     recomputing index lists repeatedly for identical operator ranks.
@@ -657,7 +657,7 @@ def entanglement(sch:list[np.ndarray]) -> list[float]:
     Returns
     -------
     time_dependent_entanglement : list[float]
-        Entanglement entropies computed as -sum(p * log2 p) where p = s**2.
+        Entanglement entropies computed as :math:`-\\sum(p\\log_2 p)` where :math:`p = s^2`.
     """
     ent_list=[]
     for s in sch:
