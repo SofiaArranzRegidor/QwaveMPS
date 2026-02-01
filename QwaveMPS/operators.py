@@ -27,7 +27,8 @@ from ncon import ncon
 from QwaveMPS.parameters import InputParams
 
 __all__ = ['sigmaplus', 'sigmaminus', 'e', 'tls_pop', 'b_dag', 'b', 'b_dag_l', 'b_dag_r', 'b_l', 'b_r', 'b_pop', 'b_pop_r', 'b_pop_l',
-           'single_time_expectation', 'loop_integrated_statistics', 'entanglement']
+           'single_time_expectation', 'loop_integrated_statistics', 'entanglement',
+           'delta_b_dag','delta_b','delta_b_dag_l','delta_b_dag_r','delta_b_l', 'delta_b_r']
 
 #-----------------------------
 # Helper function to test 

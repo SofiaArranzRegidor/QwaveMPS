@@ -24,6 +24,7 @@ from QwaveMPS.parameters import InputParams, Bins
 from typing import Callable, TypeAlias
 from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *
+from QwaveMPS.operators import u_evol, swap
 
 __all__ = ['t_evol_mar', 't_evol_nmar']
 
