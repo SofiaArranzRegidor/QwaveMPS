@@ -13,7 +13,7 @@ extensions = [
 ]
 
 # Config for autoapi
-autoapi_dirs = ["../QwaveMPS/"]
+autoapi_dirs = ["../src/QwaveMPS/"]
 autoapi_type = "python"
 autoapi_keep_files = False
 

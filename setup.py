@@ -16,7 +16,8 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Visualization"
     ],
     license="GNU General Public License v3 (GPLv3)",
-    packages=setuptools.find_packages(where="QwaveMPS"),    
+    package_dir={"": "src"},
+    packages=setuptools.find_packages(where="src"),    
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     python_requires=">=3.7",

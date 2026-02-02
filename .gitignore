@@ -209,3 +209,4 @@ __marimo__/
 # Sphinx-gallery
 docs/auto_examples/
 docs/sg_execution_times.rst
+docs/autoapi
