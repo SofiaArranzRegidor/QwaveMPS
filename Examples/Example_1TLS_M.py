@@ -1,8 +1,8 @@
 """
-Example: 1TLS (Markovian)
-=========================
+1 TLS - Decay in infinite waveguide
+===================================
 
-This is a basic example of a single two-level system (TLS) decaying into the waveguide. 
+This is a basic example of a single two-level system (TLS) decaying into an infinite waveguide. 
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
@@ -11,76 +11,22 @@ It covers two cases:
 1. Symmetrical coupling into the waveguide
 2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
 
-
+*Requirements:* 
+The following package is required: ncon (https://pypi.org/project/ncon/). 
+To install it, write the following on your console:   
+   
+pip install ncon  
 
 """
-#%%
-
-
-# Structure:    
-    
-# 1. Setup of the bin size, coupling and input parameters.
-
-# - Size of each system bin (d_sys), this is the TLS Hilbert subspace, and the total system bin (d_sys_total) containing all the emitters. 
-# For a single TLS, d_sys1=2 and d_sys_total=np.array([d_sys1]).
-# - Size of the time bins (d_t_total). This contains the field Hilbert subspace at each time step. In this case we allow one photon per time step and per right (d_t_r) 
-# and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r])
-# - Choice of coupling. Here, it is first calculated with symmetrical coupling, \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
-# and the with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
-
-
-# Input parameters (input_params). Define the data parameters that will be used in the calculation:
-# - Time step (delta_t)
-# - Maximum time (tmax)
-# - d_sys_total (as defined above)
-# - d_t_total (as defined above)
-# - Maximum bond dimension (bond). bond >=d_t_total*(number of excitations).    
-# Starting with the TLS excited and field in vacuum, 1 excitation enough with bond=4
-        
-# 2. Initial state and coupling configuration.    
-# - Choice the system initial state (i_s0). Here, initially excited, 
-# i_s0 = qmps.states.tls_excited()
-# - Choice of the waveguide initial state (i_n0). Here, starting in vacuum,
-# and considering that there is vacuum before the interaction until tmax.  
-# i_n0 = qmps.states.vacuum(tmax,input_params) 
-                    
-# 3. Selection of the corresponding Hamiltonian (Hm=qmps.hamiltonian_1tls(input_params)).
-    
-# 4. Time evolution calculation (bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_params)).
-    
-# 5. Choose Relevant observables.
-# - Get the TLS population with the tls_pop_op = qmps.tls_pop()
-# - Can get bosonic fluxes similarly with b_pop_op_r = qmps.b_pop_r(input_params)
-
-# 6. Calculate Observables.
-# - Get time dependent expectation values by acting on the relevant states (system/field) with
-# your operators.
-# - tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
-# - flux_r = qmps.single_time_expectation(bins.output_field_states, b_pop_op_r)
-    
-# 7. Example plot containing,
-# - Integrated photon flux traveling to the right
-# - Integrated photon flux traveling to the left
-# - TLS population
-# - Conservation check (for one excitation it should be 1)
-    
-# Repeat for both cases (symmetrical and chiral).
  
-# Requirements: 
-    
-# ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
-    
-# pip install ncon   
 
 #%% 
 # Imports
 #--------
 
+import QwaveMPS as qmps
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-import QwaveMPS as qmps
 import time as t
 
 
@@ -88,24 +34,29 @@ import time as t
 # Symmetrical Solution
 #---------------------
 #
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Choose the simulation parameters:
-# 1. Setup of the bin size, coupling and input parameters.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#    
+#Setup of the bin size, coupling and input parameters:
 #
-#   Size of each system bin (d_sys), this is the TLS Hilbert subspace, and the total system bin (d_sys_total) containing all the emitters. 
-#   For a single TLS, d_sys1=2 and d_sys_total=np.array([d_sys1]).
-#   Size of the time bins (d_t_total). This contains the field Hilbert subspace at each time step. In this case we allow one photon per time step and per right (d_t_r) 
-#   and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r])
-#   Choice of coupling. Here, it is first calculated with symmetrical coupling, \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
-#   and the with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
+#  * Size of each system bin (d_sys), this is the TLS Hilbert subspace, and the total system bin (d_sys_total) containing all the emitters. 
+#    For a single TLS, d_sys1=2 and d_sys_total=np.array([d_sys1]).
 #
-#   Input parameters (input_params). Define the data parameters that will be used in the calculation:
-#   Time step (delta_t)
-#   Maximum time (tmax)
-#   d_sys_total (as defined above)
-#   d_t_total (as defined above)
-#   Maximum bond dimension (bond). bond >=d_t_total*(number of excitations).    
-#   Starting with the TLS excited and field in vacuum, 1 excitation enough with bond=4
-
+#  * Size of the time bins (d_t_total). This contains the field Hilbert subspace at each time step. In this case we allow one photon per time step and per right (d_t_r) 
+#    and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r])
+#
+#  * Choice of coupling. Here, it is first calculated with symmetrical coupling, \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
+#    and the with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
+#
+#  * Input parameters (input_params). Define the data parameters that will be used in the calculation:
+#    
+#     * Time step (delta_t)
+#     * Maximum time (tmax)
+#     * d_sys_total (as defined above)
+#     * d_t_total (as defined above)
+#     * Maximum bond dimension (bond). bond >=d_t_total(number of excitations).    
+#       Starting with the TLS excited and field in vacuum, 1 excitation enough with bond=4
 
 
 #Choose the bins:
@@ -135,6 +86,17 @@ tmax=input_params.tmax
 delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the initial state and Hamiltonian
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#* Choice the system initial state. Here, initially excited. 
+#
+#* Choice of the waveguide initial state. Here, starting in vacuum,
+#  and considering that there is vacuum before the interaction until tmax.
+#  
+#* Selection of the corresponding Hamiltonian.
+
 
 """ Choose the initial state"""
 
@@ -148,11 +110,38 @@ wg_initial_state = qmps.states.vacuum(tmax,input_params)
 start_time=t.time()
 
 """Choose the Hamiltonian"""
-Hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
+hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
+
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Time evolution calculation in the Markovian regime: 
 
 """Calculate time evolution of the system"""
-bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose Relevant observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#* Get the TLS population with the tls_pop_op = qmps.tls_pop()
+#* Get bosonic fluxes. This can be doe in two different ways:
+#
+#  * Using the boson operator:
+#    
+#    b_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
+#
+#    b_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)    
+#
+#  * Using population operators directly:
+#
+#    b_pop_l = qmps.b_pop_l(input_params)
+#
+#    b_pop_r = qmps.b_pop_r(input_params)  
 
 """Choose Observables"""
 # Calculate the two level system population
@@ -162,12 +151,19 @@ tls_pop_op = qmps.tls_pop()
 b_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
 b_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
 
-# Can also call the population operators directly
-# b_pop_l = qmps.b_pop_l(input_params)
-# b_pop_r = qmps.b_pop_r(input_params)
-
 photon_pop_ops = [b_pop_l, b_pop_r]
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
+#Get time dependent expectation values by acting on the relevant states (system/field) with
+#your operators.
+#
+#Here, we calculate population dynamics, including the TLS population,
+#photon fluxes, the integrated fluxes over time, and total quanta to
+#check quanta conservation. 
 
 """Calculate population dynamics"""
 # Can calculate a single observable to get a time ordered ndarray of expectation values
@@ -187,10 +183,21 @@ total_quanta = tls_pop + net_flux_l + net_flux_r
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
+#Example plot containing,
+#* Integrated photon flux traveling to the right
+#* Integrated photon flux traveling to the left
+#* TLS population
+#* Conservation check (for one excitation it should be 1)
+
+
 """Plotting the results"""
 
 fonts=15
-
 
 plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
 plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'brown',linestyle='--',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
@@ -208,24 +215,39 @@ plt.show()
 #%% 
 # Right Chiral Solution
 #----------------------
+#
+#Similar example but now for a chiral TLS
+#with an updated coupling to be coupled only to the right channel
 
-""" 
-Updated coupling
-
-"""
-#%%
+#%% 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Update the simulation coupling:
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 
 input_params.gamma_l=gamma_l
 input_params.gamma_r=gamma_r
 
-"""Choose the Hamiltonian"""
+#%% 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Update Hamiltonian with new coupling
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 hm=qmps.hamiltonian_1tls(input_params)
+
+#%% 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """Calculate time evolution of the system"""
 
 bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
+
+#%% 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """Calculate population dynamics"""
 
@@ -235,6 +257,11 @@ photon_fluxes_ch = qmps.single_time_expectation(bins.output_field_states, photon
 net_fluxes = np.cumsum(photon_fluxes_ch, axis=1) * delta_t
 total_quanta_ch = tls_pop_ch + np.sum(net_fluxes, axis=0)
 
+
+#%% 
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
 
 """Plotting the results"""
 

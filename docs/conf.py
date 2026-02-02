@@ -60,6 +60,7 @@ html_theme = "sphinx_rtd_theme"   # pip install sphinx-rtd-theme
 # MathJax config (optional; default usually fine)
 # mathjax3_config = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]]}}
 
+from sphinx_gallery.sorting import FileNameSortKey
 
 sphinx_gallery_conf = {
     # where your example scripts live (relative to conf.py)
@@ -70,6 +71,7 @@ sphinx_gallery_conf = {
     # Only run python files in Examples/ (and typically you name them Example_*.py)
     "filename_pattern": r"Example_.*\.py",
     "remove_config_comments": True,
+    "within_subsection_order": FileNameSortKey,
 }
 
 

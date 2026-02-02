@@ -1,6 +1,6 @@
 """
-Example: 1TLS Pi Pulse
-========================
+1 TLS - Drive with classical pi-pulse
+=====================================
 
 This is an example of a single two-level system (TLS)
 driven by a classical Rabi field pi pulse from above the waveguide. 

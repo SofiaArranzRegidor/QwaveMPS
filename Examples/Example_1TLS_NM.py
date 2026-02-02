@@ -1,6 +1,6 @@
 """
-Example: 1TLS (No Markovian)
-============================
+1 TLS - Decay in semi-infinite waveguide
+========================================
 
 This is an example of a single two-level system (TLS) decaying into a semi-infinite 
 waveguide with a side mirror. This is calculated in the non-Markovian regime with a 

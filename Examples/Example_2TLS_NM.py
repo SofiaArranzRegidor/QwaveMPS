@@ -1,6 +1,6 @@
 """
-Example: 2TLS (No Markovian)
-============================
+2 TLSs - Decay in non-Markovian regime
+=====================================
 
 This is an example of 2 two-level systems (TLS1 and TLS2) decaying into the waveguide
 in the non-Markovian regime (with feedback). 

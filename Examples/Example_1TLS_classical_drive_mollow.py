@@ -1,6 +1,6 @@
 """
-Example: 1TLS CW Drive
-========================
+1 TLS - Drive with CW field
+===========================
 
 This is an example of a single two-level system (TLS)
 driven by a classical continuous-wave (CW) field from above the waveguide. 
