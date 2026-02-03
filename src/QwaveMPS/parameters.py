@@ -71,7 +71,44 @@ class InputParams:
     @property
     def d_t(self) -> int:
         return np.prod(self.d_t_total)
+class SimParams:
+    """Input / simulation parameters:
     
+    Parameters
+    ----------
+    delta_t : float
+        Time step used for time propagation.
+
+    tmax : float
+        Maximum simulation time.
+
+    d_sys_total : np.ndarray
+        Array describing the local physical dimensions of the system bins.
+        Each index is associated with the size of a tensor space.
+
+    d_t_total : np.ndarray
+        Array with dimensions for the time bins.
+        Each index is associated with the size of a tensor space.
+        In the case of a two directional light channel will be a list of two values.
+
+    bond_max : int
+        Maximum MPS bond dimension (chi) to use for truncation.
+        
+    d_t : int
+        Total size of the photonic tensor space.
+        This is the product of the sizes of the indvidual tensor spaces.
+    """
+    delta_t: float
+    tmax: float
+    d_sys_total: np.ndarray
+    d_t_total: np.ndarray
+    bond_max: int
+
+    @property
+    def d_t(self) -> int:
+        return np.prod(self.d_t_total)
+
+
 @dataclass
 class Bins:
     """Bin data used for analysing time-dependent quantities.
