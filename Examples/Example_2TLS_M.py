@@ -1,6 +1,6 @@
 """
-2 TLSs - Decay in Markovian regime
-=================================
+2 TLSs - Decay in waveguide (Markovian regime)
+==============================================
 
 This is an example of 2 two-level systems (TLS1 and TLS2) decaying into the waveguide
 in the Markovian regime. 
@@ -12,30 +12,34 @@ Computes time evolution, population dynamics, and the entanglement entropy.
 Example plots:
     
 1. TLS population dynamics
-2. Entanglement entropy with the flux
 
-Requirements: 
-    
-ncon https://pypi.org/project/ncon/. 
+2. Entanglement entropy 
 
-To install it, write the following on your console: 
-    
-pip install ncon 
+*Requirements:* 
+The following package is required: ncon (https://pypi.org/project/ncon/). 
+To install it, write the following on your console:   
+   
+pip install ncon  
         
 """
-#%% Imports
-import matplotlib.pyplot as plt
-
-import numpy as np
+#%% 
+# Imports
+#--------
 
 import QwaveMPS as qmps
+import matplotlib.pyplot as plt
+import numpy as np
 import time as t
 
-
 #%%
+#Population dynamics
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """"Choose the simulation parameters"""
-
 #Choose the Hilbert space sizes:
 d_t_l=2 #Time right channel bin dimension
 d_t_r=2 #Time left channel bin dimension
@@ -72,8 +76,15 @@ tmax=input_params.tmax
 delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t/2,delta_t)
 
-""" Choose the initial state"""
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the initial state and Hamiltonian
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Choose the initial state of each of the TLSs, the waveguide initial state,
+# and the Markovian Hamiltonian for 2 TLSs
 
+""" Choose the initial state"""
 #Starting with the firt TLS excited and the second in ground state
 tls1_initial_state=qmps.states.tls_excited()
 tls2_initial_state= qmps.states.tls_ground()
@@ -89,15 +100,27 @@ wg_initial_state = qmps.states.vacuum(tmax, input_params)
 
 
 """Choose the Hamiltonian"""
-
 hm=qmps.hamiltonian_2tls_mar(input_params)
 
 #To track computational time
 start_time=t.time()
 
-"""Calculate time evolution of the system"""
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Time evolution calculation in the Markovian regime
+
+"""Calculate time evolution of the system"""
 bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose and calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 
 """Define relevant observable operators"""
 # System operators are outerproducts of the two TLS Hilbert spaces
@@ -117,18 +140,18 @@ total_quanta = np.sum(tls_pops,axis=0) + np.cumsum(np.sum(fluxes,axis=0)) * delt
 # An equivalent formulation
 #total_quanta = tls_pops[0] + tls_pops[1] + np.cumsum(fluxes[0] + fluxes[1]) * delta_t
 
-
 print("--- %s seconds ---" %(t.time() - start_time))
 
-#%% Plot with population dynamics
-
-fonts=15
-
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 plt.plot(tlist,np.real(tls_pops[0]),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS1}$')
 plt.plot(tlist,np.real(tls_pops[1]),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm TLS2}$')
-plt.plot(tlist,np.real(np.cumsum(fluxes[0])*delta_t),linewidth = 3,color = 'b',linestyle=':',label=r'$N_R^{\rm out}$') # Net flux out right
-plt.plot(tlist,np.real(np.cumsum(fluxes[1])*delta_t),linewidth = 3,color = 'orange',linestyle='-',label=r'$N_L^{\rm out}$') # Net flux out left 
+plt.plot(tlist,np.real(np.cumsum(fluxes[0])*delta_t),linewidth = 3,color = 'orange',linestyle='-',label=r'$N_R^{\rm out}$') # Net flux out right
+plt.plot(tlist,np.real(np.cumsum(fluxes[1])*delta_t),linewidth = 3,color = 'brown',linestyle='--',label=r'$N_L^{\rm out}$') # Net flux out left 
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
@@ -138,7 +161,13 @@ plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.show()
 
-#%% 
+#%%
+#Entanglement entropy
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the entanglement entropy
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #To track computational time
 start_time=t.time()
@@ -149,10 +178,12 @@ ent_s=qmps.entanglement(bins.schmidt)
 
 print("Entanglement--- %s seconds ---" %(t.time() - start_time))
 
-#%% Plot with entanglement entropy and G1 (flux)
-
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm sys}$')
-plt.plot(tlist,np.real(fluxes[0]),linewidth = 3,color = 'lime',linestyle='-',label=r'$G^{(1)}_{t,R/L}$') # Photon flux (same time G1)
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
 plt.grid(True, linestyle='--', alpha=0.6)

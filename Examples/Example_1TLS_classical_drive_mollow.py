@@ -9,30 +9,40 @@ All the examples are in units of the TLS total decay rate, gamma. Hence, in gene
 
 Computes time evolution, population dynamics, steady-state correlations,
 and the emission spectrum, with the following example plots:
+    
 1. TLS population dynamics
+
 2. First and second-order steady-state correlations
+
 3. Long-time emission spectrum
 
-Requirements: 
-    
-ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
-    
-pip install ncon 
+*Requirements:* 
+The following package is required: ncon (https://pypi.org/project/ncon/). 
+To install it, write the following on your console:   
+   
+pip install ncon  
         
 """
-#%% Imports and plot functions
-import matplotlib.pyplot as plt
-import numpy as np
 
+#%% 
+# Imports
+#--------
 
 import QwaveMPS as qmps
+import matplotlib.pyplot as plt
+import numpy as np
 import time as t
 
 
-#%% Parameters, Simulations, and single time expectations values
+#%%
+#Population dynamics
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """"Choose the simulation parameters"""
-
 #Choose the bins:
 # Dimension chosen to be 2 to as TLS only results in emission in single quanta subspace per unit time
 d_t_l=2 #Time right channel bin dimension
@@ -62,28 +72,46 @@ delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+(delta_t/2),delta_t)
 
 
-""" Choose the initial state and coupling"""
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the initial state and Hamiltonian
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#In this case, we need to also specify the CW drive strength
+#that will go in the Hamiltonian as an additional input
 
+""" Choose the initial state"""
 sys_initial_state=qmps.states.tls_excited()
-wg_initial_state = None# qmps.states.vacuum(tmax,input_params)
+wg_initial_state = None # or qmps.states.vacuum(tmax,input_params)
 
 
 """Choose the Hamiltonian"""
-
 #CW Drive
 cw_pump=2*np.pi
 
 # Hamiltonian is 1TLS pumped (from above) by CW
 Hm=qmps.hamiltonians.hamiltonian_1tls(input_params,cw_pump)
 
-
 #To track computational time
 start_time=t.time()
 
-
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Time evolution calculation. Here we have chosen in the Markovian regime,
+#but a CW drive can also be used in the other examples
+    
 """Calculate time evolution of the system"""
 bins = qmps.simulation.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the observables for population dynamics
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 """Define relevant photonic operators"""
 tls_pop_op = qmps.tls_pop()
 flux_pop_l = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
@@ -91,6 +119,11 @@ flux_pop_r = qmps.b_dag_r(input_params) @ qmps.b_r(input_params)
 photon_pop_ops = [flux_pop_l, flux_pop_r]
 
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 """Calculate population dynamics"""
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
@@ -98,7 +131,11 @@ photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_po
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
-#%%% Population dynamics Graphing
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 fonts=15
 
@@ -113,8 +150,16 @@ plt.ylim([0.,1.05])
 plt.xlim([0.,10])
 plt.show()
 
-#%% Steady state correlation dynamics
-"""Calculate steady state correlations"""
+#%%
+#Steady-state correlations
+#----------------------------------
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the observables for steady state correlations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
+
+"""Steady state correlations"""
 
 start_time=t.time()
 
@@ -134,6 +179,12 @@ b_op_list.append(b_l)
 # Add op <b_L^\dag(t) b_R(t+t')>
 a_op_list.append(b_dag_l)
 b_op_list.append(b_r)
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the steady state correlations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
 
 # Calculate the steady state correlation (returns the list of tau dependent correlation lists,
 # list of tau values for the correlation, and the initial t value of steady state)
@@ -167,7 +218,11 @@ correlations_ss, tau_lists_ss, t_steady = qmps.correlation_ss_4op(bins.correlati
 print("SS correlation as single function call --- %s seconds ---" %(t.time() - start_time))
 
 
-#%%% Graphing of these single time dynamics
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 plt.plot(tau_lists_ss,np.real(correlations_ss[0]),linewidth = 3, color = 'darkgreen',linestyle='-',label=r'$G^{(1)}_{R,SS}$') 
 plt.plot(tau_lists_ss,np.real(correlations_ss[-1]),linewidth = 3, color = 'lime',linestyle='-',label=r'$G^{(2)}_{R,SS}$') 
@@ -180,10 +235,13 @@ plt.xlim([0,10])
 plt.tight_layout()
 plt.show()
 
-
-#%% Long time spectrum
-"""Calculate the spectrum"""
-
+#%%
+#Long-time spectrum
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the long-time spectrum
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 start_time=t.time()
 
 # Calculate the steady state spectrum of G1_R using the previously calculated steady state result
@@ -191,7 +249,12 @@ spect,w_list=qmps.spectrum_w(input_params.delta_t,correlations_ss[0])
 
 print("spectrum --- %s seconds ---" %(t.time() - start_time))
 
-# Plot the spectrum
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
+
 plt.plot(w_list/cw_pump,np.real(spect)/max(np.real(spect)),linewidth = 4, color = 'purple',linestyle='-') # TLS population
 plt.xlabel(r'$(\omega - \omega_L)/\Omega$',fontsize=fonts)
 plt.ylabel('Spectrum',fontsize=fonts)

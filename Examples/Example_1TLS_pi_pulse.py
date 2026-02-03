@@ -1,40 +1,45 @@
 """
-1 TLS - Drive with classical pi-pulse
-=====================================
+1 TLS - Drive with Classical pi-pulse in semi-infinite waveguide
+================================================================
 
-This is an example of a single two-level system (TLS)
+This is an example of a single two-level system (TLS) in a waveguide with a side mirror
 driven by a classical Rabi field pi pulse from above the waveguide. 
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
 Computes time evolution, population dynamics, steady-state correlations,
 and the emission spectrum, with the following example plots:
+    
 1. TLS population dynamics
-2. First and second-order steady-state correlations
-3. Comparison to first and second-order full correlations at two time points.
-4. Long-time emission spectrum
 
-Requirements: 
-    
-ncon https://pypi.org/project/ncon/. 
+2. First and second-order full correlations at two time points
 
-To install it, write the following on your console: 
-    
-pip install ncon 
+
+*Requirements:* 
+The following package is required: ncon (https://pypi.org/project/ncon/). 
+To install it, write the following on your console:   
+   
+pip install ncon  
         
 """
-#%% Imports and plot functions
-import matplotlib.pyplot as plt
-import numpy as np
+#%% 
+# Imports
+#--------
 
 import QwaveMPS as qmps
+import matplotlib.pyplot as plt
+import numpy as np
 import time as t
 
-
-#%% Parameters, Simulations, and single time expectations values
+#%%
+#Population dynamics
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """"Choose the simulation parameters"""
-
 #Choose the bins:
 # Dimension chosen to be 2 to as TLS only results in emission in single quanta subspace per unit time
 d_t=3 #Time channel bin dimension
@@ -65,33 +70,51 @@ delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+(delta_t/2),delta_t)
 
 
-""" Choose the initial state and coupling"""
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the initial state and Hamiltonian
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#In this case, we need to also specify the pulse information
+#that will go in the Hamiltonian as an additional input
 
+
+""" Choose the initial state"""
 sys_initial_state=qmps.states.tls_ground()
 wg_initial_state = None
 
 
 """Choose the Hamiltonian"""
-
 #Pi pulse from above
 pulse_time = tmax
 gaussian_center = 1.5
 gaussian_width = 0.5
 pulsed_pump = np.pi * qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
 
-# Hamiltonian is 1TLS pumped (from above) by a pi pulse
+# Non-Markov Hamiltonian of a 1TLS pumped (from above) by a pi pulse
 Hm=qmps.hamiltonians.hamiltonian_1tls_feedback(input_params,pulsed_pump)
-
 
 #To track computational time
 start_time=t.time()
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Time evolution calculation in the non-Markovian regime
 
 
 """Calculate time evolution of the system"""
 bins = qmps.simulation.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 
-"""Define relevant photonic operators"""
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose and calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 
+"""Define relevant photonic operators"""
 flux_op= qmps.b_pop(input_params)
 
 """Calculate population dynamics"""
@@ -113,8 +136,11 @@ loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 
 print("--- %s seconds ---" %(t.time() - start_time))
 
-#%%% Population dynamics Graphing
-
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$') # Photon flux transmitted to the right channel
@@ -127,9 +153,16 @@ plt.ylim([0.,1.05])
 plt.xlim([0.,10])
 plt.show()
 
-#%% Two time correlation
-"""Calculate two time correlation"""
+#%%
+#Two-time correlations
+#----------------------------------
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the observables for the correlations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 
+"""Calculate two time correlation"""
 start_time=t.time()
 
 # Choose operators of which to correlations
@@ -156,7 +189,11 @@ correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bins,
 
 print("Correlation time --- %s seconds ---" %(t.time() - start_time))
 
-#%%% Plot the correlation results
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 """Example graphing G1_{RR}"""
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)

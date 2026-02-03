@@ -10,31 +10,39 @@ and forth from the mirror), and a phase that can be constructive or destructive.
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
 It covers two cases:
+    
 1. Example with constructive feedback (tau=0.5, phase=pi)
+
 2. Example with destructive feedback (tau=0.5, phase=0)
         
-Requirements: 
-    
-ncon https://pypi.org/project/ncon/. To install it, write the following on your console: 
-    
-pip install ncon 
+*Requirements:* 
+The following package is required: ncon (https://pypi.org/project/ncon/). 
+To install it, write the following on your console:   
+   
+pip install ncon  
 
 References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
 """
-#%% Imports
-import matplotlib.pyplot as plt
-import numpy as np
+#%% 
+# Imports
+#--------
 
 import QwaveMPS as qmps
+import matplotlib.pyplot as plt
+import numpy as np
 import time as t
 
 
 #%%
-
-""" Example with constructive feedback:
-
-Choose a constructive feedback phase, e.g. phase=pi"""
+#Example with constructive feedback
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Choose a constructive feedback phase, e.g. phase=pi
 
 #Choose the bins:
 d_sys1=2 # tls bin dimension
@@ -65,9 +73,12 @@ tmax=input_params.tmax
 delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t/2,delta_t)
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the initial state and Hamiltonian
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """ Choose the initial state"""
-
 sys_initial_state=qmps.states.tls_excited()
 
 #wg_initial_state = qmps.states.vacuum(tmax,input_params)
@@ -77,14 +88,24 @@ wg_initial_state = None # Showing that None is the vacuum state
 start_time=t.time() 
 
 """Choose the Hamiltonian"""
-
 Hm=qmps.hamiltonian_1tls_feedback(input_params)
 
-
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Time evolution calculation in the non-Markovian regime: 
+    
 """ Time evolution of the system"""
-
 bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose and calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 
 """ Calculate population dynamics"""
 # Use single channel bosonic operators, chiral waveguide Hilbert space
@@ -113,9 +134,12 @@ loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 
 print("--- %s seconds ---" %(t.time() - start_time))
-#%%
 
-fonts=15
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$')
@@ -130,22 +154,40 @@ plt.show()
 
 
 #%%
-""" Example with destructive feedback
+#Example with destructive feedback
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Update the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Choose a destructive feedback phase, e.g. phase=0
 
-Choose a destructive feedback phase"""
 
 #update it in the input parameters
 input_params.phase=0
 
-"""Choose the Hamiltonian"""
 
+#%% 
+#^^^^^^^^^^^^^^^^^^^
+#Update Hamiltonian 
+#^^^^^^^^^^^^^^^^^^^
+
+"""Choose the Hamiltonian"""
 hm=qmps.hamiltonian_1tls_feedback(input_params)
 
+#%% 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """ Time evolution of the system"""
-
 bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
+#%% 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the observables
+#^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """ Calculate population dynamics"""
 tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
@@ -158,9 +200,10 @@ new_transmitted_flux = np.cumsum(transmitted_flux) * delta_t
 total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 
 
-#%%
-
-fonts=15
+#%% 
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
 
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(new_transmitted_flux),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$')

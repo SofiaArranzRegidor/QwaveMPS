@@ -3,43 +3,49 @@
 ===================================
 
 This is an example of a single two-level system (TLS) interacting
- with a 1 photon and 2 photon Fock state pulse. 
+with a 1-photon and 2-photon Fock state pulse. 
 
 All the examples are in units of the TLS total decay rate, gamma. Hence, in general, gamma=1.
 
 It covers two cases:
+    
 1. Example with a 1-photon tophat pulse
+
 2. Example with a 2-photon gaussian pulse
 
 Computes time evolution, population dynamics, and first and second-order correlations (for the 2 photon case),
 with example plots of the populations for both cases.
 
 
-Requirements: 
-    
-ncon https://pypi.org/project/ncon/. 
-
-To install it, write the following on your console: 
-    
-pip install ncon 
+*Requirements:* 
+The following package is required: ncon (https://pypi.org/project/ncon/). 
+To install it, write the following on your console:   
+   
+pip install ncon  
 
 References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
 
 """
 
-#%% Imports
-import matplotlib.pyplot as plt
-import numpy as np
+#%% 
+# Imports
+#--------
 
 import QwaveMPS as qmps
+import matplotlib.pyplot as plt
+import numpy as np
 import time as t
 
 
-#%% 1 photon Tophat Pulse
-
+#%% 
+#1 photon Tophat Pulse
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """"Choose the simulation parameters"""
-
 #Choose the bin dimensions
 # Here setting to 2 to accommodate a 1 photon space:
 d_t_l=2 #Time right channel bin dimension
@@ -51,7 +57,6 @@ d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
-
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
@@ -69,14 +74,20 @@ tmax=input_params.tmax
 delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t,delta_t)
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Choose the initial state and Hamiltonian
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#In this case, we need to also specify the pulse parameters
+#that will go in the photonic part of the initial state
 
 """ Choose the initial state and tophat pulse parameters"""
+sys_initial_state=qmps.states.tls_ground()
 
 # Pulse parameters por a 1-photon tophat pulse
 pulse_time = 1 #length of the pulse in time units of gamma
 photon_num = 1 #number of photons
-
-sys_initial_state=qmps.states.tls_ground()
 
 #pulse envelope shape
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
@@ -88,17 +99,27 @@ wg_initial_state = qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input
 #wg_initial_state += qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='L')
 
 """Choose the Hamiltonian"""
-
 Hm=qmps.hamiltonian_1tls(input_params)
 
 #To track computational time of populations
 start_time=t.time()
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Time evolution calculation in the Markovian regime
+
 """Calculate time evolution of the system"""
 
 bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
-
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the population dynamics
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 """Calculate population dynamics"""
 # Photonic operators
 left_flux_op = qmps.b_dag_l(input_params) @ qmps.b_l(input_params)
@@ -114,25 +135,36 @@ total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_
 print("--- %s seconds ---" %(t.time() - start_time))
 
 #%%
-fonts=15
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
-plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n_{R}$') # Photon flux transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{L}$') # Photon flux reflected to the left channel
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n_{R}$') # Photon flux transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle=':',label=r'$n_{L}$') # Photon flux reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'magenta',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend()
-plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
-plt.ylabel('Populations',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t$')
+plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
 plt.show()
 
 #%%
-"""Calculate correlations 
-(both could be calculated in same call for faster performance with use of identity operators)"""
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the two-time correlations 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#In this case, we calculate only the first-order correlation, the second-order
+#correlation is 0 at all times since there is only one photon involved.
+#
+#Here, we append the operators for each correlation we want to calculate, 
+#hence, they can be calculated in same call for faster performance with use of identity operators
 
+"""Calculate correlations """
 #To track computational time of g1
 start_time=t.time()
 
@@ -160,7 +192,11 @@ g1_correlations, correlation_tlist = qmps.correlation_2op_2t(bins.correlation_bi
 
 print("G1 correl--- %s seconds ---" %(t.time() - start_time))
 
-#%%% Graph an example in the t,t' plane
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 """Example graphing G1_{RR}"""
 
@@ -197,11 +233,15 @@ ax.set_ylim((0,4))
 cbar.set_label(r'$G^{(1)}_{LL}(t,t^\prime)\ [\gamma]$')
 plt.show()
 
-#%% 2 photon Gaussian pulse
-
+#%% 
+#2-photon Gaussian pulse
+#----------------------------------
+#
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Update the simulation parameters
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """ Update photonic space size input field, simulation length"""
-
 # Set it channel to 3 to accommodate 2 photons
 d_t_l=3 #Time right channel bin dimension
 d_t_r=3 #Time left channel bin dimension
@@ -215,27 +255,40 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 #We need a higher bond dimension for a 2-photon pulse
 input_params.bond_max=8
 
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Update the initial state
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+sys_initial_state=qmps.states.tls_ground()
+
 # Pulse parameters for a 2-photon gaussian pulse
 pulse_time = tmax
 photon_num = 2
 gaussian_center = 4
 gaussian_width = 1
 
-
-sys_initial_state=qmps.states.tls_ground()
-
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
 wg_initial_state = qmps.states.fock_pulse(pulse_envelope,pulse_time, photon_num, input_params, direction='R')
 
-
 start_time=t.time()
+
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the time evolution
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
 
 """Calculate time evolution of the system"""
 # Create the Hamiltonian again for this larger Hilbert space
 Hm=qmps.hamiltonian_1tls(input_params)
 bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
-
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the population dynamics
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
 """Calculate population dynamics"""
 photon_flux_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
@@ -254,14 +307,16 @@ total_quanta = tls_pop + np.cumsum(photon_fluxes[0] + photon_fluxes[1]) * delta_
 
 print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 
-#%%% Plot single time dynamics
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
-fonts=15
-
-plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$n_{R}$') # Photons transmitted to the right channel
-plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'b',linestyle=':',label=r'$n_{L}$') # Photons reflected to the left channel
+plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n_{R}$') # Photons transmitted to the right channel
+plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle=':',label=r'$n_{L}$') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'magenta',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
@@ -271,7 +326,15 @@ plt.ylim([0.,2.05])
 plt.xlim([0.,tmax])
 plt.show()
 
-#%%% G2 Calculation
+#%%
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Calculate the two-time correlations 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#Here, we show how to calculate the second-order correlation
+#which will have values different from 0 since the pulse 
+#contains now 2 photons.
+#
 
 #To track computational time of G2
 start_time=t.time()
@@ -320,13 +383,16 @@ g2_correlations, correlation_tlist = qmps.correlation_4op_2t(bins.correlation_bi
 
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))
 
-#%%% Plot an example
+#%%
+#^^^^^^^^^^^^^^^^
+#Plot the results
+#^^^^^^^^^^^^^^^^
+#
 
 X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
 
 
 """Example graphing G2_{RR}"""
-
 # Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[0]))
 absMax = np.abs(z).max()
@@ -341,7 +407,6 @@ plt.show()
 
 
 """Example graphing G2_{LL}"""
-
 z = np.real(qmps.transform_t_tau_to_t1_t2(g2_correlations[1]))
 absMax = np.abs(z).max()
 
@@ -354,7 +419,6 @@ cbar.set_label(r'$G^{(2)}_{LL}(t,t^\prime)\ [\gamma^{2}]$')
 plt.show()
 
 """Example graphing G2_{LR}"""
-
 # Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
 # Since the correlation isn't symmetric w.r.t. t', need both G2_{LR} and G2_{RL}
 # Arguments below would be reversed for G2_{RL}

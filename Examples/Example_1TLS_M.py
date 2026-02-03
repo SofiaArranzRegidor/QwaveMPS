@@ -9,6 +9,7 @@ All the examples are in units of the TLS total decay rate, gamma. Hence, in gene
 It covers two cases:
     
 1. Symmetrical coupling into the waveguide
+
 2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
 
 *Requirements:* 
@@ -35,7 +36,7 @@ import time as t
 #---------------------
 #
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#Choose the simulation parameters:
+#Choose the simulation parameters
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #    
 #Setup of the bin size, coupling and input parameters:
@@ -99,7 +100,6 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 
 """ Choose the initial state"""
-
 sys_initial_state=qmps.states.tls_excited() #TLS initially excited
 
 #waveguide initially vacuum for as long as calculation (tmax)
@@ -196,16 +196,13 @@ print("--- %s seconds ---" %(t.time() - start_time))
 
 
 """Plotting the results"""
-
-fonts=15
-
 plt.plot(tlist,np.real(net_flux_r),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
 plt.plot(tlist,np.real(net_flux_l),linewidth = 3,color = 'brown',linestyle='--',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend()
-plt.xlabel(r'Time, $\gamma t$',fontsize=fonts)
-plt.ylabel('Populations',fontsize=fonts)
+plt.xlabel(r'Time, $\gamma t$')
+plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.ylim([0.,1.05])
 plt.xlim([0.,tmax])
@@ -221,7 +218,7 @@ plt.show()
 
 #%% 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#Update the simulation coupling:
+#Update the simulation coupling
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 
@@ -241,7 +238,6 @@ hm=qmps.hamiltonian_1tls(input_params)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """Calculate time evolution of the system"""
-
 bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
 #%% 
@@ -250,7 +246,6 @@ bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """Calculate population dynamics"""
-
 tls_pop_ch = qmps.single_time_expectation(bins.system_states, tls_pop_op)
 photon_fluxes_ch = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
 
@@ -264,7 +259,6 @@ total_quanta_ch = tls_pop_ch + np.sum(net_fluxes, axis=0)
 #^^^^^^^^^^^^^^^^
 
 """Plotting the results"""
-
 plt.plot(tlist,np.real(net_fluxes[1]),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}_{R}$') # Photons propagating to the right channel
 plt.plot(tlist,np.real(net_fluxes[0]),linewidth = 3,color = 'brown',linestyle='--',label=r'$N^{\rm out}_{L}$') # Photons propagating to the left channel
 plt.plot(tlist,np.real(tls_pop_ch),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
