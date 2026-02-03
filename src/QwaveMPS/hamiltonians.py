@@ -337,3 +337,45 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
 
 
 
+# Fix style/standardization of below functions
+def basicSigmaPlus(dim):
+    return np.diag(np.ones(dim-1, dtype=complex), -1)
+
+def sigmaPlus(dimList, index):
+    identityDim1 = np.prod(dimList[:index], dtype=np.uint)
+    identityDim2 = np.prod(dimList[index+1:], dtype=np.uint)
+    return np.kron(np.kron(np.eye(identityDim1), basicSigmaPlus(dimList[index])), np.eye(identityDim2))
+
+def hamN2LSChiral(t, deltaT, d_t_total, tlsNum, gammas=None, detuningLs=None, phases=None, omegaPumps=None, pumpStarts=None, pumpEnds=None):
+    if gammas == None: gammas = np.ones(tlsNum)
+    if detuningLs == None: detuningLs = np.zeros(tlsNum)
+    if phases == None: phases = np.zeros(tlsNum)
+    if omegaPumps == None: omegaPumps = np.zeros(tlsNum)
+    if pumpStarts == None: pumpStarts = np.zeros(tlsNum)
+    if pumpEnds == None: pumpEnds = np.zeros(tlsNum)
+    
+    deltaB = delta_b(deltaT, np.prod(d_t_total))
+    deltaBDag = np.conj(deltaB).T
+    dTime = deltaB.shape[0]
+    dSys = 2
+    
+    dimList = (np.ones(tlsNum) * dSys).astype(int)
+    pumpCoeffs = np.array(omegaPumps) * (t >= np.array(pumpStarts)) * (t<= np.array(pumpEnds))
+    
+    H = np.zeros((dTime**tlsNum * np.prod(dimList),)*2, dtype=complex)
+    for i in range(tlsNum):
+        sigmaP = sigmaPlus(dimList, i)
+        
+        sigmaP = np.kron(np.eye(dTime**(i)), sigmaP)
+        sigmaM = sigmaP.T
+    
+        h2LS = deltaT * detuningLs[i]  * np.kron(np.eye(dTime), sigmaP @ sigmaM)                             
+        hPump = deltaT * pumpCoeffs[i] * np.kron(np.eye(dTime), sigmaP + sigmaM)
+        hInt = np.sqrt(gammas[i]) * ( np.kron(deltaB, sigmaP) + np.kron(deltaBDag, sigmaM))
+        
+        Hlocal = h2LS + hPump + hInt
+        
+        Hlocal = np.kron(np.eye(dTime**(tlsNum-i-1)), Hlocal)
+        H += Hlocal
+        
+    return H
