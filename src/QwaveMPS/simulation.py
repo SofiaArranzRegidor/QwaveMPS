@@ -26,12 +26,13 @@ from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *
 from QwaveMPS.operators import u_evol, swap
 
-__all__ = ['t_evol_mar', 't_evol_nmar', 't_evol_nmar_old', 't_evol_nmar_chiral']
+__all__ = ['t_evol_mar', 't_evol_nmar', 't_evol_nmar_chiral']
 
 # -----------------------------------
 # Singular Value Decomposition helper
 # -----------------------------------
 
+#TODO Make the epsilon used by _svd_tensors a global parameter configurable by user, like rcparams. Can have issues sometimes
 def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarray:
     """
     Perform a SVD, reshape the tensors and return left tensor, 
@@ -64,7 +65,7 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
     """
     u, s, vt = svd(tensor.reshape(tensor.shape[0]*d_1, tensor.shape[-1]*d_2), full_matrices=False)
     chi = min(bond_max, len(s))
-    epsilon = 1e-12 #to avoid dividing by zero
+    epsilon = 1e-9 #1e-12  #to avoid dividing by zero
     s_norm = s[:chi] / (norm(s[:chi])+ epsilon)
     u = u[:, :chi].reshape(tensor.shape[0],d_1,chi)
     vt = vt[:chi, :].reshape(chi,d_2,tensor.shape[-1])
@@ -162,152 +163,6 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
 
     return Bins(system_states=sbins,output_field_states=tbins, input_field_states=tbins_in,
                 correlation_bins=cor_list,schmidt=schmidt)
-
-def t_evol_nmar_old(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
-    """ 
-    Time evolution of the system with finite delays/feedback (non-Markovian regime).
-    Requires tau to be at least delta_t.
-    
-    Parameters
-    ----------
-    ham : ndarray/callable
-        Either a fixed evolution operator/tensor or a callable returning the
-        evolution operator for time-step k: ham(k).
-        
-     i_s0 : ndarray
-         Initial system bin (tensor).
-         
-     i_n0: ndarray 
-         Initial field bin.
-         Seed for the input time-bin generator.
-
-     params : InputParams
-        Class containing the input parameters
-        (contains delta_t, tmax, bond, d_t_total, d_sys_total, tau.).
-
-    Returns
-    -------
-    Bins:  Dataclass (from parameters.py) 
-        containing:
-          - sys_b: list of system bins
-          - time_b: list of time bins
-          - tau_b: list of feedback bins 
-          - cor_b: list of tensors used for correlations
-          - schmidt, schmidt_tau: lists of Schmidt coefficient arrays
-    """
-    delta_t = params.delta_t
-    tmax=params.tmax
-    bond=params.bond_max
-    d_t_total = params.d_t_total
-    d_sys_total = params.d_sys_total
-    tau=params.tau
-    
-    d_t=np.prod(d_t_total)
-    d_sys=np.prod(d_sys_total)
-    
-    # Lists for storing results
-    sbins=[] 
-    tbins=[]
-    tbins_in = []
-    taubins=[]
-    nbins=[]
-    cor_list=[]
-    schmidt=[]
-    schmidt_tau=[]
-    sbins.append(i_s0)   
-    tbins.append(states.wg_ground(d_t))
-    tbins_in.append(states.wg_ground(d_t))
-    taubins.append(states.wg_ground(d_t))
-    schmidt.append(np.zeros(1))
-    schmidt_tau.append(np.zeros(1))
-    
-    input_field=states.input_state_generator(d_t_total, i_n0)
-    n=int(round(tmax/delta_t,0))
-    t_k=0
-    t_0=0
-    if not callable(ham):
-        evol=u_evol(ham,d_sys,d_t,2) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
-    swap_t_t=swap(d_t,d_t)
-    swap_sys_t=swap(d_sys,d_t)
-    l=int(round(tau/delta_t,0)) #time steps between system and feedback
-    
-    # Fill the feedback loop with vacuum bins
-    for i in range(l):
-        nbins.append(states.wg_ground(d_t))
-        t_0+=delta_t
-    
-    i_stemp=i_s0      
-    
-    # Simulation loop for time evolution
-    for k in range(n):   
-        #swap of the feedback until being next to the system
-        i_tau= nbins[k] #starting from the feedback bin
-        for i in range(k,k+l-1): 
-            i_n=nbins[i+1] 
-            swaps=ncon([i_tau,i_n,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) 
-            i_n2,stemp,i_t=_svd_tensors(swaps,bond,d_t,d_t)
-            i_tau = ncon([np.diag(stemp),i_t],[[-1,1],[1,-3,-4]]) 
-            nbins[i]=i_n2 
-            
-        #Make the system bin the OC
-        i_1=ncon([i_tau,i_stemp],[[-1,-2,1],[1,-3,-4]]) #feedback-system contraction
-        i_t,stemp,i_stemp=_svd_tensors(i_1, bond,d_t,d_sys)
-        i_s=stemp[:,None,None]*i_stemp #OC system bin
-        
-        i_nk = next(input_field)                
-        if callable(ham):
-            evol=u_evol(ham(k),d_sys,d_t, 2)
-
-        # Put OC in input bin to calculate input field observables
-        phi1 = ncon([i_s, i_nk], [[-1,-2,1], [1,-3,-4]])
-        i_s, stemp, i_nk = _svd_tensors(phi1, bond, d_sys, d_t)
-        i_nk = stemp[:,None,None] * i_nk # OC in input bin
-        tbins_in.append(i_nk)
-
-        #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
-        phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
-        i_t,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
-        i_2=stemp[:,None,None]*i_2
-        i_stemp,stemp,i_n=_svd_tensors(i_2, bond,d_sys,d_t)
-        i_s = i_stemp*stemp[None,None,:]
-        sbins.append(i_s) 
-        
-        #swap system and i_n
-        phi2=ncon([i_s,i_n,swap_sys_t],[[-1,3,2],[2,4,-4],[-2,-3,3,4]]) #system bin, time bin + swap contraction
-        i_n,stemp,i_stemp=_svd_tensors(phi2, bond,d_t,d_sys)   
-        i_n=i_n*stemp[None,None,:] #the OC in time bin     
-        
-        cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) 
-        i_t,stemp,i_n=_svd_tensors(cont, bond,d_t,d_t)   
-        i_tau = i_t*stemp[None,None,:] #OC in feedback bin     
-        tbins.append(stemp[:,None,None]*i_n)
-        
-        #feedback bin, time bin contraction
-        taubins.append(i_tau) 
-        nbins[k+l-1]=i_tau #update of the feedback bin
-        nbins.append(i_n)         
-        t_k += delta_t
-        schmidt.append(stemp) #storing the Schmidt coeff for calculating the entanglement
-
-        #swap back of the feedback bin      
-        for i in range(k+l-1,k,-1): #goes from the last time bin to first one
-            i_n=nbins[i-1] #time bin
-            swaps=ncon([i_n,i_tau,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
-            i_t,stemp,i_n2=_svd_tensors(swaps, bond,d_t,d_t)   
-            i_tau = i_t*stemp[None,None,:] #OC tau bin         
-            nbins[i]=i_n2    #update nbins  
-        schmidt_tau.append(stemp)  
-        
-        nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step       
-        cor_list.append(i_t)    
-
-    # Rewrite the last result time bin with the OC in it
-    cor_list[-1] = i_t*stemp[None,None,:]
-
-    return Bins(system_states=sbins,loop_field_states=tbins,output_field_states=taubins,
-                input_field_states=tbins_in,correlation_bins=cor_list,
-                schmidt=schmidt,schmidt_tau=schmidt_tau)
-
 
 def _feedback_swapping(bin_list:list[np.ndarray], l_list:list[int], d_t:int, schmidt_list:list[np.ndarray], bond:int):
     """
@@ -634,12 +489,12 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[flo
     tbins_in = []
     nbins=[]
     sbins.append(i_s0)   
-    tbins_in.append(states.i_ng(d_t))
+    tbins_in.append(states.wg_ground(d_t))
     # indexed with 0 being out of the WG, greater index is greater depth
-    oc_normed_bins_lists = [[states.i_ng(d_t)] for x in range(interacting_time_bin_num)]
-    schmidts = [np.zeros(1) for x in range(interacting_time_bin_num)]
-
+    oc_normed_bins_lists = [[states.wg_ground(d_t)] for x in range(interacting_time_bin_num)]
+    schmidts = [[np.zeros(1)] for x in range(interacting_time_bin_num)]
     input_field=states.input_state_generator(d_t_total, i_n0)
+
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
@@ -874,7 +729,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
-    evols = [] * sys_num
+    evols = [0] * sys_num
     callable_ham_indices = []
     for i in range(len(hams)):
         if not callable(hams[i]):
@@ -889,8 +744,8 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     l_list=np.array(np.round(taus/delta_t, 0).astype(int)) #time steps between system and feedback
         
     # indexed with 0 being out of the WG, greater index is greater depth
-    oc_normed_bins_lists = [[states.i_ng(d_t)] for x in range(sys_num)]
-    schmidts = [np.zeros(1) for x in range(sys_num)]
+    oc_normed_bins_lists = [[states.wg_ground(d_t)] for x in range(sys_num)]
+    schmidts = [[np.zeros(1)] for x in range(sys_num)]
     sbins=[[] for x in range(sys_num)] 
     
     i_s=i_s0      
@@ -901,8 +756,12 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     nbins = _separate_sys_bins_chiral(i_s, d_sys_total, sbins, bond)
     nbins = _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
+    print_rate = max(round(n / 20.0), 1) # Print every 5%, 20/100
     for k in range(n):
-        print(str(round(k/n*100,2)) + '%')
+        # Completion print out
+        #if k% print_rate == 0:
+        #    print(str(round(k/n*100,2)) + '%')
+        
         for i in callable_ham_indices:
             evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)
 
@@ -1021,14 +880,14 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     # Have to be careful about dimensionality with the system bins
     # Swap OC from sysbin_0 to sysbin_1 to be next to first delay loop
     phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
-    nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_sys_total[-2], d_sys_total[-1])
-    nbins[-2] = nbins[oc_ind] * stemp[None,None,:]  #OC left bin
+    nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_sys_total[1], d_sys_total[0])
     oc_ind = -2
+    nbins[-2] = nbins[oc_ind] * stemp[None,None,:]  #OC left bin
 
     for j in range(feedback_bin_num):
         # Move OC into next chain of feedback time bins, past the system bin
         phi1 = ncon([nbins[oc_ind-1], nbins[oc_ind]], [[-1,-2,1],[1,-3,-4]])
-        nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_sys_total[-2-j])
+        nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_sys_total[j+1])
         oc_ind = oc_ind - 1
         nbins[oc_ind] = nbins[oc_ind] * stemp[None,None,:]  #OC left bin
 
@@ -1043,7 +902,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
 
         if j < feedback_bin_num-1:
             phi1 = ncon([nbins[oc_ind-1], nbins[oc_ind]], [[-1,-2,1],[1,-3,-4]])
-            nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_sys_total[-3-j], d_t)
+            nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_sys_total[j+2], d_t)
             oc_ind = oc_ind - 1
             nbins[oc_ind] = stemp[:,None,None] * nbins[oc_ind]  #OC time bin 
         

@@ -28,11 +28,7 @@ from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 
-import sys
-from pathlib import Path
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-import QwaveMPS.src as qmps
+import QwaveMPS as qmps
 import time as t
 
 #Parameters for plots style
@@ -77,7 +73,7 @@ input_params = qmps.parameters.InputParams(
     phase=np.pi,
     tau=0.5 # Time delay between the two TLS's
 )
-
+taus = [0.5]
 
 #Make a tlist for plots:
 tmax=input_params.tmax
@@ -102,7 +98,7 @@ start_time=t.time()
 hm=qmps.hamiltonian_2tls_nmar(input_params)
 
 """ Time evolution of the system"""
-bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
+bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,taus, input_params)
 
 
 """ Calculate population dynamics"""
@@ -117,8 +113,8 @@ photon_flux_ops = [photon_flux_l_op, photon_flux_r_op]
 
 # Calculate time dependent TLS populations, and fluxes into/out of feedback loop
 tls_pops = qmps.single_time_expectation(bins.system_states, [tls1_pop_op, tls2_pop_op])
-photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states, photon_flux_ops)
-photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, photon_flux_ops)
+photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states[1], photon_flux_ops)
+photon_fluxes_loop = qmps.single_time_expectation(bins.output_field_states[0], photon_flux_ops)
 
 # Use helper function to integrate over the flux into the loop in windows to get loop population
 loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
@@ -168,11 +164,11 @@ start_time=t.time()
 """Calculate entanglement entropy"""
 # Use given function with the schmidt coefficients saved from the simulation in the Bins object
 # Determine the entanglement entropy between the 2 TLS's and the whole waveguide
-ent_s=qmps.entanglement(bins.schmidt)
+ent_s=qmps.entanglement(bins.schmidt[1])
 
 # Determine the entanglement entropy between the 2 TLS's with the section of the waveguide
 # between them and with the rest of the waveguide.
-ent_s_tau=qmps.entanglement(bins.schmidt_tau)
+ent_s_tau=qmps.entanglement(bins.schmidt[0])
 
 
 print("Entanglement--- %s seconds ---" %(t.time() - start_time))

@@ -296,40 +296,40 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
         omega1s = tuple(omega1)
         omega2s = tuple(omega2)
         def hm_total(t_k):
-            hm_sys1 = delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus1)
+            hm_sys1 = delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
             +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1) 
-            hm_sys2 = delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus2)
+            hm_sys2 = delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
             +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2) 
             
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
    
     elif isinstance(omega1, np.ndarray):
         omega1s = tuple(omega1)
-        hm_sys2=delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus2)
+        hm_sys2=delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
         +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2) 
         
         def hm_total(t_k):
-            hm_sys1=delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus1)
+            hm_sys1=delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
             +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1)
             
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
 
     elif isinstance(omega2, np.ndarray):
         omega2s = tuple(omega2)
-        hm_sys1=delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus1)
+        hm_sys1=delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
         +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1) 
 
         def hm_total(t_k):
-            hm_sys2=delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus2)
+            hm_sys2=delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
             +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2) 
              
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
         
     else:
-        hm_sys1=delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus1)
+        hm_sys1=delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
         +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1) 
         
-        hm_sys2=delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t))),sigmaminus2)
+        hm_sys2=delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
         +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2) 
         
         hm_total=hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
@@ -338,6 +338,9 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
 
 
 # Fix style/standardization of below functions
+
+__all__ += ['hamN2LSChiral', 'hamiltonian_1tls_chiral']
+
 def basicSigmaPlus(dim):
     return np.diag(np.ones(dim-1, dtype=complex), -1)
 
@@ -379,3 +382,11 @@ def hamN2LSChiral(t, deltaT, d_t_total, tlsNum, gammas=None, detuningLs=None, ph
         H += Hlocal
         
     return H
+
+def hamiltonian_1tls_chiral(params:InputParams):
+    delta_t,d_sys_total, d_t_total =params.delta_t,params.d_sys_total,params.d_t_total
+
+    sigmaP = sigmaplus()
+    sigmaM = sigmaminus()
+    d_t = np.prod(d_t_total)
+    return np.kron(delta_b(delta_t, d_t), sigmaP) + np.kron(delta_b_dag(delta_t, d_t), sigmaM)
