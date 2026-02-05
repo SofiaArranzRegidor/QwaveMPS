@@ -11,16 +11,10 @@ All the examples are in units of the TLS total decay rate, gamma. Hence, in gene
 
 It covers two cases:
     
-1. Example with constructive feedback (tau=0.5, phase=pi)
+1. Example with constructive feedback (tau=0.5, phase=\ :math:`\pi`)
 
 2. Example with destructive feedback (tau=0.5, phase=0)
         
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
-
 References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
 """
@@ -42,7 +36,7 @@ import time as t
 #Choose the simulation parameters
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#Choose a constructive feedback phase, e.g. phase=pi
+#Choose a constructive feedback phase, e.g. phase=\ :math:`\pi`
 
 #Choose the bins:
 d_sys1=2 # tls bin dimension
@@ -143,7 +137,7 @@ print("--- %s seconds ---" %(t.time() - start_time))
 
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$')
-plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$')
+plt.plot(tlist,np.real(loop_flux),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right')
 plt.grid(True, linestyle='--', alpha=0.6)
@@ -207,7 +201,7 @@ total_quanta = tls_pops + loop_sum + np.cumsum(transmitted_flux)*delta_t
 
 plt.plot(tlist,np.real(tls_pops),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{\rm TLS}$')
 plt.plot(tlist,np.real(new_transmitted_flux),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$')
-plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$')
+plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm loop}$')
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total')
 plt.legend(loc='upper right')
 plt.xlabel(r'Time, $\gamma t$')

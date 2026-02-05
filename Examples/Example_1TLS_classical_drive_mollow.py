@@ -15,12 +15,6 @@ and the emission spectrum, with the following example plots:
 2. First and second-order steady-state correlations
 
 3. Long-time emission spectrum
-
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
         
 """
 

@@ -15,13 +15,6 @@ Example plots:
 
 2. Entanglement entropy with the flux
 
-
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
-
 References: Phys. Rev. Research 3, 023030, Arranz-Regidor et. al. (2021)
 
 """
@@ -86,7 +79,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #Choose the initial state of each of the TLSs, the waveguide initial state,
-# and the non-Markovian Hamiltonian for 2 TLSs
+#and the non-Markovian Hamiltonian for 2 TLSs
 
 """ Choose the initial state"""
 # Initial system state is an outer product of the two system states
@@ -159,7 +152,7 @@ plt.plot(tlist, np.real(tls_pops[1]), linewidth=3, color='skyblue', linestyle='-
 # Graphing the fluxes out this time
 plt.plot(tlist, np.real(photon_fluxes_out[1]), linewidth=3, color='violet',linestyle='-',label=r'$n^{\rm out}_{R}$') 
 plt.plot(tlist, np.real(photon_fluxes_out[0]), linewidth=3, color='green',linestyle=':',label=r'$n^{\rm out}_{L}$')
-plt.plot(tlist, np.real(loop_sum_l + loop_sum_r), linewidth=3,color='b',linestyle=':',label=r'$N^{\rm in}$')
+plt.plot(tlist, np.real(loop_sum_l + loop_sum_r), linewidth=3,color='b',linestyle=':',label=r'$N^{\rm loop}$')
 plt.plot(tlist, np.real(total_quanta), linewidth=3, color='g',linestyle='-',label='Total')
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
