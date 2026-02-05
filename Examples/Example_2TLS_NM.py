@@ -117,9 +117,9 @@ hm=qmps.hamiltonian_2tls_nmar(input_params)
 bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 #%%
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Choose and calculate the observables
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # 
 
 """ Calculate population dynamics"""
@@ -176,7 +176,7 @@ plt.show()
 #
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Calculate the entanglement entropy
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 
 #To track computational time

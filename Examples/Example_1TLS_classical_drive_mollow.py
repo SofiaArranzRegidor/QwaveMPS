@@ -25,8 +25,8 @@ pip install ncon
 """
 
 #%% 
-# Imports
-#--------
+#Imports
+#-------
 
 import QwaveMPS as qmps
 import matplotlib.pyplot as plt
@@ -36,11 +36,11 @@ import time as t
 
 #%%
 #Population dynamics
-#----------------------------------
+#-------------------
 #
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Choose the simulation parameters
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """"Choose the simulation parameters"""
 #Choose the bins:
@@ -120,9 +120,9 @@ photon_pop_ops = [flux_pop_l, flux_pop_r]
 
 
 #%%
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^
 #Calculate the observables
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^
 # 
 """Calculate population dynamics"""
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
@@ -152,8 +152,8 @@ plt.show()
 
 #%%
 #Steady-state correlations
-#----------------------------------
-#%%
+#-------------------------
+#
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Choose the observables for steady state correlations
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -237,11 +237,11 @@ plt.show()
 
 #%%
 #Long-time spectrum
-#----------------------------------
+#------------------
 #
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Calculate the long-time spectrum
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 start_time=t.time()
 
 # Calculate the steady state spectrum of G1_R using the previously calculated steady state result
