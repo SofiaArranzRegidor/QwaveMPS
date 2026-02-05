@@ -976,7 +976,8 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
         nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_sys_total[-1], d_sys_total[0])
         nbins[-1] = stemp[:,None,None] * nbins[-1] #OC last sys bin, on right
 
-
+# Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
+# Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
 def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
     delta_t = params.delta_t
     tmax=params.tmax
