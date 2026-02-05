@@ -643,7 +643,7 @@ def _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, inpu
 
     return nbins
 
-def _separate_sys_bins_chiral(i_s, d_sys_total, sbins, bond):
+def _separate_sys_bins(i_s, d_sys_total, sbins, bond):
     nbins = []
     sys_num = len(d_sys_total)
 
@@ -657,7 +657,7 @@ def _separate_sys_bins_chiral(i_s, d_sys_total, sbins, bond):
     sbins[0].append(i_s)
     return nbins
 
-def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams) -> Bins:
+def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
     """ 
     Time evolution of a chiral waveguide system with delay times (no feedbacks)
     Structured memory-efficiently with separated system bins in the MPS chain
@@ -753,14 +753,14 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     #first l time bins in vacuum (for no feedback part)    
     
     # Separate the system bins and initialize the feedback loop with bins
-    nbins = _separate_sys_bins_chiral(i_s, d_sys_total, sbins, bond)
+    nbins = _separate_sys_bins(i_s, d_sys_total, sbins, bond)
     nbins = _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
     print_rate = max(round(n / 20.0), 1) # Print every 5%, 20/100
     for k in range(n):
         # Completion print out
-        #if k% print_rate == 0:
-        #    print(str(round(k/n*100,2)) + '%')
+        if print_completion_flag and k % print_rate == 0:
+            print(str(round(k/n*100,2)) + '%')
         
         for i in callable_ham_indices:
             evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)
@@ -841,7 +841,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
         
         for j in range(feedback_bin_num):
             # Move OC adjacent to next sys bin
-            for k in range(l_list[-j]-1):
+            for k in range(l_list[-j-1]-1):
                 phi1 = ncon([nbins[oc_ind], nbins[oc_ind+1]], [[-1,-2,1],[1,-3,-4]])
                 oc_ind = oc_ind + 1
                 nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_t)
@@ -854,7 +854,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
 
 
             # Move to next time bin chain
-            if j == feedback_bin_num-1:
+            if j < feedback_bin_num-1:
                 phi1 = ncon([nbins[oc_ind], nbins[oc_ind+1]], [[-1,-2,1],[1,-3,-4]])
                 oc_ind = oc_ind + 1
                 nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_sys_total[-1-j], d_t)
@@ -915,6 +915,139 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     
     truncation_number = np.sum(l_list) + sys_num
     nbins = nbins[:-truncation_number]
+
+    return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
+        correlation_bins=nbins,schmidt=schmidts)
+
+
+def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None):
+    sys_num = len(d_sys_total) 
+    fback_subchains = int((sys_num+1)/2) # Take ceiling of half
+    
+    swap_t_t=swap(d_t,d_t)
+    swap_sys_t= []
+    for i in range(sys_num):
+        swap_sys_t.append(swap(d_sys_total[i],d_t))
+
+    if input_field_generator is None:
+        input_field_generator = states.input_state_generator(d_t)
+    
+    fback_subchain_lengths = (l_list[1::] + l_list[1::][::-1])[:fback_subchains-1] # Truncate the first, used at front and not doubled up. Addition compresses to half length
+
+    # Check if need to halve the last case due to double counting middle l_list
+    if sys_num % 2 != 0:
+        fback_subchain_lengths[-1] /= 2 
+
+    # If N > 2 do last subchain explicitly for special case that may have one or two system bins 
+    # Do odd N case, single sys bin at end first
+    if sys_num % 2 != 0:
+        new_time_bin = next(input_field_generator)
+        nbins.append(new_time_bin)
+
+        pass
+
+    elif sys_num > 2 and sys_num % 2 == 0:
+        pass
+
+    # Add in the bins from the right using the generator, and swap to left side of the sys bins appropriately
+    # End with OC in the right most bin on each loop, prep for next loop/after loop
+    for i in range(1,fback_subchains):
+        # Number of time bins to add for given subchain
+        for j in range(l_list[i] + l_list[-1-i]):
+            new_time_bin = next(input_field_generator)
+            nbins.append(new_time_bin)
+            oc_ind = -1
+
+    # Fill in the last feedback subchain after s_0/s_{n-1}
+    for j in range(l_list[0]):
+        new_time_bin = next(input_field_generator)
+        nbins.append(new_time_bin)
+
+        # Swap s_0 with in bin, then s_{n-1} with in bin. Then move OC back to s_0
+        phi = ncon([nbins[-2], nbins[-1], swap_sys_t[0]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_t, d_sys_total[0])
+        nbins[-2] = nbins[-2] * stemp[None,None,:] #OC time bin, left bin
+
+        phi = ncon([nbins[-3], nbins[-2], swap_sys_t[-1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, d_sys_total[-1])
+        nbins[-2] = stemp[:,None,None] * nbins[-2] #OC last sys bin, on right
+
+        phi = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_sys_total[-1], d_sys_total[0])
+        nbins[-1] = stemp[:,None,None] * nbins[-1] #OC last sys bin, on right
+
+
+def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
+    delta_t = params.delta_t
+    tmax=params.tmax
+    bond=params.bond_max
+    d_t_total = params.d_t_total
+    d_sys_total = params.d_sys_total
+
+
+    d_t=np.prod(d_t_total)
+    d_sys=np.prod(d_sys_total)
+    feedback_bin_num = len(taus)
+    sys_num = len(d_sys_total)
+
+    tbins_in = []
+    schmidt=[]
+
+    
+    input_field=states.input_state_generator(d_t_total, i_n0)
+    n=int(round(tmax/delta_t,0))
+    t_k=0
+    t_0=0
+    evols = [0] * sys_num
+    callable_ham_indices = []
+    for i in range(len(hams)):
+        if not callable(hams[i]):
+            evols[i] = u_evol(hams[i],d_sys_total[i],d_t) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
+        else:
+            callable_ham_indices.append(i)
+    swap_t_t=swap(d_t,d_t)
+    swap_sys_t= []
+    swap_t_sys = []
+    for i in range(sys_num):
+        swap_sys_t.append(swap(d_sys_total[i],d_t))
+        swap_sys_t.append(d_t, swap(d_sys_total[i]))
+
+    taus = np.array(taus)
+    l_list=np.array(np.round(taus/delta_t, 0).astype(int)) #time steps between system and feedback
+        
+    # indexed with 0 being out of the WG, greater index is greater depth
+    oc_normed_bins_lists = [[states.wg_ground(d_t)] for x in range(sys_num)]
+    schmidts = [[np.zeros(1)] for x in range(sys_num)]
+    sbins=[[] for x in range(sys_num)] 
+    
+    i_s=i_s0      
+    
+    #first l time bins in vacuum (for no feedback part)    
+    
+    # Separate the system bins and initialize the feedback loop with bins
+    nbins = _separate_sys_bins(i_s, d_sys_total, sbins, bond)
+    nbins = _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
+    
+    print_rate = max(round(n / 20.0), 1) # Print every 5%, 20/100
+    for k in range(n):
+        # Completion print out
+        if print_completion_flag and k % print_rate == 0:
+            print(str(round(k/n*100,2)) + '%')
+        
+        for i in callable_ham_indices:
+            evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)
+
+        sbin_0 = nbins[-1]
+        in_state = next(input_field)
+        nbins.append(in_state)
+
+
+        t_k += delta_t
+    
+    
+    #truncation_number = np.sum(l_list) + sys_num
+    nbins = nbins[:-truncation_number]
+
 
     return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
