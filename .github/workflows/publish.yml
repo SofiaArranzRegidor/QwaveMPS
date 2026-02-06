@@ -6,9 +6,9 @@ on:
 
 jobs:
   publish:
-    environment:
-      name: pypi
-      url: https://pypi.org/project/QwaveMPS
+    #environment:
+    #  name: pypi
+    #  url: https://pypi.org/project/QwaveMPS
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,3 +27,5 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrete.PYPI_API_TOKEN }}
