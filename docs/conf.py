@@ -50,7 +50,7 @@ myst_enable_extensions = [
     "fieldlist",
 ]
 
-exclude_patterns = ["_build", "features_to_add.txt"]
+exclude_patterns = ["_build", "features_to_add.txt", ".DS_Store"]
 
 # Theme similar vibe to MkDocs readthedocs
 html_theme = "sphinx_rtd_theme"   # pip install sphinx-rtd-theme
