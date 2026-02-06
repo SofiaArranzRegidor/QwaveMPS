@@ -1,6 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=77.0.3",
+    "setuptools_scm[toml]>=8",
     "numpy>=2.0.0",
     "scipy>=1.9",
     "ncon",
@@ -60,6 +61,11 @@ tests = ["pytest>=5.2", "pytest-rerunfailures"]
 
 [tool.setuptool.packages.find]
 where = ["src"]
+
+[tool.setuptools_scm]
+version_scheme = "release"
+local_scheme = "no-local-version"
+tag_regex = "^v(?P<version>.*)$"
 
 #[tool.cibuildwheel]
 # Change in future version to "build"
