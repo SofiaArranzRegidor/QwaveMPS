@@ -21,7 +21,7 @@ jobs:
 
       - name: Prepare and build package
         run: python -m pip install --upgrade pip
-        run: pip install build twine wheel setuptools
+        run: pip -m install build twine wheel setuptools
         run: python -m build
 
       - name: Publish package distributions to PyPI
