@@ -29,6 +29,9 @@ The following diagram summarizes the QwaveMPS framework, showing the main input 
 
 ![Diagram of the code workflow](docs/images/diagram.png)
 
+## Documentation
+
+  Read the full documentation at [https://qwavemps.readthedocs.io](https://qwavemps.readthedocs.io)
 
 ## Simple example: Population dynamics of a TLS in an infinite waveguide
 
