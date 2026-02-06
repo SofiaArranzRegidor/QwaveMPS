@@ -46,17 +46,9 @@ The following diagram summarizes the Qwavwmps framework, showing the main input 
 
 Check our [contributing guidelines](contributing.md) for details on how to contribute to QwaveMPS.
 
-## Citing
-
-Once we have the paper/arxiv, add here how to cite the repo
-
 ## License
 
 QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](../LICENSE) for more information.
-
-## Acknowledgements
-
-Add acknowledgements here.
 
 ## Contact
 For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).
