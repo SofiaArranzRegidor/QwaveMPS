@@ -1,0 +1,22 @@
+Features to add on future versions:
+    Time dependent operator expectation values (to be implemented)
+
+    Global parameter to modify the epsilon used by SVD (sometimes for long chains helpful to have a slightly larger value, like 1e-9)
+
+    Coherent pulse (done, just needs copying)
+
+    Time restricted correlation calculations (pass parameters for tmin/tmax to calculate only a subspace)
+        Would also want to generalize the helper function that transforms to (t1,t2) domain to be able to work with
+        non-square spaces
+
+    Generalized nonmarkovian time evolution (done, just needs copying and adaption to current args)
+        Could also include the efficient chiral time evolution at this point maybe
+        ...eventually efficient symmetric time evolution when implemented (will require uniform tau)
+
+    Addition of general basis vector / transition operators (for construction of user's own Hamiltonians)?
+
+    Move gammas out of input_params (Hamiltonian independent class, params that are true for every system)
+    
+    Change time evolution/hamiltonians structure so that all time bins are to the left of the system bin (including input bin)
+        Makes generalized algorithm for the nonmarkovian n-loops easier
+        (This change is probably easier than working through the algorithm again. Also organizes Hamiltonians so the system Hilbert space is always far right)
