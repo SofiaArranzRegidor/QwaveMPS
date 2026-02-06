@@ -3,8 +3,8 @@ import setuptools
 setuptools.setup(
     name="QwaveMPS",
     version="1.0.0", 
-    author="Sofia Arranz Regidor",
-    author_email="18sar4@queensu.ca",
+    author="Sofia Arranz Regidor, Matthew Kozma, Stephen Hughes",
+    author_email="qwavemps@gmail.com",
     description="Package to solve waveguide QED problems using MPS",
     url="https://github.com/SofiaArranzRegidor/QwaveMPS",
     classifiers=[
