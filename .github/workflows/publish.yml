@@ -1,0 +1,17 @@
+name: Publish Python Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
