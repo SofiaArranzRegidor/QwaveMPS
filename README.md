@@ -62,24 +62,24 @@ input_params = qmps.parameters.InputParams(
 ```
 Choose the initial state:
 ```python
-i_s0=qmps.states.tls_excited() #TLS initially excited
+i_s0 = qmps.states.tls_excited() #TLS initially excited
 i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total) #waveguide in vacuum
 ```
 Choose the Hamiltonian:
 ```python
-Hm=qmps.hamiltonian_1tls(input_params)
+ham = qmps.hamiltonian_1tls(input_params)
 ```
 Calculate time evolution of the system:
 ```python
-bins = qmps.t_evol_mar(Hm,i_s0,i_n0,input_arams)
+bins = qmps.t_evol_mar(ham,i_s0,i_n0,input_arams)
 ```
 Choose operators to calculate population dynamics:
-'''python
+```python
 tls_pop_op = qmps.tls_pop()
 flux_op_l = qmps.b_pop_l(input_params)
 flux_op_r = qmps.b_pop_r(input_params)
 flux_ops = [flux_op_l, flux_op_r]
-'''
+```
 Calculate population dynamics with operators or lists of operators:
 ```python
 tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
