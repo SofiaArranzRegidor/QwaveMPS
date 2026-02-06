@@ -1,0 +1,66 @@
+[build-system]
+requires = [
+    "setuptools>=77.0.3",
+    "numpy>=2.0.0",
+    "scipy>=1.9",
+    "ncon",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "QwaveMPS"
+dynamic = ["version"]
+description = "Python Library for exact simulations of waveguide QED using MPS."
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "GNU General Public License v3 (GPLv3)"}
+keywords = ["quantum", "physics", "dynamics"]
+authors = [
+  {name = "Sofia Arranz Regidor"},
+  {name = "Matthew Kozma"},
+  {name = "Stephen Hughes"},
+  {email = "qwavemps@gmail.com"},
+]
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.9",
+    "ncon",
+]
+
+# URLs for your project
+[project.urls]
+Homepage = "https://github.com/SofiaArranzRegidor/QwaveMPS"
+Issues = "https://github.com/SofiaArranzRegidor/QwaveMPS/issues"
+Documentation = "https://QwaveMPS.readthedocs.io/"
+"Source Code" = "https://github.com/SofiaArranzRegidor/QwaveMPS"
+
+[project.optional-dependencies]
+dev = [
+  "coverage",
+  "pytest",
+  "scipy",
+]
+docs = [
+  "sphinx-autoapi",
+  "sphinx-copybutton",
+  "sphinx-gallery",
+  "sphinx-design",
+  "matplotlib",
+]
+tests = ["pytest>=5.2", "pytest-rerunfailures"]
+
+
+[tool.setuptool.packages.find]
+where = ["src"]
+
+#[tool.cibuildwheel]
+# Change in future version to "build"
+#build-frontend = "pip"
