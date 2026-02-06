@@ -210,3 +210,6 @@ __marimo__/
 docs/auto_examples/
 docs/sg_execution_times.rst
 docs/autoapi
+
+# Mac directory organization
+**/.DS_Store
