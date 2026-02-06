@@ -1,5 +1,4 @@
 sphinx-gallery
 sphinx-rtd-theme
 myst-parser
-autoapi
 sphinx-copybutton
