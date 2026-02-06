@@ -35,7 +35,7 @@ The following diagram summarizes the QwaveMPS framework, showing the main input 
 Import the necessary packages:
 ```python
 import numpy as np
-import QwaveMPS.src as qmps
+import QwaveMPS as qmps
 ```
 Define the simulation parameters:
 ```python
