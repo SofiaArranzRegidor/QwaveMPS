@@ -2,3 +2,4 @@ sphinx-gallery
 sphinx-rtd-theme
 myst-parser
 sphinx-copybutton
+autoapi
