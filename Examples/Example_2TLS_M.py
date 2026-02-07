@@ -14,12 +14,6 @@ Example plots:
 1. TLS population dynamics
 
 2. Entanglement entropy 
-
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
         
 """
 #%% 
@@ -82,7 +76,7 @@ tlist=np.arange(0,tmax+delta_t/2,delta_t)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #Choose the initial state of each of the TLSs, the waveguide initial state,
-# and the Markovian Hamiltonian for 2 TLSs
+#and the Markovian Hamiltonian for 2 TLSs
 
 """ Choose the initial state"""
 #Starting with the firt TLS excited and the second in ground state

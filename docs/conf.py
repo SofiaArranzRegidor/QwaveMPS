@@ -10,6 +10,7 @@ extensions = [
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
+    "sphinx_gallery.sorting",
 ]
 
 # Config for autoapi
@@ -50,9 +51,7 @@ myst_enable_extensions = [
     "fieldlist",
 ]
 
-exclude_patterns = ["_build", ".DS_Store"]
-exclude_patterns += ["examplesV1.md"]
-
+exclude_patterns = ["_build", "features_to_add.txt", ".DS_Store"]
 
 # Theme similar vibe to MkDocs readthedocs
 html_theme = "sphinx_rtd_theme"   # pip install sphinx-rtd-theme

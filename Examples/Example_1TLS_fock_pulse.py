@@ -16,13 +16,6 @@ It covers two cases:
 Computes time evolution, population dynamics, and first and second-order correlations (for the 2 photon case),
 with example plots of the populations for both cases.
 
-
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
-
 References: Phys. Rev. Research 7, 023295 , Arranz-Regidor et. al. (2025)
 
 """
@@ -143,7 +136,7 @@ print("--- %s seconds ---" %(t.time() - start_time))
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n_{R}$') # Photon flux transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle=':',label=r'$n_{L}$') # Photon flux reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{R}^{\rm in}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
@@ -316,7 +309,7 @@ print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n_{R}$') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle=':',label=r'$n_{L}$') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
-plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{\rm pulse,R}$') # Photon flux in from right
+plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{R}^{\rm in}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')

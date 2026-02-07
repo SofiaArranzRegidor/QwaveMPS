@@ -23,7 +23,9 @@ import QwaveMPS.states as states
 '''
 
 def cite():
-    """Print BibTeX citation for the `QwaveMPS' package."""
+    """ 
+    Print BibTeX citation for the QwaveMPS package.
+    """
     citation = """Add citation when available"""
     print(citation)
 

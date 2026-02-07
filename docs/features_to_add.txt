@@ -1,6 +1,8 @@
 Features to add on future versions:
     Time dependent operator expectation values (to be implemented)
 
+    Global parameter to modify the epsilon used by SVD (sometimes for long chains helpful to have a slightly larger value, like 1e-9)
+
     Coherent pulse (done, just needs copying)
 
     Time restricted correlation calculations (pass parameters for tmin/tmax to calculate only a subspace)

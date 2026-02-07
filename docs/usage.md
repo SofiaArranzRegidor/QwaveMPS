@@ -6,9 +6,7 @@ This section introduces the basic structure of QwaveMPS and its functionalities.
 ![Diagram of the code workflow](./images/diagram.png)
 
 ## Input Parameters
-
-The diagram below contains the basic components of the package. There are four source scripts that are part of our input parameters. Two of them contain information for the initial parameters: these are the possible initial states (states.py) and Hamiltonians (hamiltonians.py), and they are used along with the other initial parameters to set up the particular conditions for each case (left column on the diagram). The operators.py script is mostly implicitly used and contains the basic quantum operators used in all the scripts (represented with a gray box in the diagram). The last script (simulation.py) contains the main simulation components and makes use of the initial parameters to calculate the output ones (middle column in the diagram).
+The diagram above contains the basic components of the package. The input parameters include the initial parameters needed to set up the system and run the main simulation (parameters.py), the initial states of the emitter and the field (states.py), and the Hamiltonian of the system (hamiltonian.py). The time evolution of the total system state is calculated (stored in the Bins data class) using a Markovian or non-Markovian time evolution function (simulation.py). 
 
 ## Output
-The right column of the diagram shows some of the possible outputs that the user can calculate with the previous inputs. As we will see in the next sections, this includes population dynamics, but is not limited to that, and we can also calculate correlations, entanglement and spectra, among others.
-
+Observables such as TLS populations and field fluxes can be calculated by taking the expectation values of the relevant operators on the appropriate emitter/field bins (operators.py). In a similar way, two time correlation functions can also be calculated (correlation.py). An example output plot with some observables in the non-Markovian regime is included in the bottom right of the above diagram.

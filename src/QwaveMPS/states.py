@@ -178,15 +178,19 @@ def coupling(coupl:str='symmetrical', gamma:float=1,gamma_r=None,gamma_l=None) -
     if coupl == 'chiral_r': 
         gamma_r=gamma
         gamma_l=gamma - gamma_r
-    if coupl == 'chiral_l': 
+    elif coupl == 'chiral_l': 
         gamma_l=gamma
         gamma_r=gamma - gamma_l
-    if coupl == 'symmetrical':
+    elif coupl == 'symmetrical':
         gamma_r=gamma/2.
         gamma_l=gamma - gamma_r
-    if coupl == 'other':
+    elif coupl == 'other':
         gamma_r=gamma_r
         gamma_l=gamma_l
+
+    else:
+        raise ValueError("Coupling for the function must be 'chiral_r', 'chiral_l', or 'symmetrical'")
+
     return gamma_l,gamma_r       
 
 #----------------------

@@ -12,12 +12,6 @@ It covers two cases:
 
 2. Chiral coupling, where the TLS is only coupled to the right channel of the waveguide.
 
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
-
 """
  
 
@@ -48,7 +42,7 @@ import time as t
 #    and left (d_t_l) channels. Hence, the subspace is d_t_total=np.array([d_t_l,d_t_r])
 #
 #  * Choice of coupling. Here, it is first calculated with symmetrical coupling, \gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)            
-#    and the with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral',gamma=1)
+#    and then with chiral coupling, gamma_l,gamma_r=qmps.coupling('chiral_r',gamma=1)
 #
 #  * Input parameters (input_params). Define the data parameters that will be used in the calculation:
 #    

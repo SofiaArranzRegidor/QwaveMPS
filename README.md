@@ -35,12 +35,12 @@ The following diagram summarizes the QwaveMPS framework, showing the main input 
 Import the necessary packages:
 ```python
 import numpy as np
-import QwaveMPS.src as qmps
+import QwaveMPS as qmps
 ```
 Define the simulation parameters:
 ```python
-delta_t = 0.05
-tmax = 8
+delta_t = 0.05 # Time step of the simulation
+tmax = 8 # Maximum simulation time
 tlist=np.arange(0,tmax+delta_t,delta_t)
 d_t_l=2 #Size of right-channel time bin (choose 2 for 1 photon per bin)
 d_t_r=2 #Size of left-channel time bin 
@@ -48,24 +48,42 @@ d_t_total=np.array([d_t_l,d_t_r])
 
 d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin
-```
-Choose the initial state and coupling:
-```python
-i_s0=qmps.states.tls_excited() #TLS initially excited
-i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total) #waveguide in vacuum
+
 gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+input_params = qmps.parameters.InputParams(
+    delta_t=0.05, 
+    tmax = 8,
+    d_sys_total=d_sys_total,
+    d_t_total=d_t_total,
+    gamma_l=gamma_l,
+    gamma_r=gamma_r,  
+    bond_max=4 # Maximum bond dimension, truncates entanglement information
+)
+```
+Choose the initial state:
+```python
+i_s0 = qmps.states.tls_excited() #TLS initially excited
+i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total) #waveguide in vacuum
 ```
 Choose the Hamiltonian:
 ```python
-Hm=qmps.hamiltonian_1tls(delta_t, gamma_l, gamma_r,d_sys_total,d_t_total)
+ham = qmps.hamiltonian_1tls(input_params)
 ```
 Calculate time evolution of the system:
 ```python
-sys_bins,time_bins,cor_bins,schmidt = qmps.t_evol_mar(Hm,i_s0,i_n0,delta_t,tmax,bond,d_sys_total,d_t_total)
+bins = qmps.t_evol_mar(ham,i_s0,i_n0,input_arams)
 ```
-Calculate population dynamics:
+Choose operators to calculate population dynamics:
 ```python
-pop,tbins_r,tbins_l,int_n_r,int_n_l,total=qmps.pop_dynamics(sys_bins,time_bins,delta_t,d_sys_total,d_t_total)
+tls_pop_op = qmps.tls_pop()
+flux_op_l = qmps.b_pop_l(input_params)
+flux_op_r = qmps.b_pop_r(input_params)
+flux_ops = [flux_op_l, flux_op_r]
+```
+Calculate population dynamics with operators or lists of operators:
+```python
+tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
+photon_fluxes = qmps.single_time_expectation(bins.output_field_states, flux_ops)
 ```
 Plot of population dynamics:
 
@@ -77,17 +95,17 @@ Plot of population dynamics:
 ## Contributing
 Check our [contributing guidelines](docs/contributing.md) for details on how to contribute to QwaveMPS.
 
-## Citing
+<!--## Citing
 
-Once we have the paper/arxiv, add here how to cite the repo
+Once we have the paper/arxiv, add here how to cite the repo-->
 
 ## License
 
 QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more information.
 
-## Acknowledgements
+<!--## Acknowledgements
 
-Add acknowledgements here.
+Add acknowledgements here.-->
 
 ## Contact
 For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).

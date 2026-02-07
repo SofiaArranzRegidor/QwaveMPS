@@ -13,13 +13,6 @@ and the emission spectrum, with the following example plots:
 1. TLS population dynamics
 
 2. First and second-order full correlations at two time points
-
-
-*Requirements:* 
-The following package is required: ncon (https://pypi.org/project/ncon/). 
-To install it, write the following on your console:   
-   
-pip install ncon  
         
 """
 #%% 
@@ -144,7 +137,7 @@ print("--- %s seconds ---" %(t.time() - start_time))
 
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(net_transmitted_quanta),linewidth = 3,color = 'orange',linestyle='-',label=r'$N^{\rm out}$') # Photon flux transmitted to the right channel
-plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$') # Photon flux transmitted to the left channel
+plt.plot(tlist,np.real(loop_sum),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm loop}$') # Photon flux transmitted to the left channel
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
@@ -156,7 +149,7 @@ plt.show()
 #%%
 #Two-time correlations
 #----------------------------------
-#%%
+#
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #Choose the observables for the correlations
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
