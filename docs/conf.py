@@ -10,6 +10,7 @@ extensions = [
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
+    "sphinx_gallery.sorting",
 ]
 
 # Config for autoapi
