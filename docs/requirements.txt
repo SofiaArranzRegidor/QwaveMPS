@@ -1,5 +1,5 @@
 sphinx-gallery
-sphinx-rtd-theme
+sphinx-pydata-theme
 myst-parser
 sphinx-copybutton
 sphinx-autoapi
