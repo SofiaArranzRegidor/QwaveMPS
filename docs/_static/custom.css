@@ -1,0 +1,9 @@
+```css
+
+/* Kill forced background on images (pydata theme) */
+.bd-content img,
+.bd-content figure,
+.bd-content figure img,
+.bd-content .sd-card img {
+  background-color: transparent !important;
+}

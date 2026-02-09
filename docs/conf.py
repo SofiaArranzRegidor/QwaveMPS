@@ -1,6 +1,6 @@
 # conf.py
 
-project = "QwaveMPS Documentation"
+project = "QwaveMPS"
 
 extensions = [
     "myst_parser",
@@ -52,8 +52,31 @@ myst_enable_extensions = [
 
 exclude_patterns = ["_build", "features_to_add.txt", ".DS_Store"]
 
-# Theme similar vibe to MkDocs readthedocs
-html_theme = "sphinx_rtd_theme"   # pip install sphinx-rtd-theme
+# Theme 
+html_theme = "pydata_sphinx_theme" 
+
+html_theme_options = {
+    # Top-right icon links (GitHub, etc.)
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/SofiaArranzRegidor/QwaveMPS",
+            "icon": "fa-brands fa-github",
+        },
+    ],
+
+}
+
+html_context = {
+    #"github_user": "<your-org-or-user>",
+    "github_repo": "QwaveMPS",
+    "github_version": "main",
+    "doc_path": "docs",  # change if your conf.py is elsewhere
+}
+
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+
 
 # MathJax config (optional; default usually fine)
 # mathjax3_config = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]]}}
