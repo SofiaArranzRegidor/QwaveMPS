@@ -3,6 +3,7 @@ pydata-sphinx-theme
 myst-parser
 sphinx-copybutton
 sphinx-autoapi
+sphinx-design
 matplotlib
 numpy
 scipy

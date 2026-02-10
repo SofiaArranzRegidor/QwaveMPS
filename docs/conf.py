@@ -11,6 +11,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "sphinx_gallery.sorting",
+    "sphinx_design",
 ]
 
 # Config for autoapi
@@ -49,6 +50,7 @@ myst_enable_extensions = [
     "dollarmath",    # $...$ and $$...$$
     "deflist",
     "fieldlist",
+    "attrs_block",
 ]
 
 exclude_patterns = ["_build", "features_to_add.txt", ".DS_Store"]
@@ -65,8 +67,16 @@ html_theme_options = {
             "icon": "fa-brands fa-github",
         },
     ],
-
+    "logo": {
+        "image_light": "logo.svg",
+        "image_dark": "logo.svg",  
+        "text": "QwaveMPS",
+    }
+    
 }
+
+    
+
 
 html_context = {
     #"github_user": "<your-org-or-user>",
@@ -76,7 +86,10 @@ html_context = {
 }
 
 html_static_path = ["_static"]
+
 html_css_files = ["custom.css"]
+
+html_favicon = "_static/favicon.ico"
 
 
 # MathJax config (optional; default usually fine)
@@ -108,4 +121,5 @@ def skip_modules(app, what, name, obj, skip, options):
 def setup(app):
     app.connect("autoapi-skip-member", skip_modules)
     app.add_css_file("hide_links.css")  # Custom CSS to hide jupyter links
+    app.add_css_file("custom.css")
 #'''
