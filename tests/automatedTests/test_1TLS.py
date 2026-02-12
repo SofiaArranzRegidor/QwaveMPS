@@ -2,6 +2,7 @@
 High level tests to verify dynamics with a single TLS
 """
 #%%
+import pytest
 import QwaveMPS as qmps
 import numpy as np
 from .benchmarks import *
