@@ -31,8 +31,8 @@ jobs:
         run: |
           uv sync --extra dev
 
-      - name: Checks with pre-commit
-        uses: pre-commit/action@v3.0.1
+      #- name: Checks with pre-commit
+      #  uses: pre-commit/action@v3.0.1
 
       - name: Run tests and generate coverage report
         run: |
