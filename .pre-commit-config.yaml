@@ -9,6 +9,7 @@ repos:
       # Run the linter.
       - id: ruff-check
         files: ^src/
+  # Type checking
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.400
     hooks:
