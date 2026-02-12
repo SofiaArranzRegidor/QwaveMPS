@@ -4,9 +4,9 @@ repos:
     rev: v0.11.10
     hooks:
       # Run the formatter.
-      - id: ruff-format
+      - id: ruff-format src/
       # Run the linter.
-      - id: ruff-check
+      - id: ruff-check src/
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.400
     hooks:
