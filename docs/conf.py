@@ -1,6 +1,6 @@
 # conf.py
 
-project = "QwaveMPS Documentation"
+project = "QwaveMPS"
 
 extensions = [
     "myst_parser",
@@ -11,6 +11,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "sphinx_gallery.sorting",
+    "sphinx_design",
 ]
 
 # Config for autoapi
@@ -49,12 +50,47 @@ myst_enable_extensions = [
     "dollarmath",    # $...$ and $$...$$
     "deflist",
     "fieldlist",
+    "attrs_block",
 ]
 
 exclude_patterns = ["_build", "features_to_add.txt", ".DS_Store"]
 
-# Theme similar vibe to MkDocs readthedocs
-html_theme = "sphinx_rtd_theme"   # pip install sphinx-rtd-theme
+# Theme 
+html_theme = "pydata_sphinx_theme" 
+
+html_theme_options = {
+    # Top-right icon links (GitHub, etc.)
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/SofiaArranzRegidor/QwaveMPS",
+            "icon": "fa-brands fa-github",
+        },
+    ],
+    "logo": {
+        "image_light": "logo.svg",
+        "image_dark": "logo.svg",  
+        "text": "QwaveMPS",
+    }
+    
+}
+
+    
+
+
+html_context = {
+    #"github_user": "<your-org-or-user>",
+    "github_repo": "QwaveMPS",
+    "github_version": "main",
+    "doc_path": "docs",  # change if your conf.py is elsewhere
+}
+
+html_static_path = ["_static"]
+
+html_css_files = ["custom.css"]
+
+html_favicon = "_static/favicon.ico"
+
 
 # MathJax config (optional; default usually fine)
 # mathjax3_config = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]]}}
@@ -85,4 +121,5 @@ def skip_modules(app, what, name, obj, skip, options):
 def setup(app):
     app.connect("autoapi-skip-member", skip_modules)
     app.add_css_file("hide_links.css")  # Custom CSS to hide jupyter links
+    app.add_css_file("custom.css")
 #'''

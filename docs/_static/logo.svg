@@ -1,0 +1,54 @@
+<svg width="64" height="64" viewBox="0 0 64 64"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Colorful, quantum-friendly palette -->
+  <!-- Q waveguide: #6366f1 (light indigo, thicker stroke) -->
+  <!-- MPS tensors: #06b6d4 (cyan/teal) -->
+  <!-- Bonds / legs: #a78bfa (soft violet) -->
+  <!-- Photon: #38bdf8 (bright quantum blue) -->
+
+  <!-- Q waveguide loop -->
+  <circle cx="30" cy="30" r="18"
+          fill="none"
+          stroke="#6366f1"
+          stroke-width="4.0"/>
+
+  <!-- Q tail (shortened, thicker) -->
+  <path d="M41 41 L50 50"
+        fill="none"
+        stroke="#6366f1"
+        stroke-width="4.0"
+        stroke-linecap="round"/>
+
+  <!-- Symmetric MPS bonds -->
+  <line x1="23.5" y1="30" x2="26.5" y2="30"
+        stroke="#a78bfa"
+        stroke-width="1.4"
+        stroke-linecap="round"/>
+  <line x1="33.5" y1="30" x2="36.5" y2="30"
+        stroke="#a78bfa"
+        stroke-width="1.4"
+        stroke-linecap="round"/>
+
+  <!-- MPS tensors -->
+  <rect x="16.5" y="26.5" width="7" height="7"
+        rx="1.4"
+        fill="#06b6d4"/>
+  <rect x="26.5" y="26.5" width="7" height="7"
+        rx="1.4"
+        fill="#06b6d4"/>
+  <rect x="36.5" y="26.5" width="7" height="7"
+        rx="1.4"
+        fill="#06b6d4"/>
+
+  <!-- Physical leg -->
+  <line x1="30" y1="33.5" x2="30" y2="39"
+        stroke="#a78bfa"
+        stroke-width="1.1"
+        stroke-linecap="round"/>
+
+  <!-- Quantum excitation -->
+  <circle cx="30" cy="41" r="2.1"
+          fill="#38bdf8"/>
+
+</svg>

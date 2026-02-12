@@ -1,4 +1,13 @@
-# QwaveMPS
+<p align="center">
+  <img src="docs/_static/logo.svg" alt="QwaveMPS logo" width="180">
+</p>
+
+<h1 align="center">QwaveMPS</h1>
+
+<p align="center">
+  Matrix-product-state simulations of non-Markovian waveguide QED
+</p>
+
 > QwaveMPS is an open-source Python package that calculates light-matter interactions in waveguide QED systems using Matrix Product States, allowing one to study delayed feedback effects in the non-Markovian regime.
 
 QwaveMPS is an open-source Python library for simulating one-dimensional quantum many-body systems using Matrix Product States (MPS). Designed for researchers and students, it provides a user-friendly interface for constructing, evolving, and analyzing quantum states and operators, facilitating studies in quantum physics and quantum information. This approach enables efficient, scalable simulations by focusing computational resources on the most relevant parts of the quantum system. Thus, one can study delayed feedback effects in the non-Markovian regime at a highly reduced computational cost compared to full Hilbert space approaches, making it practical to model open waveguide QED systems.
@@ -17,11 +26,6 @@ This package can be installed using the following command:
 ```
 pip install QwaveMPS
 ```
-<!--For now I am cloning the repository, going to the root folder, and installing it with 
-```
-pip install .
-```
-To be able to use the first option, we need to first publish it in PyPI. -->
   
 ## Usage
 
@@ -29,6 +33,9 @@ The following diagram summarizes the QwaveMPS framework, showing the main input 
 
 ![Diagram of the code workflow](docs/images/diagram.png)
 
+## Documentation
+
+Read the full documentation at [https://qwavemps.readthedocs.io](https://qwavemps.readthedocs.io)
 
 ## Simple example: Population dynamics of a TLS in an infinite waveguide
 
@@ -62,8 +69,8 @@ input_params = qmps.parameters.InputParams(
 ```
 Choose the initial state:
 ```python
-i_s0 = qmps.states.tls_excited() #TLS initially excited
-i_n0 = qmps.states.vacuum(tmax, delta_t, d_t_total) #waveguide in vacuum
+sys_initial_state=qmps.states.tls_excited() #TLS initially excited
+wg_initial_state = qmps.states.vacuum(tmax,input_params) #waveguide in vacuum
 ```
 Choose the Hamiltonian:
 ```python
@@ -71,7 +78,7 @@ ham = qmps.hamiltonian_1tls(input_params)
 ```
 Calculate time evolution of the system:
 ```python
-bins = qmps.t_evol_mar(ham,i_s0,i_n0,input_arams)
+bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 ```
 Choose operators to calculate population dynamics:
 ```python
@@ -92,8 +99,8 @@ Plot of population dynamics:
   <img src="docs/images/TLS_sym_decay.png" alt="state Image" width="40%">
 </p>
 
-## Contributing
-Check our [contributing guidelines](docs/contributing.md) for details on how to contribute to QwaveMPS.
+Check [the full example](https://qwavemps.readthedocs.io/en/latest/auto_examples/Example_1TLS_M.html) for more details 
+
 
 <!--## Citing
 
@@ -109,3 +116,5 @@ Add acknowledgements here.-->
 
 ## Contact
 For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).
+
+If you encounter a bug or have a feature request, please open an issue on the [issue tracker](https://github.com/SofiaArranzRegidor/QwaveMPS/issues) to report it. 
