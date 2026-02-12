@@ -7,7 +7,7 @@ import QwaveMPS as qmps
 import numpy as np
 from .benchmarks import *
 
-@pytest.mark.parameterize("gamma_l, gamma_r, initial_pop", 
+@pytest.mark.parametrize("gamma_l, gamma_r, initial_pop", 
                           [(0.5,0.5,1), (0,1,1), (0.5,0.5,0.5), (0,1,0.5)])
 def test_single_TLS(gamma_l, gamma_r, initial_pop):
     input_params = qmps.parameters.InputParams(
