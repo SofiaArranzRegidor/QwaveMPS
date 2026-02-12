@@ -17,18 +17,19 @@ def sigmaPlus0N0Nmin1(tList, pulseEnv, N, initialPop=0, zeta=-0.5, gamma=1, nInR
     
     integrand = np.exp(-zeta * tList) * np.conj(pulseEnv) * (1 - 2*sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N-1, initialPop, zeta, gamma, nInR, chirality))
     return -np.sqrt(N*chiralGamma*nInR) * np.exp(zeta * tList) *\
-        sci.integrate.cumulative_trapezoid(integrand, dx=tList[1] - tList[0], initial=0) +\
-        np.sqrt(initialPop*(1-initialPop))*np.exp(zeta*tList) # I.C.
+        sci.integrate.cumulative_trapezoid(integrand, dx=tList[1] - tList[0], initial=0) #+\
+        #np.sqrt(initialPop*(1-initialPop))*np.exp(zeta*tList) # I.C.
 
 def sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N, initialPop=0, zeta=-0.5, gamma=1, nInR=1, chirality=False):
     chiralGamma = gamma / (1 + int(not chirality))
+    # I.c.
     if N == 0:
         return initialPop * np.exp(-gamma * tList)
         
     integrand = np.exp(gamma * tList) * pulseEnv * sigmaPlus0N0Nmin1(tList, pulseEnv, N, initialPop, zeta, gamma, nInR, chirality)
     return -np.exp(-gamma * tList) * np.sqrt(N*chiralGamma*nInR) *\
         sci.integrate.cumulative_trapezoid(integrand + np.conj(integrand), dx=tList[1] - tList[0], initial=0)+\
-        initialPop*np.exp(-gamma*tList)
+        initialPop*np.exp(-gamma*tList) # I.c. addition
 
 def photonFluxMu(tList, pulseEnv, N, mu, initialPop=0, zeta=-0.5, gamma=1, nInR=1, chirality=False):
     # Assuming symmetric coupling
@@ -101,11 +102,11 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 
 """ Choose the initial state and tophat pulse parameters"""
-initial_pop = 0
-ground_state_pop = np.sqrt(1- initial_pop**2)
+initial_pop = 0.5
+ground_state_pop = 1- initial_pop
 sys_initial_state=np.zeros((1,2,1))
-sys_initial_state[:,0,:] = ground_state_pop
-sys_initial_state[:,1,:] = initial_pop
+sys_initial_state[:,0,:] = np.sqrt(ground_state_pop)
+sys_initial_state[:,1,:] = np.sqrt(initial_pop)
 
 
 
@@ -123,7 +124,7 @@ else:
     anal_env = lambda t: tophat(t, pulse_time)
 
 #%% Execute the loops
-N = 5
+N = 3
 for i in range(1,N+1):
     photon_num = i
     input_params.d_t_total = np.array([i+1, i+1])
@@ -171,7 +172,7 @@ for i in range(1,N+1):
     anal_dt = 0.001
     anal_ts = np.arange(0, input_params.tmax, anal_dt)
 
-    '''
+    #'''
     plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n_{R}$') # Photons transmitted to the right channel
     plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle='--',label=r'$n_{L}$') # Photons reflected to the left channel
     plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
@@ -197,7 +198,7 @@ for i in range(1,N+1):
     plt.ylim([0.,None])
     plt.xlim([0.,tmax])
     plt.show()
-    '''
+    #'''
 
     # Second Plot: Input State Characterization
 
