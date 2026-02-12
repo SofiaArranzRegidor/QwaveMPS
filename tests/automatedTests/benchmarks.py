@@ -56,7 +56,10 @@ def photonFluxMu(tList, pulseEnv, N, mu, initialPop=0, delta=0, gamma=1, nInR=1,
     term1 = muIndex * N * np.conj(pulseEnv) * pulseEnv
     term3 = muIndex * np.sqrt(N*chiralGamma) * pulseEnv * sigmaPlus0N0Nmin1(tList, pulseEnv, N, initialPop, delta, gamma, nInR, chirality)
     term2 = np.conj(term3)
-    term4 = muIndex * chiralGamma * sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N, initialPop, delta, gamma, nInR, chirality)
+    if muIndex == 0 and chirality:
+        term4 = np.zeros(len(tList))
+    else:
+        term4 = chiralGamma * sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N, initialPop, delta, gamma, nInR, chirality)
     return term1 + term2 + term3 + term4
 
 #%% Scattering theory Analysis of input state for same time correlations
