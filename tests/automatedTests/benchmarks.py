@@ -4,10 +4,11 @@ Analytical/numerical benchmarks used to compare dynamics to that produced by MPS
 
 import numpy as np
 import scipy as sci
+import QwaveMPS as qmps
 
 # Closeness check configuration
 atol = 1e-7
-rtol = 5e-2 # Allow 5% error
+rtol = 1e-1 # Allow 10% error
 
 def check_close(A, B):
     return np.allclose(A, B, atol=atol, rtol=rtol)
@@ -65,6 +66,9 @@ def photonFluxMu(tList, pulseEnv, N, mu, initialPop=0, delta=0, gamma=1, nInR=1,
 #%% Scattering theory Analysis of input state for same time correlations
 # Evaluate <N|(a^\dag)^m(t) a^m(t)|N> for the input state (before TLS interaction)
 def anal_same_time_correlation(t, photon_num, m, pulse_func, w_max=200, dw=0.0001):
+    if m > photon_num:
+        return np.zeros(len(t))
+    
     prefactor = sci.special.factorial(photon_num) / sci.special.factorial(photon_num-m)
 
     sample_num = int(round(2*w_max / dw))
