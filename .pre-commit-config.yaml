@@ -9,8 +9,9 @@
 #      # Run the linter.
 #      - id: ruff-check
 #        files: ^src/
-#  - repo: https://github.com/RobertCraigie/pyright-python
-#    rev: v1.1.400
-#    hooks:
-#      - id: pyright
-#        additional_dependencies: [matplotlib, pytest]
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.400
+    hooks:
+      - id: pyright
+        additional_dependencies: [matplotlib, pytest]
+        files: ^src/
