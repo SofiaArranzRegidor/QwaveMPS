@@ -4,6 +4,13 @@
 
 <h1 align="center">QwaveMPS</h1>
 
+[![build](https://github.com/SofiaArranzRegidor/QwaveMPS/actions/workflows/build.yml/badge.svg)](https://github.com/SofiaArranzRegidor/QwaveMPS/actions/workflows/build.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/SofiaArranzRegidor/QwaveMPS?token=52MBM273IF)](https://codecov.io/gh/SofiaArranzRegidor/QwaveMPS)
+[![Documentation Status](https://readthedocs.org/projects/QwaveMPS/badge/?version=latest)](https://pycharge.readthedocs.io/en/latest/?badge=latest)
+[![PyPI version](https://img.shields.io/pypi/v/QWaveMPS.svg)](https://pypi.org/project/QWaveMPS/)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/SofiaArranzRegidor/QwaveMPS?color=blue)](https://github.com/SofiaArranzRegidor/QwaveMPS/blob/main/LICENSE)
+
 <p align="center">
   Matrix-product-state simulations of non-Markovian waveguide QED
 </p>
