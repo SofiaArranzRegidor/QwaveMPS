@@ -23,7 +23,7 @@ def test_single_TLS(photon_num, initial_pop, gaussian_env):
         d_t_total=np.array([photon_num+1,photon_num+1]),
         gamma_l=0.5,
         gamma_r = 0.5,  
-        bond_max=2**(photon_num+1),
+        bond_max=min(32,2**(photon_num+1)),
     )
 
 
@@ -76,8 +76,6 @@ def test_single_TLS(photon_num, initial_pop, gaussian_env):
 
     assert check_close(total_quanta, np.cumsum(same_time_corrs[0])*delta_t + initial_pop)
     assert check_close(tls_pop, anal_pops)
-
-    import matplotlib.pyplot as plt
 
     # Check fluxes and input state correlations
     # Exclude initial condition of vacuum from flux (and shift by 1 to right to line up by dt)
