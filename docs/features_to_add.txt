@@ -20,3 +20,8 @@ Features to add on future versions:
     Change time evolution/hamiltonians structure so that all time bins are to the left of the system bin (including input bin)
         Makes generalized algorithm for the nonmarkovian n-loops easier
         (This change is probably easier than working through the algorithm again. Also organizes Hamiltonians so the system Hilbert space is always far right)
+
+    Improve generalization for multiple waveguides/channels.
+        Generalize the Fock state function for L channels. Rewrite in terms of tensor products of the single space matrices/vectors.
+        Keep option, current of "adding" result in the separate spaces. This yields the N00N states (|N0> + |0N>) we see when trying to put a photon in both channels at once.
+        Get option to also put |NM> states by tensor producting the |N> with the |M> state, the two spaces
