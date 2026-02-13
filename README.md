@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/_static/logo.svg" alt="QwaveMPS logo" width="180">
+  <img src="https://raw.githubusercontent.com/SofiaArranzRegidor/QwaveMPS/main/docs/_static/logo.svg" alt="QwaveMPS logo" width="180">
 </p>
 
 <h1 align="center">QwaveMPS</h1>
