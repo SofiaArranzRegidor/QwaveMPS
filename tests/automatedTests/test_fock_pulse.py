@@ -70,9 +70,9 @@ def test_fock_pulse(photon_num, initial_pop, gaussian_env):
     chiral = False
     pulse_env = np.append(pulse_env, np.zeros(len(tlist) - len(pulse_env)))
     pulse_env = qmps.normalize_pulse_envelope(input_params.delta_t, pulse_env)
-    anal_pops = sigmaPlusSigmaMinus0N0N(tlist, pulse_env, photon_num, initial_pop, chirality=chiral)
-    anal_flux_l = photonFluxMu(tlist, pulse_env,photon_num,'L', initial_pop, chirality=chiral)
-    anal_flux_r = photonFluxMu(tlist, pulse_env,photon_num,'R', initial_pop, chirality=chiral)
+    anal_pops = np.real(sigmaPlusSigmaMinus0N0N(tlist, pulse_env, photon_num, initial_pop, chirality=chiral))
+    anal_flux_l = np.real(photonFluxMu(tlist, pulse_env,photon_num,'L', initial_pop, chirality=chiral))
+    anal_flux_r = np.real(photonFluxMu(tlist, pulse_env,photon_num,'R', initial_pop, chirality=chiral))
 
     assert check_close(total_quanta, np.cumsum(same_time_corrs[0])*delta_t + initial_pop)
     assert check_close(tls_pop, anal_pops)
