@@ -11,7 +11,7 @@ import itertools
 photon_nums = [i for i in range(7)]
 initial_pops = [0,0.5,1]
 gaussian_env = [True]
-initial_test_conditions = list(itertools.product(photon_nums, initial_pops))
+initial_test_conditions = list(itertools.product(photon_nums, initial_pops, gaussian_env))
 
 # Doesn't work well for tophat, needs tighter numerics/looser tolerances
 @pytest.mark.parametrize("photon_num, initial_pop, gaussian_env", initial_test_conditions)
