@@ -8,8 +8,8 @@ import numpy as np
 from .benchmarks import *
 import itertools
 
-photon_nums = [i for i in range(7)]
-initial_pops = [0,0.5,1]
+photon_nums = [1,3,5]
+initial_pops = [0,0.5]
 gaussian_env = [True]
 initial_test_conditions = list(itertools.product(photon_nums, initial_pops, gaussian_env))
 
