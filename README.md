@@ -105,6 +105,11 @@ QwaveMPS is distributed under the GNU GPLv3. See [LICENSE](LICENSE) for more inf
 
 Add acknowledgements here.-->
 
+# Citing QwaveMPS
+
+If you use QwaveMPS in your research, please consider citing our paper.
+
+
 ## Contact
 For questions or support, open an issue or email [qwavemps@gmail.com](mailto:qwavemps@gmail.com).
 
