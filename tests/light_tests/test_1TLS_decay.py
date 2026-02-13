@@ -5,7 +5,7 @@ High level tests to verify dynamics with a single TLS
 import pytest
 import QwaveMPS as qmps
 import numpy as np
-from .benchmarks import *
+from ..benchmarks import *
 
 @pytest.mark.parametrize("gamma_l, gamma_r, initial_pop", 
                           [(0.5,0.5,1), (0,1,1), (0.5,0.5,0.5), (0,1,0.5)])

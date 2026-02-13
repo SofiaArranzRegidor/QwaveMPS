@@ -2,9 +2,9 @@ name: build
 
 on:
   push: # Add dev for temp testing
-    branches: [main,dev]
+    branches: [dev]
   pull_request:
-    branches: [main]
+    branches: [dev]
 
 jobs:
   test:
@@ -36,7 +36,7 @@ jobs:
 
       - name: Run tests and generate coverage report
         run: |
-          uv run coverage run -m pytest tests/automatedTests
+          uv run coverage run -m pytest tests/light_tests
           uv run coverage xml
 
       - name: Upload coverage to Codecov

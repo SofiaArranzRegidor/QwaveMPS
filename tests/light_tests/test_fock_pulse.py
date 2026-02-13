@@ -5,7 +5,7 @@ High level tests to verify dynamics with a single TLS
 import pytest
 import QwaveMPS as qmps
 import numpy as np
-from .benchmarks import *
+from ..benchmarks import *
 import itertools
 
 photon_nums = [1,3,5]
