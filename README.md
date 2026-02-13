@@ -4,7 +4,7 @@
 
 <h1 align="center">QwaveMPS</h1>
 
-[![build](https://github.com/SofiaArranzRegidor/QwaveMPS/actions/workflows/build.yml/badge.svg)](https://github.com/SofiaArranzRegidor/QwaveMPS/actions/workflows/build.yml)
+[![build](https://github.com/SofiaArranzRegidor/QwaveMPS/actions/workflows/build_dev.yml/badge.svg)](https://github.com/SofiaArranzRegidor/QwaveMPS/actions/workflows/build_dev.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/SofiaArranzRegidor/QwaveMPS?token=52MBM273IF)](https://codecov.io/gh/SofiaArranzRegidor/QwaveMPS)
 [![Documentation Status](https://readthedocs.org/projects/QwaveMPS/badge/?version=latest)](https://pycharge.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://img.shields.io/pypi/v/QWaveMPS.svg)](https://pypi.org/project/QWaveMPS/)
