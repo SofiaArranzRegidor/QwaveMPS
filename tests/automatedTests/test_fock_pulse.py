@@ -15,7 +15,7 @@ initial_test_conditions = list(itertools.product(photon_nums, initial_pops, gaus
 
 # Doesn't work well for tophat, needs tighter numerics/looser tolerances
 @pytest.mark.parametrize("photon_num, initial_pop, gaussian_env", initial_test_conditions)
-def test_single_TLS(photon_num, initial_pop, gaussian_env):
+def test_fock_pulse(photon_num, initial_pop, gaussian_env):
     input_params = qmps.parameters.InputParams(
         delta_t=0.05, 
         tmax = 8,
