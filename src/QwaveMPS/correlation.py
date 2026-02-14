@@ -46,7 +46,8 @@ def spectrum_w(delta_t:float, g1_list: np.ndarray) -> tuple[np.ndarray, np.ndarr
     wlist : np.ndarray
         Corresponding frequency list.
     """
-    s_w = np.fft.fftshift(np.fft.fft(g1_list))
+    one_side_norm = delta_t * 2 / np.pi
+    s_w = np.fft.fftshift(np.fft.fft(g1_list)) * one_side_norm
     n=s_w.size
     wlist = np.fft.fftshift(np.fft.fftfreq(n,d=delta_t))*2*np.pi   
     return s_w,wlist
