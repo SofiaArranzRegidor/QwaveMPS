@@ -650,7 +650,7 @@ def _separate_sys_bins(i_s, d_sys_total, sbins, bond):
     for i in range(-1, -sys_num, -1):
         sys_i, stemp, i_s = _svd_tensors(i_s, bond, d_sys_total[i], np.prod(d_sys_total[:i]))
         nbins.append(sys_i)
-        i_s = stemp[:,None,None] * i_s #OC time bin
+        i_s = stemp[:,None,None] * i_s #OC sys bin
         sbins[i].append(sys_i * stemp[None,None,:])
 
     nbins.append(i_s)
@@ -919,7 +919,30 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
 
+def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Coupling_Helper, bond):
+    # OC starts in rightmost sys bin [-1]
+    # Sysbins are initially ordered w.r.t. d_sys_total dims (N-1, N-2, N-3, ..., 2, 1, 0)
+    # Want to reorder to (..., N-3, 2, N-2, 1, N-1, 0)
+    # Need to swap N-1 to pos. -2, N2 to pos. -4, etc.
 
+    # Creation of swap matrices (indexed in sys_dim order, as this is prior to sys_bin reordering)
+    swap_matrices = np.zeros((help_obj.sys_num, help_obj.sys_num))
+    for i in range(help_obj.sys_num):
+        for j in range(help_obj.sys_num - i, i):
+            swap_matrices[i][j] = swap(d_sys_total[i], d_sys_total[j])
+
+    # Loop over bins that will be brought to the right
+    for i in range(help_obj.sys_num / 2):
+        # Move OC to the left bin (one that will be moved)
+        for j in range(i, help_obj.sys_num):
+            
+            
+        # Move this OC bin to the right to correct location
+        for j in range():
+
+    return nbins
+
+# Assume OC is in right most system bin
 def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None):
     sys_num = len(d_sys_total) 
     fback_subchains = int((sys_num+1)/2) # Take ceiling of half
@@ -947,6 +970,8 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
         pass
 
     elif sys_num > 2 and sys_num % 2 == 0:
+        new_time_bin = next(input_field_generator)
+        nbins.append(new_time_bin)
         pass
 
     # Add in the bins from the right using the generator, and swap to left side of the sys bins appropriately
@@ -965,16 +990,67 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
 
         # Swap s_0 with in bin, then s_{n-1} with in bin. Then move OC back to s_0
         phi = ncon([nbins[-2], nbins[-1], swap_sys_t[0]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
-        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_t, d_sys_total[0])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi, bond, d_t, d_sys_total[0])
         nbins[-2] = nbins[-2] * stemp[None,None,:] #OC time bin, left bin
 
         phi = ncon([nbins[-3], nbins[-2], swap_sys_t[-1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
-        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, d_sys_total[-1])
+        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi, bond, d_t, d_sys_total[-1])
         nbins[-2] = stemp[:,None,None] * nbins[-2] #OC last sys bin, on right
 
         phi = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
-        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_sys_total[-1], d_sys_total[0])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi, bond, d_sys_total[-1], d_sys_total[0])
         nbins[-1] = stemp[:,None,None] * nbins[-1] #OC last sys bin, on right
+
+class Symmetrical_Coupling_Helper:     
+    ordered_indices : np.ndarray
+    d_sys_ordered : list[int]
+    fback_subchain_lengths : np.ndarray
+    odd_end : bool
+    sys_num : int
+
+    def __init__(self, d_sys_total, l_list):
+        self.sys_num = len(d_sys_total)
+        self.set_ordered_indices(self.sys_num)
+        self.set_d_sys_ordered(d_sys_total)
+        self.set_fback_subchain_lengths(l_list)
+        self.set_odd_end(self.sys_num)
+
+    # indexed from right to left of the MPS
+    def set_ordered_indices(self, sys_num):
+        indices = np.arange(sys_num, dtype=int)
+        half_point = int(round(sys_num/2))
+        first_half = indices[:half_point]
+        rev_end_half = indices[:half_point-1:-1]
+
+        result = np.zeros(sys_num, dtype=int)
+        result[::2] = first_half
+        result[1::2] = rev_end_half
+        self.ordered_indices = result
+
+    def set_d_sys_ordered(self, d_sys_total):
+        self.d_sys_ordered = d_sys_total[self.ordered_indices]
+
+    # Ordered from right to left in the MPS
+    def set_fback_subchain_lengths(self, l_list):
+        sys_num = len(l_list) + 1
+        self.fback_subchain_num = int((sys_num+1)/2) # Take ceiling of half
+        fback_subchain_lengths = np.zeros(self.fback_subchain_num, dtype=int)
+        fback_subchain_lengths[1:] = (l_list[1::] + l_list[1::][::-1])[:self.fback_subchain_num-1] # Truncate the first, used at front and not doubled up. Addition compresses to half length
+
+        # Check if need to halve the last case due to double counting middle l_list
+        if sys_num % 2 != 0:
+            fback_subchain_lengths[-1] /= 2 
+        
+        # Set the first value
+        fback_subchain_lengths[0] = l_list[0]
+
+        self.fback_subchain_lengths = fback_subchain_lengths
+
+    def set_odd_end(self, sys_num):
+        if sys_num % 2 == 0:
+            self.odd_end = False
+        else:
+            self.odd_end = True
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
@@ -990,10 +1066,25 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
     d_sys=np.prod(d_sys_total)
     feedback_bin_num = len(taus)
     sys_num = len(d_sys_total)
+    taus = np.array(taus)
+
+    # In case of half taus specified, infer rest of taus by symmetry requirements
+    if len(taus) == int(round((sys_num-1)/2)) and sys_num % 2 != 0:
+        taus = np.append(taus, taus[::-1])
+    elif len(taus) == int(round(sys_num/2)) and sys_num % 2 == 0:
+        taus = np.append(taus, taus[len(taus)-2::-1])
+
+    l_list=np.array(np.round(taus/delta_t, 0).astype(int)) #time steps between system and feedback
+
+
+    # Check errors
+    if not (l_list == l_list[::-1]).all():
+        raise ValueError("Delay times tau list must be symmetric over reversal.")
+
+    help_obj = Symmetrical_Coupling_Helper(d_sys_total, l_list)
 
     tbins_in = []
     schmidt=[]
-
     
     input_field=states.input_state_generator(d_t_total, i_n0)
     n=int(round(tmax/delta_t,0))
@@ -1001,6 +1092,13 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
     t_0=0
     evols = [0] * sys_num
     callable_ham_indices = []
+
+    # Determine the number of sys/time legs and sys dims for each Hamiltonian (right to left / outside to inside)
+    # Eg. 0, 6, 1, 5, 2, 4, 3
+    # Also want to store the feedback lengths between each pair of bins
+    # Helpful to store these things in an interior class that can get passed around
+
+
     for i in range(len(hams)):
         if not callable(hams[i]):
             evols[i] = u_evol(hams[i],d_sys_total[i],d_t) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
@@ -1013,8 +1111,6 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
         swap_sys_t.append(swap(d_sys_total[i],d_t))
         swap_sys_t.append(d_t, swap(d_sys_total[i]))
 
-    taus = np.array(taus)
-    l_list=np.array(np.round(taus/delta_t, 0).astype(int)) #time steps between system and feedback
         
     # indexed with 0 being out of the WG, greater index is greater depth
     oc_normed_bins_lists = [[states.wg_ground(d_t)] for x in range(sys_num)]
@@ -1027,6 +1123,7 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
     
     # Separate the system bins and initialize the feedback loop with bins
     nbins = _separate_sys_bins(i_s, d_sys_total, sbins, bond)
+    nbins = _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj, bond)
     nbins = _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
     print_rate = max(round(n / 20.0), 1) # Print every 5%, 20/100
@@ -1035,6 +1132,7 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
         if print_completion_flag and k % print_rate == 0:
             print(str(round(k/n*100,2)) + '%')
         
+        #TODO Have to account for two system bin legs, and possibility of single sys/time leg
         for i in callable_ham_indices:
             evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)
 
