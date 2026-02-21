@@ -64,7 +64,7 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
     """
     u, s, vt = svd(tensor.reshape(tensor.shape[0]*d_1, tensor.shape[-1]*d_2), full_matrices=False)
     chi = min(bond_max, len(s))
-    epsilon = 1e-9 #to avoid dividing by zero
+    epsilon = 1e-10 #to avoid dividing by zero
     s_norm = s[:chi]# / (norm(s[:chi])+ epsilon)
     u = u[:, :chi].reshape(tensor.shape[0],d_1,chi)
     vt = vt[:chi, :].reshape(chi,d_2,tensor.shape[-1])
