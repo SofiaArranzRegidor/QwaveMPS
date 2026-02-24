@@ -20,7 +20,7 @@ from QwaveMPS.parameters import InputParams
 
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling', 'tophat_envelope', 'gaussian_envelope',
            'exp_decay_envelope', 'normalize_pulse_envelope', 'fock_pulse',
-           '_fock_pulse']
+           '_fock_pulse', '_fock_pulse2', '_noom_state']
 
 #--------------------
 #Initial basic states
@@ -460,6 +460,11 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
         apm[dt_indices[i][::-1], indices[i],:] = apmVals[:,None]
         apm[dt_indices[i][0], indices[i][-1],:] = np.sqrt(photon_nums[i]) * pulse_envs[-1][i]**photon_nums[i]
 
+    # Normalize the tenosor apm
+    if photon_num_l != 0 and photon_num_r != 0:
+        apm /= np.sqrt((photon_num_r)*m**(photon_num_r)*2)
+    else:
+        apm /= np.sqrt((max(photon_num_r,photon_num_l))*m**(max(photon_num_r,photon_num_l)))
 
     # Internal function to evaluate the k^th matrix
     def calc_ak(dt, d_total, pulse_envs_k, k):
@@ -470,24 +475,13 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
             # Treat end cases separately
             ak[0, indices[j], dt_indices[j]] = np.sqrt(photon_nums[j]) * pulse_envs_k[j]**np.arange(photon_num_dims[j])
             ak[dt_indices[j],0,dt_indices[j]] = 1
+
         return ak
 
     apk_can=[]    
 
     # Test prints
-    print('A1:')
-    for i in range(time_bin_dim):
-        print(np.real(ap1[:,i,:]))
-    print('='*50)
-    print('ApM:')
-    for i in range(time_bin_dim):
-        print(np.real(apm[:,i,:]))
-    print('='*50)
-    print('Ak:')
-    Ak = calc_ak(dt, time_bin_dim, pulse_envs[1],1)
-    for i in range(time_bin_dim):
-        print(np.real(Ak[:,i,:]))
-
+    #_fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
     
     # Entanglement/normalization process
     apk_c=ncon([calc_ak(dt, time_bin_dim, pulse_envs[m-2], m-1), apm],[[-1,-2,1],[1,-3,-4]])            
@@ -511,21 +505,64 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
     return apk_can
 
 
-def _fock_pulse_ap1():
-    pass
+def _fock_pulse_ap1(dt, max_dt,photon_num, pulse_env, bond0=1):
+    ap1 = np.zeros([bond0,dt,max_dt], dtype=complex)
+    photon_dim = photon_num+1
+    indices = np.arange(0,photon_dim,1)
+    ap1[:,indices,indices] = np.sqrt(photon_num) * pulse_env[0]**np.arange(photon_dim)
+    ap1[:,0,0] = 1
+    # Test line - Fill out for outer product extension to work
+    ap1[:,0,photon_dim:] = 1
 
-def _fock_pulse_apm():
-    pass
+    return ap1
 
-def _fock_pulse_ak(dt, d_total, pulse_envs_k, k):
-    ak=np.zeros([dt,d_total,dt],dtype=complex)
-    for j in range(channel_num):
-        for i in range(photon_num_dims[j]):
-            ak[dt_indices[j][:photon_num_dims[j]-i], indices[j][i], dt_indices[j][i:]] = np.sqrt(sci.special.comb(dt_indices[j][i:],i)) * pulse_envs_k[j]**i
-        # Treat end cases separately
-        ak[0, indices[j], dt_indices[j]] = np.sqrt(photon_nums[j]) * pulse_envs_k[j]**np.arange(photon_num_dims[j])
-        ak[dt_indices[j],0,dt_indices[j]] = 1
+def _fock_pulse_apm(dt, max_dt,photon_num, pulse_env, m, bond0=1):
+    apm = np.zeros([max_dt,dt,bond0], dtype=complex)
+    photon_dim = photon_num+1
+    indices = np.arange(0,photon_dim,1)
+    combinatorial_factors = sci.special.comb(photon_num,np.arange(photon_dim))
+    apmVals = np.sqrt(combinatorial_factors)* pulse_env[-1]**np.arange(photon_dim)
+
+    apm[indices[::-1],indices,:] = apmVals[:,None]
+    apm[0, -1,:] = np.sqrt(photon_num) * pulse_env[-1]**photon_num
+
+    # Test line - Fill out for outer product extension to work
+    apm[photon_dim:,0,:] = 1
+
+    # Normalization for the tensor train
+    if photon_num > 0:
+        apm /= np.sqrt(photon_num * m**(photon_num))
+    return apm
+
+def _fock_pulse_ak(dt, max_dt,photon_num, pulse_env, k):
+    ak=np.zeros([max_dt,dt,max_dt],dtype=complex)
+    photon_dim = photon_num+1
+    indices = np.arange(0,photon_dim,1)
+    for i in range(photon_dim):
+        ak[indices[:photon_dim-i], i, indices[i:]] = np.sqrt(sci.special.comb(indices[i:],i)) * pulse_env[k]**i
+    # Treat end cases separately
+    ak[0, indices, indices] = np.sqrt(photon_num) * pulse_env[k]**np.arange(photon_dim)
+    ak[indices,0,indices] = 1
+    
+    # Test line - Fill out for outer product extension to work
+    ak[photon_dim:,0,:] = 1
+    ak[:,0,photon_dim:] = 1
+    
     return ak
+
+def _fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim):
+    print('A1:', ap1.shape)
+    for i in range(time_bin_dim):
+        print(np.real(ap1[:,i,:]))
+    print('='*50)
+    print('ApM:', apm.shape)
+    for i in range(time_bin_dim):
+        print(np.real(apm[:,i,:]))
+    print('='*50)
+    ak = calc_ak(1)
+    print('Ak:', ak.shape)
+    for i in range(time_bin_dim):
+        print(np.real(ak[:,i,:]))
 
 
 def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParams, photon_nums:list[int], bond0:int=1)->list[np.ndarray]:    
@@ -570,6 +607,7 @@ def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParam
     
     delta_t = params.delta_t
     d_t_total = params.d_t_total
+    dt_max = max(d_t_total)
     bond = params.bond_max
     
     m = int(round(pulse_time/delta_t,0))
@@ -577,7 +615,6 @@ def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParam
     channel_num = len(d_t_total)
     
     photon_nums = np.array(photon_nums)
-    photon_num_dims = photon_nums + 1
     
     # Normalize the pulse envelopes
     for i in range(channel_num):
@@ -590,46 +627,198 @@ def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParam
     
     # Pad envelopes as necessary to be of length m
     for i in range(channel_num):
-        pulse_envs[i] = np.append(pulse_envs[i], [i] * (m-len(pulse_envs[i])))
+        pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
 
-    ap1=np.zeros([bond0,time_bin_dim,dt],dtype=complex)
-    apm=np.zeros([dt,time_bin_dim,bond0],dtype=complex)
+    #ap1=np.zeros([bond0,time_bin_dim,dt_max],dtype=complex)
+    #apm=np.zeros([dt_max,time_bin_dim,bond0],dtype=complex)
 
-    # Evaluate the first and last matrices (each iteration for L and R respectively)
+    ap1s = []
+    apms = []
     for i in range(channel_num):
-        ap1[:,indices[i],dt_indices[i]] = np.sqrt(photon_nums[i]) * pulse_envs[0][i]**np.arange(photon_num_dims[i])
-        ap1[:,indices[i][0],dt_indices[i][0]] = 1
+        ap1s.append(_fock_pulse_ap1(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i]))
+        apms.append(_fock_pulse_apm(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], m))
 
-        combinatorial_factors = sci.special.comb(photon_nums[i],np.arange(photon_num_dims[i]))
-        apmVals = np.sqrt(combinatorial_factors)* pulse_envs[-1][i]**np.arange(photon_num_dims[i])
+    '''
+    ap1s_extended = np.empty((channel_num, dt_max), dtype=object)
+    apms_extended = np.empty((channel_num, dt_max), dtype=object)
+    for j in range(dt_max):
+        ap1s_extended[0][j] = ap1s[0][:,:,j]
+        apms_extended[0][j] = apms[0][j,:,:]
+    
+    # Construct the outer products
+    for i in range(channel_num-1):
+        for j in range(dt_max):
+            ap1s_extended[i+1][j] = np.kron(ap1s_extended[i][j], ap1s[i+1][:,:,j])
+            apms_extended[i+1][j] = np.kron(apms_extended[i][j], apms[i+1][j,:,:])
 
-        apm[dt_indices[i][::-1], indices[i],:] = apmVals[:,None]
-        apm[dt_indices[i][0], indices[i][-1],:] = np.sqrt(photon_nums[i]) * pulse_envs[-1][i]**photon_nums[i]
+    ap1 = np.stack(ap1s_extended[-1], axis=2)
+    apm = np.stack(apms_extended[-1], axis=0)
+    '''
+    ap1 = ap1s[0]
+    apm = apms[0]
+    cum_dim = np.cumprod(d_t_total)
+    for i in range(1,channel_num):
+        ap1 = np.einsum('ijl,ikl->ijkl', ap1, ap1s[i])
+        ap1 = ap1.reshape(bond0, cum_dim[i], dt_max)
+        apm = np.einsum('ijl,ikl->ijkl', apm, apms[i])
+        apm = apm.reshape(dt_max, cum_dim[i], bond0)
 
+
+    # Create inner function to calculate aks with appropriate outer product
+    def calc_ak(k):
+        aks = []
+        for i in range(channel_num):
+            aks.append(_fock_pulse_ak(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], k))
+
+        '''
+        aks_extended = np.empty((channel_num, dt_max), dtype=object)
+        for j in range(dt_max):
+            aks_extended[0][j] = aks[0][j,:,j]
+
+        # Construct the outer product
+        for i in range(channel_num-1):
+            for j in range(dt_max):
+                aks_extended[i+1][j] = np.kron(aks_extended[i][j], aks[i+1][j,:,j])
+
+        return np.stack(aks_extended[-1], axis=0)
+        '''
+
+        ak = aks[0]
+        cum_dim = np.cumprod(d_t_total)
+        for i in range(1,channel_num):
+            ak = np.einsum('ijk,ilk->ijlk', ak, aks[i])
+            ak = ak.reshape(dt_max, cum_dim[i], dt_max)
+        return ak
 
     # Test prints
-    print('A1:')
-    for i in range(timeBinDim):
-        print(np.real(Ap1[:,i,:]))
-    print('='*50)
-    print('ApM:')
-    for i in range(timeBinDim):
-        print(np.real(ApM[:,i,:]))
-    print('='*50)
-    print('Ak:')
-    Ak = _fock_pulse_ak(dTime, timeBinDim, fk[1])
-    for i in range(timeBinDim):
-        print(np.real(Ak[:,i,:]))
-
+    #_fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
     apk_can=[]    
     
     # Entanglement/normalization process
-    apk_c=ncon([_fock_pulse_ak(dt, time_bin_dim, pulse_envs[m-2], m-1), apm],[[-1,-2,1],[1,-3,-4]])            
+    apk_c=ncon([calc_ak(m-1), apm],[[-1,-2,1],[1,-3,-4]])            
     
     for k in range(m-2,1,-1):
         apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
         apk_c = stemp[None,None,:] * apk_c
-        apk_c = ncon([_fock_pulse_ak(dt, time_bin_dim, pulse_envs[k-1], k),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
+        apk_c = ncon([calc_ak(k),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
+        apk_can.append(i_n_r)        
+    
+    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
+    apk_can.append(i_n_r)
+    apk_c = apk_c * stemp[None,None,:]
+    apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
+    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
+    i_n_l = i_n_l * stemp[None,None,:]
+    apk_can.append(i_n_r)
+    apk_can.append(i_n_l)
+    
+    apk_can.reverse()
+    return apk_can
+
+def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams, photon_nums:list[int], bond0:int=1)->list[np.ndarray]:    
+    """
+    Creates a Fock pulse input field MPS with a pulse envelope.
+
+
+    Parameters
+    ----------
+    pulse_env_r : list[float]
+        Time dependent pulse envelope for a right incident pulse.
+        If None, uses tophat pulse.
+
+    pulse_time : float
+        Time length of the pulse (units of inverse coupling). 
+        If the pulse envelope is of greater length it will be truncated from the tail.
+
+    params : InputParams
+        Class containing the input parameters
+    
+    pulse_env_l : list[float]
+        Time dependent pulse envelope for a left incident pulse.
+        If None, uses tophat pulse.
+    
+    photon_num_l : int
+        Left incident photon number. 
+        (Interpretation may be different if photon_num_r is nonzero)
+
+    photon_num_r : int
+        Right incident photon number. 
+        (Interpretation may be different if photon_num_l is nonzero)
+    
+    bond0 : int, default: 1
+        Default bond dimension of bins.
+    
+    Returns
+    -------
+    fock_pulse : list[ndarray]
+        A list of the incident time bins of the Fock pulse, with the first bin in index 0.
+    
+    """ 
+    
+    delta_t = params.delta_t
+    d_t_total = params.d_t_total
+    dt_max = max(d_t_total)
+    bond = params.bond_max
+    
+    m = int(round(pulse_time/delta_t,0))
+    time_bin_dim = np.prod(d_t_total)
+    channel_num = len(d_t_total)
+    
+    photon_nums = np.array(photon_nums)
+    
+    # Normalize the pulse envelopes
+    for i in range(channel_num):
+        # Default to single top hat pulse
+        if pulse_envs[i] is None:
+            pulse_envs[i] = np.ones(m)
+        else:
+            pulse_envs[i] = np.array(pulse_envs[i])
+        pulse_envs[i] = normalize_pulse_envelope(delta_t, pulse_envs[i])
+    
+    # Pad envelopes as necessary to be of length m
+    for i in range(channel_num):
+        pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
+
+    ap1s = []
+    apms = []
+    for i in range(channel_num):
+        ap1s.append(_fock_pulse_ap1(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i]))
+        apms.append(_fock_pulse_apm(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], m))
+
+    ap1 = ap1s[0]
+    apm = apms[0]
+    cum_dim = np.cumprod(d_t_total)
+    for i in range(1,channel_num):
+        ap1 = np.einsum('ijl,ikl->ijkl', ap1, ap1s[i])
+        ap1 = ap1.reshape(bond0, cum_dim[i], dt_max)
+        apm = np.einsum('ijl,ikl->ijkl', apm, apms[i])
+        apm = apm.reshape(dt_max, cum_dim[i], bond0)
+
+
+    # Create inner function to calculate aks with appropriate outer product
+    def calc_ak(k):
+        aks = []
+        for i in range(channel_num):
+            aks.append(_fock_pulse_ak(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], k))
+
+        ak = aks[0]
+        cum_dim = np.cumprod(d_t_total)
+        for i in range(1,channel_num):
+            ak = np.einsum('ijk,ilk->ijlk', ak, aks[i])
+            ak = ak.reshape(dt_max, cum_dim[i], dt_max)
+        return ak
+
+    # Test prints
+    #_fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
+    apk_can=[]    
+    
+    # Entanglement/normalization process
+    apk_c=ncon([calc_ak(m-1), apm],[[-1,-2,1],[1,-3,-4]])            
+    
+    for k in range(m-2,1,-1):
+        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
+        apk_c = stemp[None,None,:] * apk_c
+        apk_c = ncon([calc_ak(k),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
         apk_can.append(i_n_r)        
     
     apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)

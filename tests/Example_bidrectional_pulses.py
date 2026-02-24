@@ -5,10 +5,12 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-photon_num = 3
+photon_num_l = 0
+photon_num_r = 3
+photon_num = max(photon_num_l, photon_num_r)
 gaussian_env = False
 input_params = qmps.parameters.InputParams(
-    delta_t=0.05, 
+    delta_t=0.02, 
     tmax = 8,
     d_sys_total=np.array([2]),
     d_t_total=np.array([photon_num+1,photon_num+1]),
@@ -35,13 +37,11 @@ else:
 
 pulse_env_r = pulse_env
 pulse_env_l = pulse_env
-photon_num_l = 0
-photon_num_r = 1
 
-wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num_r, input_params)
-print('='*50)
+#wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num_r, input_params)
+#print('='*50)
 wg_initial_state = qmps._fock_pulse(pulse_env_r,pulse_time,input_params, pulse_env_l, photon_num_l, photon_num_r)   
-
+wg_initial_state = qmps._fock_pulse2([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
 
 Hm=qmps.hamiltonian_1tls(input_params)
 bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
