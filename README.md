@@ -127,7 +127,7 @@ Add acknowledgements here.-->
 
 # Citing QwaveMPS
 
-If you use QwaveMPS in your research, please consider citing our paper.
+If you use QwaveMPS in your research, please consider citing our paper: [arXiv](https://doi.org/10.48550/arXiv.2602.15826)
 
 
 ## Contact
