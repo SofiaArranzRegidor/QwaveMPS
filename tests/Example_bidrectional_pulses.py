@@ -5,8 +5,8 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-photon_num_l = 0
-photon_num_r = 3
+photon_num_l = 5
+photon_num_r = 5
 photon_num = max(photon_num_l, photon_num_r)
 gaussian_env = False
 input_params = qmps.parameters.InputParams(
@@ -16,7 +16,7 @@ input_params = qmps.parameters.InputParams(
     d_t_total=np.array([photon_num+1,photon_num+1]),
     gamma_l=0.5,
     gamma_r = 0.5,  
-    bond_max=max(32,2**(photon_num+1)),
+    bond_max=max(32,2**(photon_num)),
 )
 
 
@@ -41,7 +41,9 @@ pulse_env_l = pulse_env
 #wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num_r, input_params)
 #print('='*50)
 wg_initial_state = qmps._fock_pulse(pulse_env_r,pulse_time,input_params, pulse_env_l, photon_num_l, photon_num_r)   
-wg_initial_state = qmps._fock_pulse2([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
+#wg_initial_state = qmps._fock_pulse2([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
+#wg_initial_state = qmps._noom_state([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
+
 
 Hm=qmps.hamiltonian_1tls(input_params)
 bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
@@ -67,13 +69,15 @@ same_time_corrs_l = np.real(qmps.single_time_expectation(bins.input_field_states
 total_quanta = np.cumsum(same_time_corrs_r[0] + same_time_corrs_l[0]) * delta_t
 total_quanta2 = tls_pop + np.cumsum(np.sum(photon_fluxes, axis=0)) * delta_t
 
-# %% Plotting
+#%%
 lw = 2
 plt.plot(tlist, tls_pop, linewidth=lw, label=r'$n_{TLS}$')
 plt.plot(tlist, total_quanta,linewidth=lw, label=r'Quanta')
 plt.plot(tlist, total_quanta2,linewidth=lw, linestyle = ':',label=r'Quanta 2')
 plt.plot(tlist, same_time_corrs_l[0],linewidth=lw, label=r'$n^{\rm in}_{L}$')
 plt.plot(tlist, same_time_corrs_r[0],linewidth=lw, linestyle=':', label=r'$n^{\rm in}_{R}$')
+
+plt.hlines(photon_num_r, 0, 4)
 
 plt.xlim((0,4))
 plt.ylim((0,None))

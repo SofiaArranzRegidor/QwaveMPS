@@ -462,9 +462,12 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
 
     # Normalize the tenosor apm
     if photon_num_l != 0 and photon_num_r != 0:
-        apm /= np.sqrt((photon_num_r)*m**(photon_num_r)*2)
+        apm /= np.sqrt((photon_num_r)*m**(photon_num_r))#*2)
     else:
         apm /= np.sqrt((max(photon_num_r,photon_num_l))*m**(max(photon_num_r,photon_num_l)))
+
+    # NOOM state case (Not correct normalization)
+    #apm /= np.sqrt(channel_num*photon_num_r*2)
 
     # Internal function to evaluate the k^th matrix
     def calc_ak(dt, d_total, pulse_envs_k, k):
@@ -511,6 +514,7 @@ def _fock_pulse_ap1(dt, max_dt,photon_num, pulse_env, bond0=1):
     indices = np.arange(0,photon_dim,1)
     ap1[:,indices,indices] = np.sqrt(photon_num) * pulse_env[0]**np.arange(photon_dim)
     ap1[:,0,0] = 1
+    
     # Test line - Fill out for outer product extension to work
     ap1[:,0,photon_dim:] = 1
 
@@ -564,7 +568,8 @@ def _fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim):
     for i in range(time_bin_dim):
         print(np.real(ak[:,i,:]))
 
-
+#TODO Needs bencharmking (3+ channels), currently seems to only work for |N0> or |0N> states, not |NM> states
+# May need some theory/analysis work to be certain of target matrices
 def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParams, photon_nums:list[int], bond0:int=1)->list[np.ndarray]:    
     """
     Creates a Fock pulse input field MPS with a pulse envelope.
@@ -629,31 +634,12 @@ def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParam
     for i in range(channel_num):
         pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
 
-    #ap1=np.zeros([bond0,time_bin_dim,dt_max],dtype=complex)
-    #apm=np.zeros([dt_max,time_bin_dim,bond0],dtype=complex)
-
     ap1s = []
     apms = []
     for i in range(channel_num):
         ap1s.append(_fock_pulse_ap1(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i]))
         apms.append(_fock_pulse_apm(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], m))
 
-    '''
-    ap1s_extended = np.empty((channel_num, dt_max), dtype=object)
-    apms_extended = np.empty((channel_num, dt_max), dtype=object)
-    for j in range(dt_max):
-        ap1s_extended[0][j] = ap1s[0][:,:,j]
-        apms_extended[0][j] = apms[0][j,:,:]
-    
-    # Construct the outer products
-    for i in range(channel_num-1):
-        for j in range(dt_max):
-            ap1s_extended[i+1][j] = np.kron(ap1s_extended[i][j], ap1s[i+1][:,:,j])
-            apms_extended[i+1][j] = np.kron(apms_extended[i][j], apms[i+1][j,:,:])
-
-    ap1 = np.stack(ap1s_extended[-1], axis=2)
-    apm = np.stack(apms_extended[-1], axis=0)
-    '''
     ap1 = ap1s[0]
     apm = apms[0]
     cum_dim = np.cumprod(d_t_total)
@@ -669,19 +655,6 @@ def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParam
         aks = []
         for i in range(channel_num):
             aks.append(_fock_pulse_ak(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], k))
-
-        '''
-        aks_extended = np.empty((channel_num, dt_max), dtype=object)
-        for j in range(dt_max):
-            aks_extended[0][j] = aks[0][j,:,j]
-
-        # Construct the outer product
-        for i in range(channel_num-1):
-            for j in range(dt_max):
-                aks_extended[i+1][j] = np.kron(aks_extended[i][j], aks[i+1][j,:,j])
-
-        return np.stack(aks_extended[-1], axis=0)
-        '''
 
         ak = aks[0]
         cum_dim = np.cumprod(d_t_total)
@@ -715,6 +688,8 @@ def _fock_pulse2(pulse_envs:list[list[float]],pulse_time:float,params:InputParam
     apk_can.reverse()
     return apk_can
 
+#TODO Needs benchmarking, currently seems to only work with |N0> + |0N> states
+# Requires with computational normalization, matrices are not defined currently such that state is normalized by default
 def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams, photon_nums:list[int], bond0:int=1)->list[np.ndarray]:    
     """
     Creates a Fock pulse input field MPS with a pulse envelope.
@@ -779,21 +754,33 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
     for i in range(channel_num):
         pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
 
+
     ap1s = []
     apms = []
     for i in range(channel_num):
         ap1s.append(_fock_pulse_ap1(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i]))
         apms.append(_fock_pulse_apm(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], m))
 
-    ap1 = ap1s[0]
-    apm = apms[0]
-    cum_dim = np.cumprod(d_t_total)
-    for i in range(1,channel_num):
-        ap1 = np.einsum('ijl,ikl->ijkl', ap1, ap1s[i])
-        ap1 = ap1.reshape(bond0, cum_dim[i], dt_max)
-        apm = np.einsum('ijl,ikl->ijkl', apm, apms[i])
-        apm = apm.reshape(dt_max, cum_dim[i], bond0)
+    # Extend to outer space
+    cum_dim = np.append(1, np.cumprod(d_t_total))
+    cum_dim_rev = np.append(np.cumprod(d_t_total[1:][::-1])[::-1], 1)
+    for i in range(channel_num):
+        e0L = np.zeros(cum_dim[i]); e0R = np.zeros(cum_dim_rev[i])
+        e0L[0] = 1; e0R[0] = 1
+        ap1s[i] = np.einsum('ijk,a,b->iajbk', ap1s[i], e0L, e0R).reshape(bond0, time_bin_dim, dt_max)
+        apms[i] = np.einsum('ijk,a,b->iajbk', apms[i], e0L, e0R).reshape(dt_max, time_bin_dim, bond0)
 
+    ap1 = np.zeros([bond0,time_bin_dim,dt_max],dtype=complex)
+    apm = np.zeros([dt_max,time_bin_dim,bond0],dtype=complex)
+    for i in range(channel_num):
+        ap1 += ap1s[i]
+        apm += apms[i]
+
+    # Accounting for addition of 1's in vacuum... way to avoid this with better ap1/apm/apk definitions?
+    ap1[:,0,:] /= channel_num
+    apm[:,0,:] /= channel_num
+    # Normalization for addition of states
+    apm /= np.sqrt(channel_num**max(photon_nums))
 
     # Create inner function to calculate aks with appropriate outer product
     def calc_ak(k):
@@ -801,15 +788,25 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
         for i in range(channel_num):
             aks.append(_fock_pulse_ak(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], k))
 
-        ak = aks[0]
-        cum_dim = np.cumprod(d_t_total)
-        for i in range(1,channel_num):
-            ak = np.einsum('ijk,ilk->ijlk', ak, aks[i])
-            ak = ak.reshape(dt_max, cum_dim[i], dt_max)
+
+        for i in range(channel_num):
+            e0L = np.zeros(cum_dim[i]); e0R = np.zeros(cum_dim_rev[i])
+            e0L[0] = 1; e0R[0] = 1
+            #aks[i] = np.einsum('ijk,a,b->iajbk', ap1s[i], e0L, e0R).reshape(dt_max, time_bin_dim, dt_max)
+            # With linear embedding matrix
+            W = np.kron(np.kron(e0L[:,None], np.eye(d_t_total[i])), e0R[:,None])
+            aks[i] = np.einsum('ijk,Jj->iJk', aks[i], W)
+
+        ak = np.zeros([dt_max,time_bin_dim,dt_max],dtype=complex)
+        for i in range(channel_num):
+            ak += aks[i]
+
+        ak[:,0,:] /= channel_num
+
         return ak
 
     # Test prints
-    #_fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
+    _fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
     apk_can=[]    
     
     # Entanglement/normalization process
@@ -832,3 +829,4 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
     
     apk_can.reverse()
     return apk_can
+
