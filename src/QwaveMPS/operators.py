@@ -535,7 +535,7 @@ def expectation_2bins(bin_state:np.ndarray, mpo:np.ndarray) -> complex:
     expectation value : complex
         The expectation value of the operator for the given state.
     """ 
-    sol = ncon([np.conj(bin_state),mpo,bin_state],[[1,2,5,4],[2,3,5,6],[1,3,6,4]])
+    sol = ncon([np.conj(bin_state),mpo,bin_state],[[1,2,5,4],[2,5,3,6],[1,3,6,4]])
     return sol
 
 def expectation_nbins(ket:np.ndarray, mpo:np.ndarray) -> complex:
