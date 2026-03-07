@@ -192,42 +192,42 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
         omega2s = tuple(omega2)
         hm_total=[]
         def hm_total(t_k):
-            hm_sys1=delta_t*omega1s[t_k]/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
-            +delta_t*delta1*np.kron(e1,np.eye(d_t)) 
+            hm_sys1=(delta_t*omega1s[t_k]/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
+            +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
             
-            hm_sys2=delta_t*omega2s[t_k]/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
-            +delta_t*delta2* np.kron(e2,np.eye(d_t)) 
+            hm_sys2=(delta_t*omega2s[t_k]/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
+            +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
            
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
    
     elif isinstance(omega1, np.ndarray):
         omega1s = tuple(omega1)
-        hm_sys2=delta_t*omega2/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
-        +delta_t*delta2* np.kron(e2,np.eye(d_t))  
+        hm_sys2=(delta_t*omega2/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
+        +delta_t*delta2* np.kron(e2,np.eye(d_t)))  
 
         def hm_total(t_k):
-            hm_sys1=delta_t*omega1s[t_k]/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
-            +delta_t*delta1*np.kron(e1,np.eye(d_t)) 
+            hm_sys1=(delta_t*omega1s[t_k]/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
+            +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
             
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
 
     elif isinstance(omega2, np.ndarray):
         omega2s = tuple(omega2)
-        hm_sys1=delta_t*omega1/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
-        +delta_t*delta1*np.kron(e1,np.eye(d_t)) 
+        hm_sys1=(delta_t*omega1/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
+        +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
         
         def hm_total(t_k):
-            hm_sys2=delta_t*omega2s[t_k]/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
-            +delta_t*delta2* np.kron(e2,np.eye(d_t)) 
+            hm_sys2=(delta_t*omega2s[t_k]/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
+            +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
              
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
         
     else:
-        hm_sys1=delta_t*omega1/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
-        +delta_t*delta1*np.kron(e1,np.eye(d_t)) 
+        hm_sys1=(delta_t*omega1/2*(np.kron(sigmaplus1,np.eye(d_t)) + np.kron(sigmaminus1,np.eye(d_t)))
+        +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
      
-        hm_sys2=delta_t*omega2/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
-        +delta_t*delta2* np.kron(e2,np.eye(d_t)) 
+        hm_sys2=(delta_t*omega2/2*(np.kron(sigmaplus2,np.eye(d_t)) + np.kron(sigmaminus2,np.eye(d_t)))
+        +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
  
         hm_total = (hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L )
     return hm_total
@@ -295,41 +295,41 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
         omega1s = tuple(omega1)
         omega2s = tuple(omega2)
         def hm_total(t_k):
-            hm_sys1 = delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t)) 
-            hm_sys2 = delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t)) 
+            hm_sys1 = (delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
+            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
+            hm_sys2 = (delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
+            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
             
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
    
     elif isinstance(omega1, np.ndarray):
         omega1s = tuple(omega1)
-        hm_sys2=delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t)) 
+        hm_sys2=(delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
+        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
         
         def hm_total(t_k):
-            hm_sys1=delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t)) 
+            hm_sys1=(delta_t*omega1s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
+            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
             
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
 
     elif isinstance(omega2, np.ndarray):
         omega2s = tuple(omega2)
-        hm_sys1=delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t)) 
+        hm_sys1=(delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
+        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
 
         def hm_total(t_k):
-            hm_sys2=delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t)) 
+            hm_sys2=(delta_t*omega2s[t_k]/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
+            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
              
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
         
     else:
-        hm_sys1=delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t)) 
+        hm_sys1=(delta_t*omega1/2*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
+        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
         
-        hm_sys2=delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t)) 
+        hm_sys2=(delta_t*omega2/2*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
+        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
         
         hm_total=hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
     return hm_total
