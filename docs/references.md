@@ -1,4 +1,4 @@
-# References
+# Bibliography
 
 
 [1] Sofia Arranz Regidor, Gavin Crowder, Howard Carmichael, and Stephen Hughes, 
