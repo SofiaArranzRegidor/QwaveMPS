@@ -208,7 +208,7 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
 
         def hm_total(t_k):
             hm_sys1=(delta_t*omega1s[t_k]/2*(np.kron(np.eye(d_t),sigmaplus1) + np.kron(np.eye(d_t),sigmaminus1))
-            +delta_t*delta1*np.kron(np.eye(d_t),e1) 
+            +delta_t*delta1*np.kron(np.eye(d_t),e1)) 
             
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
 

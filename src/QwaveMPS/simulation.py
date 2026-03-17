@@ -919,6 +919,58 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
 
+class Symmetrical_Coupling_Helper:     
+    ordered_indices : np.ndarray
+    d_sys_ordered : list[int]
+    fback_subchain_lengths : np.ndarray
+    odd_end : bool
+    sys_num : int
+
+    def __init__(self, d_sys_total, l_list):
+        self.sys_num = len(d_sys_total)
+        self.set_ordered_indices(self.sys_num)
+        self.set_d_sys_ordered(d_sys_total)
+        self.set_fback_subchain_lengths(l_list)
+        self.set_odd_end(self.sys_num)
+
+    # indexed from right to left of the MPS
+    def set_ordered_indices(self, sys_num):
+        indices = np.arange(sys_num, dtype=int)
+        half_point = int(round(sys_num/2))
+        first_half = indices[:half_point]
+        rev_end_half = indices[:half_point-1:-1]
+
+        result = np.zeros(sys_num, dtype=int)
+        result[::2] = first_half
+        result[1::2] = rev_end_half
+        self.ordered_indices = result
+
+    def set_d_sys_ordered(self, d_sys_total):
+        self.d_sys_ordered = d_sys_total[self.ordered_indices]
+
+    # Ordered from right to left in the MPS
+    def set_fback_subchain_lengths(self, l_list):
+        sys_num = len(l_list) + 1
+        self.fback_subchain_num = int((sys_num+1)/2) # Take ceiling of half
+        fback_subchain_lengths = np.zeros(self.fback_subchain_num, dtype=int)
+        fback_subchain_lengths[1:] = (l_list[1::] + l_list[1::][::-1])[:self.fback_subchain_num-1] # Truncate the first, used at front and not doubled up. Addition compresses to half length
+
+        # Check if need to halve the last case due to double counting middle l_list
+        if sys_num % 2 != 0:
+            fback_subchain_lengths[-1] /= 2 
+        
+        # Set the first value
+        fback_subchain_lengths[0] = l_list[0]
+
+        self.fback_subchain_lengths = fback_subchain_lengths
+
+    def set_odd_end(self, sys_num):
+        if sys_num % 2 == 0:
+            self.odd_end = False
+        else:
+            self.odd_end = True
+
+
 def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Coupling_Helper, bond):
     # OC starts in rightmost sys bin [-1]
     # Sysbins are initially ordered w.r.t. d_sys_total dims (N-1, N-2, N-3, ..., 2, 1, 0)
@@ -935,11 +987,11 @@ def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Cou
     for i in range(help_obj.sys_num / 2):
         # Move OC to the left bin (one that will be moved)
         for j in range(i, help_obj.sys_num):
-            
+            return
             
         # Move this OC bin to the right to correct location
-        for j in range():
-
+        for j in range(None):
+            return
     return nbins
 
 # Assume OC is in right most system bin
@@ -1001,56 +1053,6 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
         nbins[-2], stemp, nbins[-1] = _svd_tensors(phi, bond, d_sys_total[-1], d_sys_total[0])
         nbins[-1] = stemp[:,None,None] * nbins[-1] #OC last sys bin, on right
 
-class Symmetrical_Coupling_Helper:     
-    ordered_indices : np.ndarray
-    d_sys_ordered : list[int]
-    fback_subchain_lengths : np.ndarray
-    odd_end : bool
-    sys_num : int
-
-    def __init__(self, d_sys_total, l_list):
-        self.sys_num = len(d_sys_total)
-        self.set_ordered_indices(self.sys_num)
-        self.set_d_sys_ordered(d_sys_total)
-        self.set_fback_subchain_lengths(l_list)
-        self.set_odd_end(self.sys_num)
-
-    # indexed from right to left of the MPS
-    def set_ordered_indices(self, sys_num):
-        indices = np.arange(sys_num, dtype=int)
-        half_point = int(round(sys_num/2))
-        first_half = indices[:half_point]
-        rev_end_half = indices[:half_point-1:-1]
-
-        result = np.zeros(sys_num, dtype=int)
-        result[::2] = first_half
-        result[1::2] = rev_end_half
-        self.ordered_indices = result
-
-    def set_d_sys_ordered(self, d_sys_total):
-        self.d_sys_ordered = d_sys_total[self.ordered_indices]
-
-    # Ordered from right to left in the MPS
-    def set_fback_subchain_lengths(self, l_list):
-        sys_num = len(l_list) + 1
-        self.fback_subchain_num = int((sys_num+1)/2) # Take ceiling of half
-        fback_subchain_lengths = np.zeros(self.fback_subchain_num, dtype=int)
-        fback_subchain_lengths[1:] = (l_list[1::] + l_list[1::][::-1])[:self.fback_subchain_num-1] # Truncate the first, used at front and not doubled up. Addition compresses to half length
-
-        # Check if need to halve the last case due to double counting middle l_list
-        if sys_num % 2 != 0:
-            fback_subchain_lengths[-1] /= 2 
-        
-        # Set the first value
-        fback_subchain_lengths[0] = l_list[0]
-
-        self.fback_subchain_lengths = fback_subchain_lengths
-
-    def set_odd_end(self, sys_num):
-        if sys_num % 2 == 0:
-            self.odd_end = False
-        else:
-            self.odd_end = True
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
