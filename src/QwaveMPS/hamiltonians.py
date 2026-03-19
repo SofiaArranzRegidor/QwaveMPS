@@ -282,14 +282,14 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
     e2=np.kron(np.eye(d_sys1),e(d_sys2))   
     
     #interaction terms
-    t11 = np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t),sigmaminus2),delta_b_dag_l(delta_t,d_t_total))
-    t11hc = +np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t),sigmaplus2),delta_b_l(delta_t,d_t_total))
-    t21 = np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_dag_r(delta_t,d_t_total)*np.exp(1j*phase),sigmaminus2),np.eye(d_t))
-    t21hc = +np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_r(delta_t,d_t_total)*np.exp(-1j*phase),sigmaplus2),np.eye(d_t))
-    t12 = np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_dag_l(delta_t,d_t_total)*np.exp(1j*phase),sigmaminus1),np.eye(d_t))
-    t12hc = +np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_l(delta_t,d_t_total)*np.exp(-1j*phase),sigmaplus1),np.eye(d_t))
-    t22 = np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t),sigmaminus1),delta_b_dag_r(delta_t,d_t_total))
-    t22hc = +np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t),sigmaplus1),delta_b_r(delta_t,d_t_total))
+    t11 = np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_dag_l(delta_t,d_t_total),sigmaminus1),np.eye(d_t))    
+    t11hc = +np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_l(delta_t,d_t_total),sigmaplus1),np.eye(d_t))
+    t21 = np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t)*np.exp(1j*phase),sigmaminus1),delta_b_dag_r(delta_t,d_t_total))    
+    t21hc = +np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t)*np.exp(-1j*phase),sigmaplus1),delta_b_r(delta_t,d_t_total))
+    t12 = np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t)*np.exp(1j*phase),sigmaminus2),delta_b_dag_l(delta_t,d_t_total))
+    t12hc = +np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t)*np.exp(-1j*phase),sigmaplus2),delta_b_l(delta_t,d_t_total))  
+    t22 = np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_dag_r(delta_t,d_t_total),sigmaminus2),np.eye(d_t))
+    t22hc = +np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_r(delta_t,d_t_total),sigmaplus2),np.eye(d_t))
      
     if isinstance(omega1, np.ndarray) and isinstance(omega2, np.ndarray):
         omega1s = tuple(omega1)
