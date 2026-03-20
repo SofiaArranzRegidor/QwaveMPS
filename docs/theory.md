@@ -16,7 +16,7 @@ $$H_{\rm W} = \sum_{\alpha=L,R} \int_{\mathcal{B}} d\omega  \omega b_\alpha^\dag
 
 where $b_\alpha^\dagger (\omega)$ and $b_\alpha(\omega)$ are the creation and annihilation bosonic operators for the right- and left-moving photons, and $\mathcal{B}$ is the relevant bandwidth of interest around the resonance frequency $\omega_0$, in the rotating-wave approximation. 
 
-To solve these complex problems, many theories make use of approximations, such as the Markovian approximation, which results in valuable information being lost. In this project, we give a tool to solve waveguide QED problems using matrix product states (MPS), which allows us to solve these systems without making some of the usual approximations [1,2].  
+To solve these complex problems, many theories make use of approximations, such as the Markovian approximation, which results in valuable information being lost. In this project, we give a tool to solve waveguide QED problems using matrix product states (MPS), which allows us to solve these systems without making some of the usual approximations [1,2,3].  
 
 For this, we need to discretize the waveguide in time into the so-called ``time bins'' and write the discretized Hamiltonian in time using the boson noise operators,
 
@@ -37,7 +37,7 @@ Then, the initial state is written in terms of MPS, and the time evolution opera
 ## Matrix Product States
 ### Singular value decomposition
 
-Matrix product states is an approach based on one-dimensional tensor network theories [1,3]. The MPS algorithm relies on the Schmidt or singular value decomposition (SVD) of a quantum system, which considers the bipartition state of the system as a tensor product. The SVD decomposition of a tensor $M$ is,
+Matrix product states is an approach based on one-dimensional tensor network theories [1,4]. The MPS algorithm relies on the Schmidt or singular value decomposition (SVD) of a quantum system, which considers the bipartition state of the system as a tensor product. The SVD decomposition of a tensor $M$ is,
 
 $$M = U S V^\dagger,$$
 
@@ -110,7 +110,7 @@ where $d_t$ is 2 by default to allow one photon per time bin.
 
 ### Time evolution
 
-The evolution of the system is performed by applying the time evolution operator on the relevant parts of the MPS at each time step. In the Markovian regime or when we do not have feedback effects, this is usually on the system bin and the present time bin. For example, at a time $t_k,
+The evolution of the system is performed by applying the time evolution operator on the relevant parts of the MPS at each time step. In the Markovian regime or when we do not have feedback effects, this is usually on the system bin and the present time bin. For example, at a time $t_k$,
 
 
 ```{image} images/mark_U.png
@@ -135,8 +135,10 @@ In all the cases, after applying the time evolution operator, the state is again
 
 ## References
 
-[1] Sofia Arranz Regidor, Gavin Crowder, Howard Carmichael, and Stephen Hughes, “Modeling quantum light-matter interactions in waveguide QED with retardation, nonlinear interactions, and a time-delayed feedback: Matrix product states versus a space-discretized waveguide model,” Phys. Rev. Res. 3, 023030 (2021).
+[1] Hannes Pichler and Peter Zoller, “Photonic circuits with time delays and quantum feedback,” Phys. Rev. Lett. 116, 093601 (2016).
 
 [2] Hannes Pichler, Soonwon Choi, Peter Zoller, and Mikhail D. Lukin, “Universal photonic quantum computation via time-delayed feedback,” Proceedings of the National Academy of Sciences 114, 11362–11367 (2017).
+
+[3] Sofia Arranz Regidor, Gavin Crowder, Howard Carmichael, and Stephen Hughes, “Modeling quantum light-matter interactions in waveguide QED with retardation, nonlinear interactions, and a time-delayed feedback: Matrix product states versus a space-discretized waveguide model,” Phys. Rev. Res. 3, 023030 (2021).
 
 [3] R. Orús, A practical introduction to tensor networks: Matrix product states and projected entangled pair states, Annals of Physics 349, 117 (2014)

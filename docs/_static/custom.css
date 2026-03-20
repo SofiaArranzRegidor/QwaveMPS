@@ -1,0 +1,46 @@
+```css
+```
+
+/* Allow transparent PNGs to stay transparent in dark mode */
+html[data-theme="dark"].bd-content img:not(.only-dark,.dark-light) {
+  background-color: transparent;
+  border-radius: 0;
+  filter: none;
+
+}
+
+
+html[data-theme="dark"] body .bd-content img:not(.only-dark,.dark-light) {
+  background-color: transparent;
+  border-radius: 0;
+
+}
+
+/* Navbar project name size */
+.navbar-brand,
+.navbar-brand .project-name{
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+
+.bd-main .bd-content h1:first-of-type { 
+  text-align: center;
+  color: #06b6d4;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+
+/* Remove the header anchor (#) from layout so titles center correctly */
+.bd-main .bd-content h1 .headerlink {
+  position: absolute;
+  left: -1.2em;
+}
+
+
+/* Card titles */
+.sd-card-title {
+  color: #06b6d4;
+  font-weight: 600;
+}

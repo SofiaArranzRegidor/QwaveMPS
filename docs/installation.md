@@ -1,13 +1,12 @@
 # Installation
 
 QwaveMPS can be installed using the following command: 
-⚠️ **TODO:** for this to work, we need to have it in PyPI
 
 ```bash
 pip install QwaveMPS
 ```
 
-This package is available on PyPI. ⚠️ **TODO:** add the link when ready.
+This package is available on [PyPI](https://pypi.org/project/QwaveMPS/)
 
 ## General Requirements
 
@@ -15,7 +14,7 @@ The following packages are required to run the QwaveMPS:
 
 | Package | Version | 
 |----------|----------|
-| python  | 3.7+  | 
+| python  | 3.8+  | 
 | numpy  | 1.16.0+  | 
 | scipy  | 1.3.0+  | 
 | ncon  |   | 
