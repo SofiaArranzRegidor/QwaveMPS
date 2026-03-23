@@ -49,7 +49,7 @@ d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
-gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.states.coupling('symmetrical',gamma=1)
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
