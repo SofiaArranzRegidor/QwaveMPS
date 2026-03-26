@@ -1020,7 +1020,6 @@ def createCoherentMatrix(dim, max_dim, alpha, fk, k, m):
         Gamma[0,indices,0] = coherent_vals
     return Gamma
 
-
 def coherent_pulse(pulse_envs,pulse_time, params:InputParams, alphas,bond0=1):
     delta_t = params.delta_t
     d_t_total = params.d_t_total
@@ -1052,97 +1051,6 @@ def coherent_pulse(pulse_envs,pulse_time, params:InputParams, alphas,bond0=1):
         aks = []
         for i in range(channel_num):
             aks.append(createCoherentMatrix(d_t_total[i], dt_max, alphas[i], pulse_envs[i], k, m))
-
-        ak = aks[0]
-        shape0 = ak.shape[0]
-        shape2 = ak.shape[-1]
-        for i in range(1,channel_num):
-            ak = np.einsum('ijk,ilk->ijlk', ak, aks[i])
-            ak = ak.reshape(shape0, cum_dim[i], shape2)
-        return ak    
-    
-    #_fock_matrix_text_print(calc_ak(0), calc_ak(m-1), calc_ak, time_bin_dim)
-
-    apk_can=[]
-        
-    apk_c=ncon([calc_ak(m-2), calc_ak(m-1)],[[-1,-2,1],[1,-3,-4]])
-
-    for k in range(m-2,1,-1):
-        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-        apk_c = stemp[None,None,:] * apk_c
-        apk_c = ncon([calc_ak(k-1),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
-        apk_can.append(i_n_r)        
-    
-    ap1 = calc_ak(0)
-    
-    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-    apk_can.append(i_n_r)
-    apk_c = apk_c * stemp[None,None,:]
-    apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
-    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-    i_n_l = i_n_l * stemp[None,None,:]
-    apk_can.append(i_n_r)
-    apk_can.append(i_n_l)
-    
-    apk_can.reverse()
-        
-    return apk_can
-
-def calc_squeezed_val(zeta, pulse_env_val, i):
-    sq_vals = np.zeros(len(i),dtype=complex)
-    for j in range(len(i)):
-        if i[j] % 2 == 0 or i[j]==0:
-            r=np.abs(zeta)
-            phi=np.angle(zeta)
-            term1= (np.sqrt(sci.special.factorial(2*i[j])))/(np.sqrt(np.cosh(r))*2**i[j]*sci.special.factorial(i[j]))
-            sq_vals[j]=term1*(-1*np.exp(1j*phi)*np.tanh(r))**i[j]
-    return sq_vals
-    
-def createSqueezedMatrix(dim, max_dim, alpha, fk, k, m):
-    indices = np.arange(0,dim,1)
-    squeezed_vals = calc_squeezed_val(alpha, fk[k], indices)
-    if k ==0:
-        Gamma = np.zeros((1,dim,max_dim),dtype=complex)
-        Gamma[:,indices,0] = squeezed_vals
-    elif k == m-1:
-        Gamma = np.zeros((max_dim,dim,1),dtype=complex)
-        Gamma[0,indices,:] = squeezed_vals[:,None]
-    else:
-        Gamma = np.zeros((max_dim,dim,max_dim),dtype=complex)
-        Gamma[0,indices,0] = squeezed_vals
-    return Gamma
-
-
-def squeezed_pulse(pulse_envs,pulse_time, params:InputParams, zetas,bond0=1):
-    delta_t = params.delta_t
-    d_t_total = params.d_t_total
-    dt_max = max(d_t_total)
-    bond_max = params.bond_max
-    time_bin_dim = np.prod(d_t_total)
-    channel_num = len(d_t_total)
-    cum_dim = np.cumprod(d_t_total)
-    
-    m = int(round(pulse_time/delta_t,0))
-        
-    # Normalize the pulse envelopes
-    for i in range(channel_num):
-        # Default to single top hat pulse
-        if pulse_envs[i] is None:
-            pulse_envs[i] = np.ones(m)
-        else:
-            pulse_envs[i] = np.array(pulse_envs[i])
-        pulse_envs[i] = normalize_pulse_envelope_coherent(pulse_envs[i])
-    
-    # Pad envelopes as necessary to be of length m
-    for i in range(channel_num):
-        pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
-
-
-    # Create inner function to calculate aks with appropriate outer product
-    def calc_ak(k):
-        aks = []
-        for i in range(channel_num):
-            aks.append(createSqueezedMatrix(d_t_total[i], dt_max, zetas[i], pulse_envs[i], k, m))
 
         ak = aks[0]
         shape0 = ak.shape[0]
