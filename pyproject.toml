@@ -13,7 +13,7 @@ name = "QwaveMPS"
 dynamic = ["version"]
 description = "Python Library for exact simulations of waveguide QED using MPS."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "GNU General Public License v3 (GPLv3)"}
 keywords = ["quantum", "physics", "dynamics"]
 authors = [
@@ -59,7 +59,7 @@ docs = [
 tests = ["pytest>=5.2", "pytest-rerunfailures"]
 
 
-[tool.setuptool.packages.find]
+[tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools_scm]
