@@ -516,7 +516,7 @@ def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
     -------- 
 
     """ 
-    return np.einsum('kjq,qi->kji', ak, omega)
+    return np.einsum('ijk,kq->ijq', ak, omega)
 
 #-------------------------
 # Create the Pulse based on given matrix scheme
@@ -586,10 +586,10 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
         # If 0 or m-1, contract
         if k == 0:
             for i in range(channel_num):
-                aks[i] = _contract_alpha(alpha, aks[i])
+                aks[i] = _contract_alpha(alphas[i], aks[i])
         if k == m-1:
             for i in range(channel_num):
-                aks[i] = _contract_omega(omega, aks[i])
+                aks[i] = _contract_omega(omegas[i], aks[i])
 
         # Get the outer product for the channels
         ak = _tensor_outer_rank3(aks)
@@ -630,7 +630,6 @@ def _fock_alphaOmega(dim:int,photon_num:int, bond0:int=1) -> tuple[np.ndarray,np
     -------- 
 
     """ 
-
     a1 = np.zeros([bond0,dim], dtype=complex)
     am = np.zeros([dim,bond0], dtype=complex)
     a1[:,0] = 1
@@ -734,7 +733,7 @@ def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:int):
     """ 
     return np.exp(-np.abs(np.conj(pulse_env_val)*alpha)**2 / 2) * (np.conj(pulse_env_val)*alpha)**(n)/(np.sqrt(sci.special.factorial(n)))
 
-def _coherent_alphaOmega(_, __, ___) -> tuple[np.ndarray,np.ndarray]:
+def _coherent_alphaOmega(_, __) -> tuple[np.ndarray,np.ndarray]:
     """
     Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a Coherent state.
     

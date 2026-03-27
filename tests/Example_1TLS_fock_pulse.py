@@ -32,8 +32,6 @@ from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 
-import sys
-from pathlib import Path
 import QwaveMPS as qmps
 import time as t
 
@@ -95,6 +93,8 @@ pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
 # Create the pulse envelope
 wg_initial_state = qmps.states.fock_pulse([pulse_env,pulse_env],pulse_time,input_params, [photon_num,0])
+#wg_initial_state = qmps.coherent_pulse([pulse_env,pulse_env],pulse_time,input_params, [0.5,0.5])
+
 
 # Multiple pulses may be appended in the usual list appending way
 #wg_initial_state += qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='L')
