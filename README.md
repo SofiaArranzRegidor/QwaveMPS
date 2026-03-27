@@ -85,7 +85,7 @@ wg_initial_state = qmps.states.vacuum(tmax,input_params) #waveguide in vacuum
 ```
 Choose the Hamiltonian:
 ```python
-ham = qmps.hamiltonian_1tls(input_params)
+hm = qmps.hamiltonian_1tls(input_params)
 ```
 Calculate time evolution of the system:
 ```python
