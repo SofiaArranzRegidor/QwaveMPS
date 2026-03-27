@@ -5,8 +5,8 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-photon_num_l = 2
-photon_num_r = 3
+photon_num_l = 0
+photon_num_r = 10
 photon_num = max(photon_num_l, photon_num_r)
 gaussian_env = False
 input_params = qmps.parameters.InputParams(
@@ -26,7 +26,7 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 sys_initial_state = qmps.tls_ground()
 
-pulse_center = 2
+pulse_center = 3
 sigma = 1
 pulse_time_gauss = input_params.tmax
 pulse_env_gauss = qmps.gaussian_envelope(pulse_time_gauss, input_params, sigma, pulse_center)
@@ -39,7 +39,8 @@ pulse_env_l = pulse_env_rect
 #wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num_r, input_params)
 #print('='*50)
 #wg_initial_state = qmps.fock_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [photon_num_l, photon_num_r])   
-wg_initial_state = qmps.coherent_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [0.2, 0.5])   
+#wg_initial_state = qmps.coherent_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [0.2, 0.5])   
+wg_initial_state = qmps.smsv_pulse([pulse_env_l, pulse_env_l],pulse_time_rect,input_params, [0, 0.5])   
 
 #wg_initial_state = qmps._noom_state([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
 

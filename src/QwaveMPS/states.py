@@ -19,9 +19,10 @@ from typing import Callable
 from QwaveMPS import simulation as sim
 from QwaveMPS.parameters import InputParams
 
-__all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling', 'tophat_envelope', 'gaussian_envelope'
-           ,'exp_decay_envelope', 'normalize_pulse_envelope_united', 'normalize_pulse_envelope_unitless'
-           ,'left_normalize_bins', 'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse']
+__all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling',
+            'tophat_envelope', 'gaussian_envelope','exp_decay_envelope',
+            'normalize_pulse_envelope_united', 'normalize_pulse_envelope_unitless','left_normalize_bins',
+            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'calc_smsv_val', 'smsv_pulse']
 
 #--------------------
 #Initial basic states
@@ -598,7 +599,7 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
     bins = [calc_ak(k) for k in range(m)]    
     
     # Test print of the bins
-    #_matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
+    _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
 
     bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed
@@ -703,12 +704,18 @@ def fock_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParam
         A list of the incident time bins of the Fock pulse, with the first bin in index 0.
     
     """ 
+    # Checks that photon_nums and pulseEnvs are wrapped as lists, even in case of single channel
+    if np.isscalar(photon_nums):
+        photon_nums = [photon_nums]
+    if np.isscalar(pulse_envs[0]):
+        pulse_envs = [pulse_envs]
+
     return create_pulse(pulse_envs, pulse_time, params, photon_nums, _fock_alphaOmega, _fock_pulse_ak)
 
 #-------------------------
 # Coherent pulse MPS generator
 #-------------------------
-def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:int):
+def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:np.ndarray):
     """
     Calculates the coefficient for the projection of a coherent state, alpha, onto the number state, n.
     
@@ -720,7 +727,7 @@ def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:int):
     pulse_env_val : complex
         The time dependent modulation of alpha at this point.
 
-    n : int
+    n : np.ndarray
         The number state being projected onto.
 
     Returns
@@ -734,9 +741,10 @@ def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:int):
     """ 
     return np.exp(-np.abs(np.conj(pulse_env_val)*alpha)**2 / 2) * (np.conj(pulse_env_val)*alpha)**(n)/(np.sqrt(sci.special.factorial(n)))
 
-def _coherent_alphaOmega(_, __) -> tuple[np.ndarray,np.ndarray]:
+def _tensor_prod_alphaOmega(_, __) -> tuple[np.ndarray,np.ndarray]:
     """
-    Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a Coherent state.
+    Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a tensor product state.
+    This is used when the bond dimension will be 1 for all bins, such as coherent states and single-time point squeezed states).
     
     Returns
     -------
@@ -788,8 +796,112 @@ def _coherent_ak(dim:int, alpha:complex, pulse_env:list[complex], k:int) -> np.n
     return ak
 
 
-def coherent_pulse(pulse_envs,pulse_time, params:InputParams, alphas,bond0=1):
-    return create_pulse(pulse_envs, pulse_time, params, alphas, _coherent_alphaOmega, _coherent_ak)
+def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:InputParams, alphas:list[complex],bond0:int=1) -> list[np.ndarray]:
+    """
+    Creates a coherent pulse input field MPS with a pulse envelope. 
+    Can create a state of fock pulses in multiple channels, e.g. of the form |alpha1,alpha2,alpha3>
+
+    Parameters
+    ----------
+    pulse_envs : list[list[complex]]
+        List of time dependent pulse envelopes for each channel/tensorspace in the waveguide (d_t_total).
+        If None uses a top-hat pulse (constant amplitude).
+
+    pulse_time : float
+        Time length of the pulse (units of inverse coupling). 
+        If the pulse envelope is of greater length it will be truncated from the tail.
+
+    params : InputParams
+        Class containing the input parameters
+    
+    alphas : list[complex]
+        List of alphas for the coherent pulses for each channel/tensorspace in the waveguide.
+            
+    bond0 : int, default: 1
+        Default bond dimension of bins.
+    
+    Returns
+    -------
+    coherent_pulse : list[ndarray]
+        A list of the incident time bins of the coherent pulse, with the first bin in index 0.
+    
+    """ 
+    # Checks that photon_nums and pulseEnvs are wrapped as lists, even in case of single channel
+    if np.isscalar(alphas):
+        alphas = [alphas]
+    if np.isscalar(pulse_envs[0]):
+        pulse_envs = [pulse_envs]
+    return create_pulse(pulse_envs, pulse_time, params, alphas, _tensor_prod_alphaOmega, _coherent_ak)
+
+#-------------------------
+# 
+#-------------------------
+def calc_smsv_coeffs(zeta:complex, pulse_env_val:complex, n:np.ndarray):
+    """
+    Calculates the coefficient for the projection of a coherent state, alpha, onto the number state, n.
+    
+    Parameters
+    ----------
+    alpha : complex
+        Defines the displacement of the coherent state from the vacuum.
+    
+    pulse_env_val : complex
+        The time dependent modulation of alpha at this point.
+
+    n : np.ndarray
+        The number state being projected onto.
+
+    Returns
+    -------
+    coeff : complex
+        Coefficient for the projection of the coherent state, onto the number state, n
+        
+    Examples
+    -------- 
+
+    """ 
+    n = np.asarray(n)
+    zeta_local = zeta*pulse_env_val
+    r = np.abs(zeta_local)
+    eiphi = np.exp(1j * np.angle(zeta_local))
+    halfn = n/2
+    result = np.where(n % 2 == 0,
+        1/(np.sqrt(np.cosh(r))) * (-eiphi * np.tanh(r))**(halfn) * (np.sqrt(sci.special.factorial(n)))/(2**halfn * sci.special.factorial(halfn)),
+        0)
+    return result
+
+def calc_tmsv_coeffs(zeta:complex, pulse_env_val:complex, n:np.ndarray):
+    """
+    Calculates the coefficient for the projection of a coherent state, alpha, onto the number state, n.
+    
+    Parameters
+    ----------
+    alpha : complex
+        Defines the displacement of the coherent state from the vacuum.
+    
+    pulse_env_val : complex
+        The time dependent modulation of alpha at this point.
+
+    n : np.ndarray
+        The number state being projected onto.
+
+    Returns
+    -------
+    coeff : complex
+        Coefficient for the projection of the coherent state, onto the number state, n
+        
+    Examples
+    -------- 
+
+    """ 
+    n = np.asarray(n)
+    zeta_local = zeta*pulse_env_val
+    r = np.abs(zeta_local)
+    eiphi = np.exp(1j * np.angle(zeta_local))
+    result = np.where(n % 2 == 0,
+        1/np.cosh(r) * (-eiphi * np.tanh(r))**(n),
+        0)
+    return result
 
 # Below state is not implemented correctly yet. DO NOT USE.
 #TODO Needs benchmarking, currently seems to only work with |N0> + |0N> states
