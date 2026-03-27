@@ -5,12 +5,13 @@ Created on Thu Sep 25 11:33:34 2025
 
 @author: sofia
 """
-
+#%%
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 import QwaveMPS as qmps
+import QwaveMPS.operators as qops
 import time as t
 
 #Parameters for plots style
@@ -26,7 +27,7 @@ def clean_ticks(x, pos):
 #%%
 
 """Choose the time step and end time"""
-N=8
+N=10
 d_sys1=2 # first tls bin dimension 
 d_sys_total=np.array([d_sys1]*N) #total system bin dimension
 
@@ -35,13 +36,13 @@ d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_r])
 d_t = np.prod(d_t_total)
 input_params = qmps.parameters.InputParams(
-    delta_t=0.05, # Time step of the simulation
-    tmax = 40,#30, # Maximum simulation time
+    delta_t=0.01, # Time step of the simulation
+    tmax = 50,#30, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=1,
     gamma_r = 1,  
-    bond_max=32 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
+    bond_max=64 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
 tlist=np.arange(0,input_params.tmax+input_params.delta_t, input_params.delta_t)
 
@@ -49,8 +50,8 @@ tlist=np.arange(0,input_params.tmax+input_params.delta_t, input_params.delta_t)
 """Choose the delay time"""
 
 tau=1
-#taus = [tau] * (N-1)
-taus = [1,0.5,1,0.5,1,0.5,1]
+taus = [tau] * (N-1)
+#taus = [1,0.5,1,0.5,1,0.5,1]
 
 """ Choose the initial state and coupling"""
 i_s = np.zeros([1,d_sys1,1],dtype=complex) #system bin
@@ -71,19 +72,20 @@ i_s0[:,int(2**(len(d_sys_total))-1),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
 # i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
-i_n0 = qmps.fock_pulse(qmps.tophat_envelope(2, input_params), 2, 1, input_params, 'R')
+i_n0 = qmps.states.fock_pulse(qmps.states.tophat_envelope(2, input_params), 2, 1, input_params, 'R')
+i_n0 = None
 
 """Choose the Hamiltonian"""
 
 #hm = qmps.hamN2LSChiral(0, delta_t, d_t, N)
 hams = []
 for i in range(len(d_sys_total)):
-    hm = qmps.hamiltonian_1tls_chiral(input_params)
+    hm = qmps.hamiltonians.hamiltonian_1tls_chiral(input_params)
     hams.append(hm)
 
 
 """ Time evolution of the system"""
-bins = qmps.t_evol_nmar_chiral(hams,i_s0,i_n0,taus,input_params)
+bins = qmps.simulation.t_evol_nmar_chiral(hams,i_s0,i_n0,taus,input_params)
 
 #%%
 time_b = bins.output_field_states[0] # Bins entering the feedback channel between the TLS's
@@ -94,31 +96,31 @@ out_bins = bins.output_field_states[-1]
 
 #pop1,pop2,tbins_r,tbins_l,trans,ref,total=qmps.pop_dynamics_2tls(sys_b,time_b,delta_t,d_sys_total,d_t_total,tau_b,tau)
 
-sys_pop_op = qmps.sigmaplus() @ qmps.sigmaminus()
-flux_op = qmps.b_pop(input_params)
+sys_pop_op = qops.sigmaplus() @ qops.sigmaminus()
+flux_op = qops.b_pop(input_params)
 
 sys_pops = []
 for i in range(len(d_sys_total)):
-    sys_pops.append(qmps.single_time_expectation(bins.system_states[i], sys_pop_op))
-out_flux = qmps.single_time_expectation(out_bins, flux_op)
+    sys_pops.append(qops.single_time_expectation(bins.system_states[i], sys_pop_op))
+out_flux = qops.single_time_expectation(out_bins, flux_op)
 
 #%%
 
-fonts=15
+fonts=18
 pic_style(fonts)
 
 
 #fig, ax = plt.subplots(figsize=(4.5, 4))
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(7, 5))
 
+plt.plot(tlist,np.real(out_flux),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{R}$')
 for i in range(N):
     plt.plot(tlist,np.real(sys_pops[i]),linewidth = 3,linestyle='-',label=r'$n_{\rm TLS}^{('+str(i)+r')}$')
 
-plt.plot(tlist,np.real(out_flux),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{\rm out}$')
 #plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
 #plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
 #plt.plot(tlist,total,linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend(loc='upper right', bbox_to_anchor=(1, 0.95),labelspacing=0.2)
+plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1.1),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
@@ -127,8 +129,10 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,5*N])
-plt.tight_layout()
+plt.xlim([0.,50])
 
+plt.tight_layout()
+#plt.savefig('pops.pdf', bbox_inches='tight', dpi=400)
 
 plt.show()
 
@@ -138,7 +142,7 @@ plt.show()
 start_time=t.time()
 
 # Have to create operators again for this larger space
-b_dag = qmps.b_dag(input_params); b = qmps.b(input_params)
+b_dag = qops.b_dag(input_params); b = qops.b(input_params)
 ops_same_time = []; ops_two_time = []
 
 # Add op <b_R^\dag(t) b_R^\dag(t+t') b_R^(t+t') b_R(t)> 
@@ -150,7 +154,7 @@ ops_two_time.append(np.kron(b_dag@b, b_dag@b))
 ops_same_time.append(b_dag @ b); ops_two_time.append(np.kron(b_dag, b))
 ops_same_time.append(b_dag @ b); ops_two_time.append(np.kron(b, b_dag))
 
-correlations, correlation_tlist = qmps.correlations_2t(bins.correlation_bins, ops_same_time, ops_two_time, input_params, True)
+correlations, correlation_tlist = qmps.correlation.correlations_2t(bins.correlation_bins, ops_same_time, ops_two_time, input_params, True)
 
 
 print("G2 correl--- %s seconds ---" %(t.time() - start_time))
@@ -165,7 +169,7 @@ X,Y = np.meshgrid(correlation_tlist,correlation_tlist)
 xmax = N*3
 
 # Use a function to transform from t,t' coordinates to t1, t2 so that t2=t+t'
-z = np.real(qmps.transform_t_tau_to_t1_t2(correlations[0]))
+z = np.real(qmps.correlation.transform_t_tau_to_t1_t2(correlations[0]))
 absMax = np.abs(z).max()
 
 # Just take top half of the seismic cmap, only have positive values
@@ -178,8 +182,9 @@ cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
-ax.set_xlim([0,xmax])
-ax.set_ylim([0,xmax])
+tempMax = 1.5*taus[0]*N
+ax.set_xlim([0,tempMax])
+ax.set_ylim([0,tempMax])
 
 
 cbar.set_label(r'$G^{(2)}_{TT}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)
@@ -192,7 +197,7 @@ plt.show()
 
 
 """Example graphing G1"""
-z = np.real(qmps.transform_t_tau_to_t1_t2(correlations[1], correlations[2]))
+z = np.real(qmps.correlation.transform_t_tau_to_t1_t2(correlations[1], correlations[2]))
 absMax = np.abs(z).max()
 
 fig, ax = plt.subplots(figsize=(4.5, 4))
@@ -202,8 +207,8 @@ cbar = fig.colorbar(cf,ax=ax, pad=0)
 
 ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
-ax.set_xlim([0,xmax])
-ax.set_ylim([0,xmax])
+ax.set_xlim([0,tempMax])
+ax.set_ylim([0,tempMax])
 
 
 cbar.set_label(r'$G^{(1)}_{TT}(t,t^\prime)\ [\gamma^{2}]$',labelpad=0)

@@ -21,8 +21,7 @@ from QwaveMPS.parameters import InputParams
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling', 'tophat_envelope', 'gaussian_envelope',
            'exp_decay_envelope', 'normalize_pulse_envelope', 'fock_pulse',
            '_fock_pulse', '_fock_pulse2', '_noom_state',
-             'coherent_pulse', 'coherent_pulse_1', 'coherent_pulse_2dims',
-             '_fock_pulse3']
+             'coherent_pulse', '_fock_pulse3']
 
 #--------------------
 #Initial basic states
@@ -562,7 +561,7 @@ def _fock_pulse_ak(dt, max_dt,photon_num, pulse_env, k):
     
     return ak
 
-def _fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim):
+def _matrix_text_print(ap1, apm, calc_ak, time_bin_dim):
     print('A1:', ap1.shape)
     for i in range(time_bin_dim):
         print(np.real(ap1[:,i,:]))
@@ -974,7 +973,7 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
         return ak
 
     # Test prints
-    _fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
+    _matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
     apk_can=[]    
     
     # Entanglement/normalization process
@@ -1009,17 +1008,9 @@ def calc_coherent_val(alpha, pulse_env_val, i):
 def createCoherentMatrix(dim, max_dim, alpha, fk, k, m):
     indices = np.arange(0,dim,1)
     coherent_vals = calc_coherent_val(alpha, fk[k], indices)
-    if k ==0:
-        Gamma = np.zeros((1,dim,max_dim),dtype=complex)
-        Gamma[:,indices,0] = coherent_vals
-    elif k == m-1:
-        Gamma = np.zeros((max_dim,dim,1),dtype=complex)
-        Gamma[0,indices,:] = coherent_vals[:,None]
-    else:
-        Gamma = np.zeros((max_dim,dim,max_dim),dtype=complex)
-        Gamma[0,indices,0] = coherent_vals
+    Gamma = np.zeros((1,dim,1),dtype=complex)
+    Gamma[0,indices,0] = coherent_vals
     return Gamma
-
 
 def coherent_pulse(pulse_envs,pulse_time, params:InputParams, alphas,bond0=1):
     delta_t = params.delta_t
@@ -1046,19 +1037,18 @@ def coherent_pulse(pulse_envs,pulse_time, params:InputParams, alphas,bond0=1):
     for i in range(channel_num):
         pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
 
-
     # Create inner function to calculate aks with appropriate outer product
     def calc_ak(k):
         aks = []
         for i in range(channel_num):
             aks.append(createCoherentMatrix(d_t_total[i], dt_max, alphas[i], pulse_envs[i], k, m))
 
+
         ak = aks[0]
         shape0 = ak.shape[0]
         shape2 = ak.shape[-1]
         for i in range(1,channel_num):
-            ak = np.einsum('ijk,ilk->ijlk', ak, aks[i])
-            ak = ak.reshape(shape0, cum_dim[i], shape2)
+            ak = np.kron(ak, aks[i]).reshape(shape0**2, cum_dim[i], shape2**2)
         return ak    
     
     #_fock_matrix_text_print(calc_ak(0), calc_ak(m-1), calc_ak, time_bin_dim)
@@ -1088,145 +1078,15 @@ def coherent_pulse(pulse_envs,pulse_time, params:InputParams, alphas,bond0=1):
         
     return apk_can
 
-def coherent_pulse_2dims(pulse_env,pulse_time, params:InputParams, alpha, direction='R',bond0=1):
-    delta_t = params.delta_t
-    d_t_total = params.d_t_total
-    dTime = d_t_total[0]
-    dt_max = max(d_t_total)
-    bond_max = params.bond_max
+def _left_normalize_bins(bins, bond_max):        
+    m = len(bins)
+    bin_dim = bins[0].shape[1]
 
-
-    m = int(round(pulse_time/delta_t,0))
-    time_bin_dim = np.prod(d_t_total)
-    dTimeIndices = np.arange(0,dTime)
-
-    
-    if str(direction).upper() in {'L','0'}:
-        indices = np.arange(0,dTime,1)
-        indices2 = indices[::-1]
-    else:
-        indices = np.arange(0,time_bin_dim, dTime)  
-        indices2 = indices[::-1]
-    
-    if len(pulse_env) == 0:
-        pulseEnvelopeVal= 1.0 / np.sqrt(m)
-        pulse_env = [pulseEnvelopeVal]*m
-    m = len(pulse_env)
-    pulse_env = normalize_pulse_envelope_coherent(pulse_env)
-
-            
-    def calcCoherentValue(alpha, pulseEnvelopeVal, i):
-        return np.exp(-np.abs(np.conj(pulseEnvelopeVal)*alpha)**2 / 2) * (np.conj(pulseEnvelopeVal)*alpha)**(i)/(np.sqrt(sci.special.factorial(i)))
-
-    def createCoherentMatrix(dim, alpha, fk, m, indices):
-        if m ==0:
-            Gamma = np.zeros((1,dim**2,dim),dtype=complex)
-            for i in range(len(indices)):
-                Gamma[:,indices[i],0] = calcCoherentValue(alpha, fk[m], i)
-    
-        elif m == len(fk)-1:
-            Gamma = np.zeros((dim,dim**2,1),dtype=complex)
-            for i in range(len(indices)):
-                Gamma[0,indices[i],:] = calcCoherentValue(alpha, fk[m], i)
-            
-        else:
-            Gamma = np.zeros((dim,dim**2,dim),dtype=complex)
-            for i in range(len(indices)):
-                Gamma[0,indices[i],0] = calcCoherentValue(alpha, fk[m], i)
-            
-        return Gamma
-    
-    def calc_ak(k):
-        return createCoherentMatrix(dTime, alpha, pulse_env, k, indices)
-    
-    #_fock_matrix_text_print(calc_ak(0), calc_ak(m-1), calc_ak, time_bin_dim)
-
-    apk_can=[]
+    for k in range(m-1,0,-1):
+        curr_bin = ncon([bins[k-1], bins[k]],[[-1,-2,1],[1,-3,-4]])
+        curr_bin, stemp, i_n_r = sim._svd_tensors(curr_bin, bond_max, bin_dim, bin_dim)
+        curr_bin = curr_bin * stemp[None,None,:]
+        bins[k] = i_n_r
+        bins[k-1] = curr_bin
         
-    apk_c=ncon([createCoherentMatrix(dTime, alpha, pulse_env, m-2, indices), createCoherentMatrix(dTime, alpha, pulse_env, m-1, indices)],[[-1,-2,1],[1,-3,-4]])
-
-    for k in range(m-2,1,-1):
-        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-        apk_c = stemp[None,None,:] * apk_c
-        apk_c = ncon([createCoherentMatrix(dTime, alpha, pulse_env, k-1, indices),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
-        apk_can.append(i_n_r)        
-    
-    ap1 = createCoherentMatrix(dTime, alpha, pulse_env, 0, indices)        
-    
-    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-    apk_can.append(i_n_r)
-    apk_c = apk_c * stemp[None,None,:]
-    apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
-    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-    i_n_l = i_n_l * stemp[None,None,:]
-    apk_can.append(i_n_r)
-    apk_can.append(i_n_l)
-    
-    apk_can.reverse()
-        
-    return apk_can
-
-def coherent_pulse_1(pulse_env,pulse_time, params:InputParams, alpha, bond0=1):
-    delta_t = params.delta_t
-    d_t_total = params.d_t_total
-    dTime = d_t_total[0]
-    time_bin_dim = dTime
-    dt_max = max(d_t_total)
-    bond_max = params.bond_max
-
-
-    m = int(round(pulse_time/delta_t,0))
-    
-    if len(pulse_env) == 0:
-        pulseEnvelopeVal= 1.0 / np.sqrt(m)
-        pulse_env = [pulseEnvelopeVal]*m
-    m = len(pulse_env)
-    pulse_env = normalize_pulse_envelope_coherent(pulse_env)
-
-    
-    def calcCoherentValue(alpha, pulseEnvelopeVal, i):
-        return np.exp(-np.abs(np.conj(pulseEnvelopeVal)*alpha)**2 / 2) * (np.conj(pulseEnvelopeVal)*alpha)**(i)/(np.sqrt(sci.special.factorial(i)))
-
-    def createCoherentMatrix(dim, alpha, fk, m):
-        if m ==0:
-            Gamma = np.zeros((1,dim,dim),dtype=complex)
-            for i in range(dim):
-                Gamma[:,i,0] = calcCoherentValue(alpha, fk[m], i)
-
-        elif m == len(fk)-1:
-            Gamma = np.zeros((dim,dim,1),dtype=complex)
-            for i in range(dim):
-                Gamma[0,i,:] = calcCoherentValue(alpha, fk[m], i)
-            
-        else:
-            Gamma = np.zeros((dim,dim,dim),dtype=complex)
-            for i in range(dim):
-                Gamma[0,i,0] = calcCoherentValue(alpha, fk[m], i)
-            
-        return Gamma
-
-    apk_can=[]
-        
-    apk_c=ncon([createCoherentMatrix(dTime, alpha, pulse_env, m-2), createCoherentMatrix(dTime, alpha, pulse_env, m-1)],[[-1,-2,1],[1,-3,-4]])
-
-    for k in range(m-2,1,-1):
-        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-        apk_c = stemp[None,None,:] * apk_c
-        apk_c = ncon([createCoherentMatrix(dTime, alpha, pulse_env, k-1),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
-        apk_can.append(i_n_r)        
-    
-    ap1 = createCoherentMatrix(dTime, alpha, pulse_env, 0)        
-    
-    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-    apk_can.append(i_n_r)
-    apk_c = apk_c * stemp[None,None,:]
-    apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
-    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond_max, time_bin_dim, time_bin_dim)
-    i_n_l = i_n_l * stemp[None,None,:]
-    apk_can.append(i_n_r)
-    apk_can.append(i_n_l)
-    
-    apk_can.reverse()
-            
-    return apk_can
-
+    return bins
