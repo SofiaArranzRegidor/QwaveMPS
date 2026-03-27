@@ -34,9 +34,7 @@ import numpy as np
 
 import sys
 from pathlib import Path
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-import QwaveMPS.src as qmps
+import QwaveMPS as qmps
 import time as t
 
 #Parameters for plots style
@@ -96,7 +94,7 @@ sys_initial_state=qmps.states.tls_ground()
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
 # Create the pulse envelope
-wg_initial_state = qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='R')
+wg_initial_state = qmps.states.fock_pulse([pulse_env,pulse_env],pulse_time,input_params, [photon_num,0])
 
 # Multiple pulses may be appended in the usual list appending way
 #wg_initial_state += qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='L')

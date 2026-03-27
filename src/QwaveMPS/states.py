@@ -370,7 +370,7 @@ def left_normalize_bins(bins:list[np.ndarray], bond_max:int) -> list[np.ndarray]
         
     return bins
 
-def _fock_matrix_text_print(ap1:np.ndarray, apm:np.ndarray, ak:np.ndarray, time_bin_dim:int):
+def _matrix_text_print(ap1:np.ndarray, apm:np.ndarray, ak:np.ndarray, time_bin_dim:int):
     """
     Prints out the initial, end, and a middle matrix for a given MPS factorization.
 
@@ -493,7 +493,7 @@ def _contract_alpha(alpha:np.ndarray, ak:np.ndarray) -> np.ndarray:
     -------- 
 
     """ 
-    return np.einsum('iq,qjq->ijq', alpha, ak)
+    return np.einsum('iq,qjk->ijk', alpha, ak)
 
 def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
     """
@@ -516,8 +516,7 @@ def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
     -------- 
 
     """ 
-
-    return np.einsum('qjq,qi->qji', ak, omega)
+    return np.einsum('kjq,qi->kji', ak, omega)
 
 #-------------------------
 # Create the Pulse based on given matrix scheme
@@ -596,10 +595,11 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
         ak = _tensor_outer_rank3(aks)
         return ak
 
-    # Test prints
-    #_fock_matrix_text_print(ap1, apm, calc_ak, time_bin_dim)
-    bins = [calc_ak(k) for k in range(m)]        
-    bins_l_normed = _left_normalize_bins(bins, bond_max)        
+    bins = [calc_ak(k) for k in range(m)]    
+    
+    _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
+
+    bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed
 
 
