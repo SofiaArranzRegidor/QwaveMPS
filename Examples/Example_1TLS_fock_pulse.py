@@ -86,10 +86,10 @@ photon_num = 1 #number of photons
 pulse_env=qmps.states.tophat_envelope(pulse_time, input_params)
 
 # Create the pulse envelope
-wg_initial_state = qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='R')
+wg_initial_state = qmps.states.fock_pulse([None, pulse_env],pulse_time, input_params, [0,photon_num])
 
 # Multiple pulses may be appended in the usual list appending way
-#wg_initial_state += qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='L')
+#wg_initial_state += qmps.states.fock_pulse([pulse_env, None],pulse_time, [photon_num,0], input_params)
 
 """Choose the Hamiltonian"""
 Hm=qmps.hamiltonian_1tls(input_params)
@@ -262,7 +262,7 @@ gaussian_center = 4
 gaussian_width = 1
 
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
-wg_initial_state = qmps.states.fock_pulse(pulse_envelope,pulse_time, photon_num, input_params, direction='R')
+wg_initial_state = qmps.states.fock_pulse([None, pulse_envelope],pulse_time, input_params, [0,photon_num])
 
 start_time=t.time()
 

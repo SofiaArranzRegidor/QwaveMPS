@@ -48,10 +48,10 @@ def test_fock_pulse(photon_num, initial_pop, gaussian_env):
         pulse_env = qmps.tophat_envelope(pulse_time, input_params)
         anal_env = lambda t: tophat(t, pulse_time)
 
-    wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num, input_params)
+    wg_initial_state = qmps.fock_pulse([None, pulse_env],pulse_time, input_params, [0, photon_num])
 
     Hm=qmps.hamiltonian_1tls(input_params)
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params, show_progress=False)
 
 
     # Calculate the two level system population

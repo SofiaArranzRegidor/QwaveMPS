@@ -597,7 +597,8 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
 
     bins = [calc_ak(k) for k in range(m)]    
     
-    _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
+    # Test print of the bins
+    #_matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
 
     bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed
@@ -844,25 +845,15 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
     
     photon_nums = np.array(photon_nums)
     
-    # Normalize the pulse envelopes
-    for i in range(channel_num):
-        # Default to single top hat pulse
-        if pulse_envs[i] is None:
-            pulse_envs[i] = np.ones(m)
-        else:
-            pulse_envs[i] = np.array(pulse_envs[i])
-        pulse_envs[i] = normalize_pulse_envelope(delta_t, pulse_envs[i])
-    
-    # Pad envelopes as necessary to be of length m
-    for i in range(channel_num):
-        pulse_envs[i] = np.append(pulse_envs[i], [0] * (m-len(pulse_envs[i])))
+    # Normalize the pulse envelopes and pad as necessary with 0's
+    pulse_envs = _pulse_env_preparation(pulse_envs, channel_num, m)
 
 
     ap1s = []
     apms = []
-    for i in range(channel_num):
-        ap1s.append(_fock_pulse_ap1(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i]))
-        apms.append(_fock_pulse_apm(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], m))
+    #for i in range(channel_num):
+    #    ap1s.append(_fock_pulse_ap1(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i]))
+    #    apms.append(_fock_pulse_apm(d_t_total[i], dt_max, photon_nums[i], pulse_envs[i], m))
 
     # Extend to outer space
     cum_dim = np.append(1, np.cumprod(d_t_total))

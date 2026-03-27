@@ -248,7 +248,7 @@ gaussian_width = 1
 sys_initial_state=qmps.states.tls_ground()
 
 pulse_envelope = qmps.states.gaussian_envelope(pulse_time, input_params, gaussian_width, gaussian_center)
-wg_initial_state = qmps.states.fock_pulse(pulse_envelope,pulse_time, photon_num, input_params, direction='R')
+wg_initial_state = qmps.states.fock_pulse([None, pulse_envelope], pulse_time, input_params, [0,photon_num])
 
 
 start_time=t.time()

@@ -5,18 +5,18 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-photon_num_l = 5
-photon_num_r = 5
+photon_num_l = 2
+photon_num_r = 3
 photon_num = max(photon_num_l, photon_num_r)
 gaussian_env = False
 input_params = qmps.parameters.InputParams(
     delta_t=0.02, 
     tmax = 8,
     d_sys_total=np.array([2]),
-    d_t_total=np.array([photon_num+1,photon_num+1]),
+    d_t_total=np.array([photon_num_l+1,photon_num_r+1]),
     gamma_l=0.5,
     gamma_r = 0.5,  
-    bond_max=max(32,2**(photon_num)),
+    bond_max=max(32,2**(photon_num+3)),
 )
 
 
@@ -26,22 +26,21 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 sys_initial_state = qmps.tls_ground()
 
-if gaussian_env:
-    pulse_center = 3
-    sigma = 1
-    pulse_time = input_params.tmax
-    pulse_env = qmps.gaussian_envelope(pulse_time, input_params, sigma, pulse_center)
-else:
-    pulse_time = 1
-    pulse_env = qmps.tophat_envelope(pulse_time, input_params)
+pulse_center = 2
+sigma = 1
+pulse_time_gauss = input_params.tmax
+pulse_env_gauss = qmps.gaussian_envelope(pulse_time_gauss, input_params, sigma, pulse_center)
+pulse_time_rect = 1
+pulse_env_rect = qmps.tophat_envelope(pulse_time_rect, input_params)
 
-pulse_env_r = pulse_env
-pulse_env_l = pulse_env
+pulse_env_r = pulse_env_gauss
+pulse_env_l = pulse_env_rect
 
 #wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num_r, input_params)
 #print('='*50)
-wg_initial_state = qmps._fock_pulse(pulse_env_r,pulse_time,input_params, pulse_env_l, photon_num_l, photon_num_r)   
-#wg_initial_state = qmps._fock_pulse2([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
+#wg_initial_state = qmps.fock_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [photon_num_l, photon_num_r])   
+wg_initial_state = qmps.coherent_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [0.2, 0.5])   
+
 #wg_initial_state = qmps._noom_state([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
 
 
@@ -66,22 +65,21 @@ tls_pop = np.real(qmps.single_time_expectation(bins.system_states, qmps.tls_pop(
 same_time_corrs_r = np.real(qmps.single_time_expectation(bins.input_field_states, same_time_corrs_r))
 same_time_corrs_l = np.real(qmps.single_time_expectation(bins.input_field_states, same_time_corrs_l))
 
-total_quanta = np.cumsum(same_time_corrs_r[0] + same_time_corrs_l[0]) * delta_t
-total_quanta2 = tls_pop + np.cumsum(np.sum(photon_fluxes, axis=0)) * delta_t
+total_quanta = tls_pop + np.cumsum(np.sum(photon_fluxes, axis=0)) * delta_t
 
 #%%
 lw = 2
 plt.plot(tlist, tls_pop, linewidth=lw, label=r'$n_{TLS}$')
 plt.plot(tlist, total_quanta,linewidth=lw, label=r'Quanta')
-plt.plot(tlist, total_quanta2,linewidth=lw, linestyle = ':',label=r'Quanta 2')
 plt.plot(tlist, same_time_corrs_l[0],linewidth=lw, label=r'$n^{\rm in}_{L}$')
 plt.plot(tlist, same_time_corrs_r[0],linewidth=lw, linestyle=':', label=r'$n^{\rm in}_{R}$')
 
-plt.hlines(photon_num_r, 0, 4)
+#plt.hlines(photon_num_r, 0, 4)
 
-plt.xlim((0,4))
+plt.xlim((0,8))
 plt.ylim((0,None))
 plt.xlabel(r'$\gamma t$')
 plt.ylabel(r'Pops')
 plt.legend()
+plt.show()
 # %%

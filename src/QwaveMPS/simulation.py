@@ -25,6 +25,7 @@ from typing import Callable, TypeAlias
 from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *
 from QwaveMPS.operators import u_evol, swap
+from tqdm import tqdm
 
 __all__ = ['t_evol_mar', 't_evol_nmar']
 
@@ -74,7 +75,7 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
 # Time evolution: Markovian and non-Markovian evolutions
 # ------------------------------------------------------
 
-def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams, show_progress:bool = True) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system without delay times (Markovian regime)
     
@@ -94,6 +95,9 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     params : InputParams
         Class containing the input parameters
         (contains delta_t, tmax, bond, d_t_total, d_sys_total).
+    
+    show_progress : bool, default: True
+        Flag to show progress bar of the simulation.
 
     Returns
     -------
@@ -134,7 +138,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     cor_list=[]
 
     # Time Evolution loop
-    for k in range(n):   
+    for k in tqdm(range(n), disable = not show_progress):   
         i_nk = next(input_field)   
         if callable(ham):
             evol=u_evol(ham(k),d_sys,d_t)
@@ -167,7 +171,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     return Bins(system_states=sbins,output_field_states=tbins, input_field_states=tbins_in,
                 correlation_bins=cor_list,schmidt=schmidt)
 
-def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputParams, show_progress:bool=True) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """ 
     Time evolution of the system with finite delays/feedback (non-Markovian regime).
     Requires tau to be at least delta_t.
@@ -188,6 +192,9 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
      params : InputParams
         Class containing the input parameters
         (contains delta_t, tmax, bond, d_t_total, d_sys_total, tau.).
+
+    show_progress : bool, default: True
+        Flag to show progress bar of the simulation.
 
     Returns
     -------
@@ -243,7 +250,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
     i_stemp=i_s0      
     
     # Simulation loop for time evolution
-    for k in range(n):   
+    for k in tqdm(range(n), disable=not show_progress):   
         #swap of the feedback until being next to the system
         i_tau= nbins[k] #starting from the feedback bin
         for i in range(k,k+l-1): 
