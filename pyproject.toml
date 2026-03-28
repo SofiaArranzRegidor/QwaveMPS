@@ -57,7 +57,7 @@ docs = [
 tests = ["pytest>=5.2", "pytest-rerunfailures"]
 
 
-[tool.setuptool.packages.find]
+[tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools_scm]

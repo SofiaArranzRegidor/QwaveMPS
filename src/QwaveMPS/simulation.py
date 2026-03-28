@@ -262,7 +262,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
             
         #Make the system bin the OC
         i_1=ncon([i_tau,i_stemp],[[-1,-2,1],[1,-3,-4]]) #feedback-system contraction
-        i_t,stemp,i_stemp=_svd_tensors(i_1, bond,d_t,d_sys)
+        i_tauu,stemp,i_stemp=_svd_tensors(i_1, bond,d_t,d_sys)
         i_s=stemp[:,None,None]*i_stemp #OC system bin
         
         i_nk = next(input_field)                
@@ -276,8 +276,8 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         tbins_in.append(i_nk)
 
         #now contract the 3 bins and apply u, followed by 2 svd to recover the 3 bins 
-        phi1=ncon([i_t,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
-        i_t,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
+        phi1=ncon([i_tauu,i_s,i_nk,evol],[[-1,3,1],[1,4,2],[2,5,-5],[-2,-3,-4,3,4,5]]) #tau bin, system bin, future time bin + u operator contraction
+        i_tauu,stemp,i_2=_svd_tensors(phi1, bond,d_t,d_t*d_sys)
         i_2=stemp[:,None,None]*i_2
         i_stemp,stemp,i_n=_svd_tensors(i_2, bond,d_sys,d_t)
         i_s = i_stemp*stemp[None,None,:]
@@ -288,9 +288,9 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         i_n,stemp,i_stemp=_svd_tensors(phi2, bond,d_t,d_sys)   
         i_n=i_n*stemp[None,None,:] #the OC in time bin     
         
-        cont= ncon([i_t,i_n],[[-1,-2,1],[1,-3,-4]]) 
-        i_t,stemp,i_n=_svd_tensors(cont, bond,d_t,d_t)   
-        i_tau = i_t*stemp[None,None,:] #OC in feedback bin     
+        cont= ncon([i_tauu,i_n],[[-1,-2,1],[1,-3,-4]]) 
+        i_tauu,stemp,i_n=_svd_tensors(cont, bond,d_t,d_t)   
+        i_tau = i_tauu*stemp[None,None,:] #OC in feedback bin     
         tbins.append(stemp[:,None,None]*i_n)
         
         #feedback bin, time bin contraction
@@ -304,18 +304,17 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray,params:InputPa
         for i in range(k+l-1,k,-1): #goes from the last time bin to first one
             i_n=nbins[i-1] #time bin
             swaps=ncon([i_n,i_tau,swap_t_t],[[-1,5,2],[2,6,-4],[-2,-3,5,6]]) #time bin, feedback bin + swap contraction
-            i_t,stemp,i_n2=_svd_tensors(swaps, bond,d_t,d_t)   
-            i_tau = i_t*stemp[None,None,:] #OC tau bin         
+            i_tauu,stemp,i_n2=_svd_tensors(swaps, bond,d_t,d_t)   
+            i_tau = i_tauu*stemp[None,None,:] #OC tau bin         
             nbins[i]=i_n2    #update nbins  
         schmidt_tau.append(stemp)  
         
         nbins[k+1] = stemp[:,None,None]*i_n2 #new tau bin for the next time step       
-        cor_list.append(i_t)    
+        cor_list.append(i_tauu)    
 
     # Rewrite the last result time bin with the OC in it
-    cor_list[-1] = i_t*stemp[None,None,:]
+    cor_list[-1] = i_tauu*stemp[None,None,:]
 
     return Bins(system_states=sbins,loop_field_states=tbins,output_field_states=taubins,
                 input_field_states=tbins_in,correlation_bins=cor_list,
                 schmidt=schmidt,schmidt_tau=schmidt_tau)
-
