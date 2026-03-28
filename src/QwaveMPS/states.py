@@ -21,8 +21,8 @@ from QwaveMPS.parameters import InputParams
 
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling',
             'tophat_envelope', 'gaussian_envelope','exp_decay_envelope',
-            'normalize_pulse_envelope_united', 'normalize_pulse_envelope_unitless','left_normalize_bins',
-            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse']
+            'normalize_pulse_envelope_integral', 'normalize_pulse_envelope','left_normalize_bins',
+            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'addMPSs']
 
 #--------------------
 #Initial basic states
@@ -290,7 +290,7 @@ def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, d
     pulse_envelope = np.exp(-time_diffs * decay_rate)
     return pulse_envelope
 
-def normalize_pulse_envelope_united(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
+def normalize_pulse_envelope_integral(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
     """
     Normalizes a given pulse envelope so that the integral of the square magnitude is 1.
 
@@ -312,7 +312,7 @@ def normalize_pulse_envelope_united(delta_t:float, pulse_env:np.ndarray)->np.nda
     pulse_env /= np.sqrt(norm_factor)
     return pulse_env
 
-def normalize_pulse_envelope_unitless(pulse_env:np.ndarray)->np.ndarray:
+def normalize_pulse_envelope(pulse_env:np.ndarray)->np.ndarray:
     """
     Normalizes a given pulse envelope so that the sum of the square elements is 1.
 
@@ -440,7 +440,7 @@ def _pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:int, puls
             pulse_envs[i] = np.ones(pulse_bin_num)
         else:
             pulse_envs[i] = np.array(pulse_envs[i])
-        pulse_envs[i] = normalize_pulse_envelope_unitless(pulse_envs[i])
+        pulse_envs[i] = normalize_pulse_envelope(pulse_envs[i])
     
     # Pad envelopes as necessary to be of length m
     for i in range(channel_num):
@@ -599,7 +599,7 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
     bins = [calc_ak(k) for k in range(m)]    
     
     # Test print of the bins
-    _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
+    #_matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
 
     bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed
@@ -902,6 +902,35 @@ def calc_tmsv_coeffs(zeta:complex, pulse_env_val:complex, n:np.ndarray):
         1/np.cosh(r) * (-eiphi * np.tanh(r))**(n),
         0)
     return result
+
+
+#-------------------------
+# Inefficient operations on MPS's (will be large, and ideally should be simplified  afterwards)
+#-------------------------
+#TODO Doesn't seem to quite work (issue in final bin of pulse train, looks like maybe an OC issue?). Furthermore, goes crazy if trying to left normalize the MPS after adding two MPSs
+def addMPSs(bins1:list[np.ndarray], bins2:list[np.ndarray], norm_coeff:float=1/np.sqrt(2)) -> list[np.ndarray]:
+    new_bins = [None] * len(bins1)
+    
+    for i in range(1,len(bins1)-1):
+        a_k = bins1[i]
+        b_k = bins2[i]
+        a_shape = a_k.shape
+        b_shape = b_k.shape
+        # output array
+        c_k = np.zeros((a_shape[0]+b_shape[0], a_shape[1], a_shape[2]+b_shape[2]), dtype=complex)
+        
+        # top-left block: A_k
+        c_k[:b_shape[0], :, :b_shape[2]] = a_k
+        # bottom-right block: B_k
+        c_k[a_shape[0]:, :, a_shape[2]:] = b_k
+        new_bins[i] = c_k
+
+    new_bins[0] = np.concatenate([bins1[0], bins2[0]], axis=2)
+    new_bins[-1] = np.concatenate([bins1[-1],bins2[-1]], axis=0)
+
+    new_bins[-1] *= norm_coeff
+    return new_bins
+
 
 # Below state is not implemented correctly yet. DO NOT USE.
 #TODO Needs benchmarking, currently seems to only work with |N0> + |0N> states

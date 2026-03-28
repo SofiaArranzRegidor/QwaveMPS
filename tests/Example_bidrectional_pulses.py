@@ -5,8 +5,8 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-photon_num_l = 0
-photon_num_r = 10
+photon_num_l = 2
+photon_num_r = 2
 photon_num = max(photon_num_l, photon_num_r)
 gaussian_env = False
 input_params = qmps.parameters.InputParams(
@@ -36,11 +36,17 @@ pulse_env_rect = qmps.tophat_envelope(pulse_time_rect, input_params)
 pulse_env_r = pulse_env_gauss
 pulse_env_l = pulse_env_rect
 
-#wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num_r, input_params)
-#print('='*50)
 #wg_initial_state = qmps.fock_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [photon_num_l, photon_num_r])   
 #wg_initial_state = qmps.coherent_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [0.2, 0.5])   
-wg_initial_state = qmps.smsv_pulse([pulse_env_l, pulse_env_l],pulse_time_rect,input_params, [0, 0.5])   
+
+# Example trying to make a superposition state, here a (|N0> + |0N>) state
+wg_initial_state = qmps.fock_pulse([pulse_env_l, pulse_env_l],pulse_time_rect,input_params, [1, 0])   
+wg_initial_state2 = qmps.fock_pulse([pulse_env_l, pulse_env_l],pulse_time_rect,input_params, [0, 1])   
+
+wg_initial_state = qmps.addMPSs(wg_initial_state, wg_initial_state2)
+print(wg_initial_state[0].shape, wg_initial_state[-1].shape)
+#wg_initial_state = qmps.left_normalize_bins(wg_initial_state, input_params.bond_max)
+print(wg_initial_state[0].shape, wg_initial_state[-1].shape)
 
 #wg_initial_state = qmps._noom_state([pulse_env_l, pulse_env_r], pulse_time, input_params, [photon_num_l, photon_num_r])
 
