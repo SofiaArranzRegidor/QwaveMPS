@@ -22,7 +22,7 @@ from QwaveMPS.parameters import InputParams
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling',
             'tophat_envelope', 'gaussian_envelope','exp_decay_envelope',
             'normalize_pulse_envelope_united', 'normalize_pulse_envelope_unitless','left_normalize_bins',
-            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'calc_smsv_val', 'smsv_pulse']
+            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse']
 
 #--------------------
 #Initial basic states
