@@ -1,11 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=77.0.3",
-    "setuptools_scm[toml]>=8",
-    "numpy>=2.0.0",
-    "scipy>=1.9",
-    "ncon",
-    "tqdm",
+    "setuptools_scm[toml]>=8"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -14,7 +10,7 @@ name = "QwaveMPS"
 dynamic = ["version"]
 description = "Python Library for exact simulations of waveguide QED using MPS."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "GNU General Public License v3 (GPLv3)"}
 keywords = ["quantum", "physics", "dynamics"]
 authors = [
@@ -32,9 +28,10 @@ classifiers=[
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 dependencies = [
-    "numpy>=1.22",
+    "numpy>=2.2.0",
     "scipy>=1.9",
     "ncon",
+    "tqdm"
 ]
 
 # URLs for your project
@@ -48,14 +45,14 @@ Documentation = "https://QwaveMPS.readthedocs.io/"
 dev = [
   "coverage",
   "pytest",
-  "ruff",
+  "ruff"
 ]
 docs = [
   "sphinx-autoapi",
   "sphinx-copybutton",
   "sphinx-gallery",
   "sphinx-design",
-  "matplotlib",
+  "matplotlib"
 ]
 tests = ["pytest>=5.2", "pytest-rerunfailures"]
 
@@ -71,7 +68,7 @@ tag_regex = "^v(?P<version>.*)$"
 [dependency-groups]
 dev = [
     "fastapi>=0.124.4",
-    "pytest>=8.3.5",
+    "pytest>=8.3.5"
 ]
 
 #[tool.cibuildwheel]
