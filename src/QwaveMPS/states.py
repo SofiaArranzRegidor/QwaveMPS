@@ -337,7 +337,6 @@ def normalize_pulse_envelope(pulse_env:np.ndarray)->np.ndarray:
 #-------------------------
 # Pulse Helper Functions
 #-------------------------
-
 def left_normalize_bins(bins:list[np.ndarray], bond_max:int) -> list[np.ndarray]:        
     """
     Given an MPS converts it to a left normalized form (OC in bin 0)
@@ -406,11 +405,12 @@ def _matrix_text_print(ap1:np.ndarray, apm:np.ndarray, ak:np.ndarray, time_bin_d
     for i in range(time_bin_dim):
         print(np.real(ak[:,i,:]))
 
-def _pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:int, pulse_bin_num:int) -> list[list[complex]]:
+def _single_pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:int, pulse_bin_num:int) -> list[list[complex]]:
     """
     Prepares the pulse envelope so that they are tail truncated or padded (with 0's) to be of 
     length of the given pulse time. Also normalizes each pulse envelope to ensure it they are
     properly normalized
+    Only works for single envelope (per channel) states, such as indistinguishable photon Fock states (i.e. f(t), not f(t_1,t_2)).
 
     Parameters
     ----------
@@ -473,6 +473,7 @@ def _tensor_outer_rank3(tensor_list:list[np.ndarray])->np.ndarray:
         )
     return result
 
+# Contractions placed directly into create_pulse function
 def _contract_alpha(alpha:np.ndarray, ak:np.ndarray) -> np.ndarray:
     """
     Matrix multiplies each matrix ak[:,i,:] by alpha from the left to get the first MPS tensor.
@@ -522,7 +523,7 @@ def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
 #-------------------------
 # Create the Pulse based on given matrix scheme
 #-------------------------
-def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParams, matrix_args:list[int], pulse_alphaOmega:Callable, pulse_ak:Callable, bond0:int=1)->list[np.ndarray]:    
+def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParams, pulse_alphaOmega:Callable, alphaOmega_args:list[tuple], pulse_ak:Callable, ak_args:list[tuple], bond0:int=1)->list[np.ndarray]:    
     """
     Creates a pulse input field MPS with a pulse envelope. 
     Created quantum pulse is dependent on the matrix_args, and the alpha, omega, and ak matrices passed.
@@ -540,16 +541,20 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
     params : InputParams
         Class containing the input parameters
     
-    matrix_args : list[int]
-        List of matrix_args for each channel/tensorspace in the waveguide.
-
     pulse_alphaOmega : Callable
         Function to yield the alpha/omega vectors used to contract with the first/last tensors.
         These are dependent on the weights of the input state(s) and final state(s).
 
+    alphaOmega_args : list[tuple]
+        List of arguments associated to the callable pulse_alphaOmega() function corresponding to each channel/tensorspace in the waveguide.
+        
     pulse_ak : Callable
         Function that yields the tensors, at each bin k, for the MPS factorization.
         These can be described by the transition structure and weights of an automata.
+        Expected implicitly that the first two arguments of this function will be the tensor number (k) followed by the dimension of the tensorspace
+
+    ak_args : list[tuple]
+        List of arguments associated to the callable pulse_ak() function corresponding to each channel/tensorspace in the waveguide.
 
     bond0 : int, default: 1
         Default bond dimension of bins.
@@ -567,30 +572,27 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
     m = int(round(pulse_time/delta_t,0))
     time_bin_dim = np.prod(d_t_total)
     channel_num = len(d_t_total)
-    matrix_args = np.array(matrix_args)
+    alphaOmega_args = np.array(alphaOmega_args)
 
     alphas = []; omegas = []
     for i in range(channel_num):
-        alpha, omega = pulse_alphaOmega(d_t_total[i], matrix_args[i])
+        alpha, omega = pulse_alphaOmega(*alphaOmega_args[i])
         alphas.append(alpha)
         omegas.append(omega)
     
-    # Normalize the pulse envelopes and pad as necessary with 0's
-    pulse_envs = _pulse_env_preparation(pulse_envs, channel_num, m)
-
     # Create inner function to calculate aks with appropriate outer product
     def calc_ak(k):
         aks = []
         for i in range(channel_num):
-            aks.append(pulse_ak(d_t_total[i], matrix_args[i], pulse_envs[i], k))
+            aks.append(pulse_ak(k, d_t_total[i], *ak_args[i]))
 
         # If 0 or m-1, contract
         if k == 0:
             for i in range(channel_num):
-                aks[i] = _contract_alpha(alphas[i], aks[i])
+                aks[i] = np.einsum('iq,qjk->ijk', alphas[i], aks[i]) #_contract_alpha(alphas[i], aks[i])
         if k == m-1:
             for i in range(channel_num):
-                aks[i] = _contract_omega(omegas[i], aks[i])
+                aks[i] = np.einsum('ijk,kq->ijq', aks[i], omegas[i]) #_contract_omega(omegas[i], aks[i])
 
         # Get the outer product for the channels
         ak = _tensor_outer_rank3(aks)
@@ -638,12 +640,15 @@ def _fock_alphaOmega(dim:int,photon_num:int, bond0:int=1) -> tuple[np.ndarray,np
     am[photon_num, 0] = 1
     return a1, am
 
-def _fock_pulse_ak(dt:int, photon_num:int, pulse_env:list[complex], k:int) -> np.ndarray:
+def _fock_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -> np.ndarray:
     """
     Generates the tensors for the MPS factorization of a Fock State for a given bin/site, k.
     
     Parameters
     ----------
+    k : int
+        The index of the bin of of the pulse being generated.
+
     dt : int
         The dimension of the physical index.
     
@@ -652,9 +657,6 @@ def _fock_pulse_ak(dt:int, photon_num:int, pulse_env:list[complex], k:int) -> np
 
     pulse_env : list[complex]
         The pulse envelope of the pulse.
-
-    k : int
-        The index of the bin of of the pulse being generated.
 
     Returns
     -------
@@ -710,7 +712,19 @@ def fock_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParam
     if np.isscalar(pulse_envs[0]):
         pulse_envs = [pulse_envs]
 
-    return create_pulse(pulse_envs, pulse_time, params, photon_nums, _fock_alphaOmega, _fock_pulse_ak)
+    # Normalize the pulse envelopes and pad as necessary with 0's
+    m = int(round(pulse_time/params.delta_t,0))
+    channel_num = len(params.d_t_total)
+    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
+
+    # pack function arguments
+    alphaOmega_args = []
+    ak_args = []
+    for i in range(channel_num):
+        alphaOmega_args.append((params.d_t_total[i], photon_nums[i]))
+        ak_args.append((photon_nums[i], pulse_envs[i]))
+
+    return create_pulse(pulse_envs, pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
 
 #-------------------------
 # Coherent pulse MPS generator
@@ -761,13 +775,16 @@ def _tensor_prod_alphaOmega(_, __) -> tuple[np.ndarray,np.ndarray]:
     a1 = np.ones((1,1), dtype=complex)
     return a1, a1
 
-def _coherent_ak(dim:int, alpha:complex, pulse_env:list[complex], k:int) -> np.ndarray:
+def _coherent_ak(k:int, dim:int, alpha:complex, pulse_env:list[complex]) -> np.ndarray:
     """
     Generates the tensors for the MPS factorization of a Coherent State for a given bin/site, k.
     Note that a coherent state is a total outer product state, and as such has bond dimensions of 1.
     
     Parameters
     ----------
+    k : int
+        The index of the bin of of the pulse being generated.
+
     dt : int
         The dimension of the physical index.
     
@@ -776,9 +793,6 @@ def _coherent_ak(dim:int, alpha:complex, pulse_env:list[complex], k:int) -> np.n
 
     pulse_env : list[complex]
         The pulse envelope of the pulse.
-
-    k : int
-        The index of the bin of of the pulse being generated.
 
     Returns
     -------
@@ -831,7 +845,20 @@ def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:Input
         alphas = [alphas]
     if np.isscalar(pulse_envs[0]):
         pulse_envs = [pulse_envs]
-    return create_pulse(pulse_envs, pulse_time, params, alphas, _tensor_prod_alphaOmega, _coherent_ak)
+
+    # Normalize the pulse envelopes and pad as necessary with 0's
+    m = int(round(pulse_time/params.delta_t,0))
+    channel_num = len(params.d_t_total)
+    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
+
+    # pack function arguments
+    alphaOmega_args = []
+    ak_args = []
+    for i in range(channel_num):
+        alphaOmega_args.append(())
+        ak_args.append((alphas[i], pulse_envs[i]))
+
+    return create_pulse(pulse_envs, pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
 
 #-------------------------
 # 
@@ -987,7 +1014,7 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
     photon_nums = np.array(photon_nums)
     
     # Normalize the pulse envelopes and pad as necessary with 0's
-    pulse_envs = _pulse_env_preparation(pulse_envs, channel_num, m)
+    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
 
 
     ap1s = []
