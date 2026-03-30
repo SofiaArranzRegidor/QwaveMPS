@@ -25,13 +25,16 @@ import numpy as np
 from scipy.linalg import expm
 from ncon import ncon
 from QwaveMPS.parameters import InputParams
+from QwaveMPS.states import basis
 
-__all__ = ['sigmaplus', 'sigmaminus', 'e', 'tls_pop', 'b_dag', 'b', 'b_dag_l', 'b_dag_r', 'b_l', 'b_r', 'b_pop', 'b_pop_r', 'b_pop_l',
+__all__ = ['sigmaplus', 'sigmaminus', 'e', 'tls_pop', 'transition_op', 'create', 'destroy',
+           'extend_op', 'extend_ket',
+           'b_dag', 'b', 'b_dag_l', 'b_dag_r', 'b_l', 'b_r', 'b_pop', 'b_pop_r', 'b_pop_l',
            'single_time_expectation', 'loop_integrated_statistics', 'entanglement',
            'delta_b_dag','delta_b','delta_b_dag_l','delta_b_dag_r','delta_b_l', 'delta_b_r']
 
 #-----------------------------
-# Helper function to test 
+# Helper function to test for list of operators
 #-----------------------------
 def op_list_check(op_list:object) -> bool:
     '''
@@ -50,6 +53,59 @@ def op_list_check(op_list:object) -> bool:
     '''
     return isinstance(op_list, (list, tuple)) \
         or (isinstance(op_list, np.ndarray) and op_list.ndim > 2)
+
+#-----------------------------
+# Helper functions to extend states/operators to higher tensor spaces
+#-----------------------------
+def extend_op(op:np.ndarray, dim_list:list[int], i:int) -> np.ndarray:
+    """
+    Extends an operator to a higher tensor space, with identities used for the extension to the other tensor spaces.
+    
+    Parameters
+    ----------
+    op : np.ndarray
+        Operator acting in the single Hilbert space.
+    
+    dim_list : list[int]
+        Ordered list of Hilbert space sizes.
+
+    i : int
+        Index of the tensor space in which the unextended operators exists.
+
+    Returns
+    -------
+    op_ext : ndarray
+        The extended version of the operator to act over the total tensor space produced by dim_list.
+    """ 
+    l_dim = int(np.prod(dim_list[:i]))
+    r_dim = int(np.prod(dim_list[i+1:]))
+
+    return np.kron(np.kron(np.eye(l_dim), op), np.eye(r_dim))
+
+def extend_ket(ket:np.ndarray, dim_list:list[int], i:int) -> np.ndarray:
+    """
+    Extends a ket to a higher tensor space, with identities used for the extension to the other tensor spaces.
+    
+    Parameters
+    ----------
+    ket : np.ndarray
+        Ket existing in the single Hilbert space.
+    
+    dim_list : list[int]
+        Ordered list of Hilbert space sizes.
+
+    i : int
+        Index of the tensor space in which the unextended operators exists.
+
+    Returns
+    -------
+    ket_ext : ndarray
+        The extended version of the ket to exist over the total tensor space produced by dim_list.
+    """ 
+    l_dim = int(np.prod(dim_list[:i]))
+    r_dim = int(np.prod(dim_list[i+1:]))
+
+    return np.outer(np.outer(basis(l_dim,0), ket), basis(r_dim,0))
 
 #-----------------------------
 # TLS operators
@@ -116,6 +172,63 @@ def tls_pop(d_sys:int=2) -> np.ndarray:
         Population operator for a TLS
     """ 
     return np.real((sigmaplus() @ sigmaminus()))
+
+#-----------------------------
+# General transition and bosonic operators
+#-----------------------------
+def transition_op(dim:int, i:int, j:int) -> np.ndarray:
+    """
+    Creates a transition operator of size 'dim' from basis state 'i' to basis state 'j'.
+    
+    Parameters
+    ----------
+    dim : int
+        Size of the Hilbert space.
+    
+    i : int
+        First basis vector in the outer product defining the transition operator.
+
+    j : int
+        Second basis vector in the outer product defining the transition operator.
+
+    Returns
+    -------
+    creation_op : ndarray
+        The annihilation operator.
+    """ 
+    return np.outer(basis(dim,i), basis(dim,j)) 
+
+def create(dim:int) -> np.ndarray:
+    """
+    Creates a creation operator for a Hilbert space of size 'dim'.
+    
+    Parameters
+    ----------
+    dim : int
+        Size of the Hilbert space.
+
+    Returns
+    -------
+    creation_op : ndarray
+        The creation operator.
+    """ 
+    return np.diag(np.sqrt(np.arange(1, dim, dtype=complex)), -1) 
+
+def destroy(dim:int) -> np.ndarray:
+    """
+    Creates a annihilation operator for a Hilbert space of size 'dim'.
+    
+    Parameters
+    ----------
+    dim : int
+        Size of the Hilbert space.
+
+    Returns
+    -------
+    creation_op : ndarray
+        The annihilation operator.
+    """ 
+    return np.diag(np.sqrt(np.arange(1, dim, dtype=complex)), 1)    
 
 #-----------------------------
 # Time bin noise operators

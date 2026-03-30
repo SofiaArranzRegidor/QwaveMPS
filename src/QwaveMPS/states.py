@@ -19,7 +19,7 @@ from typing import Callable
 from QwaveMPS import simulation as sim
 from QwaveMPS.parameters import InputParams
 
-__all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'input_state_generator', 'coupling',
+__all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'basis', 'input_state_generator', 'coupling',
             'tophat_envelope', 'gaussian_envelope','exp_decay_envelope',
             'normalize_pulse_envelope_integral', 'normalize_pulse_envelope','left_normalize_bins',
             'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'addMPSs']
@@ -112,6 +112,28 @@ def vacuum(time_length:float, params:InputParams) -> list[np.ndarray]:
     
     
     return [wg_ground(d_t, bond0) for i in range(l)]
+
+def basis(dim:int, n:int=0) -> np.ndarray:
+    """
+    Generates a basis vector for a Hilbert space of size 'dim'.
+    
+    Parameters
+    ----------  
+    dim : int
+        Size of the Hilbert space.
+
+    n : int, default: 0
+        Integer label of the basis vector.
+
+    Returns
+    -------
+    basis_vec : np.ndarray
+        The n^th basis vector for the Hilbert space of size dim.
+    """ 
+    basis_vec = np.zeros(dim, dtype=complex)
+    basis_vec[n] = 1
+    return basis_vec
+
 
 def input_state_generator(d_t_total:list[int], input_bins:list[np.ndarray]=None, bond0:int=1, default_state=None) -> Iterator[np.ndarray]:
     """
@@ -523,6 +545,7 @@ def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
 #-------------------------
 # Create the Pulse based on given matrix scheme
 #-------------------------
+#TODO Needs optimization work. Lot of room for performance improvements here.
 def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParams, pulse_alphaOmega:Callable, alphaOmega_args:list[tuple], pulse_ak:Callable, ak_args:list[tuple], bond0:int=1)->list[np.ndarray]:    
     """
     Creates a pulse input field MPS with a pulse envelope. 
