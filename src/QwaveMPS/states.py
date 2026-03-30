@@ -877,7 +877,7 @@ def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:Input
         alphaOmega_args.append(())
         ak_args.append((alphas[i], pulse_envs[i]))
 
-    return create_pulse(pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
+    return create_pulse(pulse_time, params, _tensor_prod_alphaOmega, alphaOmega_args, _coherent_ak, ak_args)
 
 #-------------------------
 # Product Fock States
