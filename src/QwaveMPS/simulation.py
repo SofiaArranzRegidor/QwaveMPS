@@ -25,6 +25,7 @@ from typing import Callable, TypeAlias
 from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *
 from QwaveMPS.operators import u_evol, swap
+from tqdm import tqdm
 
 __all__ = ['t_evol_mar', 't_evol_nmar', 't_evol_nmar_chiral']
 
@@ -75,7 +76,7 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
 # Time evolution: Markovian and non-Markovian evolutions
 # ------------------------------------------------------
 
-def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams) -> Bins:
+def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputParams, show_progress:bool = True) -> Bins:
     """ 
     Time evolution of the system without delay times (Markovian regime)
     
@@ -95,6 +96,9 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     params : InputParams
         Class containing the input parameters
         (contains delta_t, tmax, bond, d_t_total, d_sys_total).
+    
+    show_progress : bool, default: True
+        Flag to show progress bar of the simulation.
 
     Returns
     -------
@@ -135,7 +139,7 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     cor_list=[]
 
     # Time Evolution loop
-    for k in range(n):   
+    for k in tqdm(range(n), disable = not show_progress):   
         i_nk = next(input_field)   
         if callable(ham):
             evol=u_evol(ham(k),d_sys,d_t)
@@ -278,6 +282,9 @@ def _initialize_feedback_loop(bin_list:list[np.ndarray], sys_bin:np.ndarray, l_l
 
     bond0 : int, default: 1
         Initial bond dimension size.
+
+    show_progress : bool, default: True
+        Flag to show progress bar of the simulation.
 
     Returns
     -------
@@ -423,7 +430,7 @@ def _separate_bins(bins:list[np.ndarray], phi:np.ndarray, feedback_loop_num:int,
     i_s = phi    
     return bins, i_s
 
-def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams) -> Bins:
+def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True) -> Bins:
     """ 
     Time evolution of the system with delay times
     
@@ -453,8 +460,8 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[flo
     d_t_total : ndarray
         List of sizes of the photonic Hilbert spaces.
 
-    taus : int, default: 1
-        List of delay times for nonmarkovian channels. Ordering coincides to order of feedback tensor spaces in the Hamiltonian from right to left.
+    show_progress : bool, default: True
+        Display the progress bar for the completion of the simulation
 
     Returns
     -------
@@ -512,7 +519,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[flo
     # Create the time contraction indices and initialize the feedback loop with bins
     time_evolution_ncon_indices = _ncon_contraction_index_list(interacting_time_bin_num+1, True) # Plus 1 for the system bin!
     nbins, i_s = _initialize_feedback_loop(nbins, i_s, l_list, d_t, d_sys, bond, input_field_generator=None) # Modifies nbins in place, need to return i_s as it is reassigned in function
-    for k in range(n):
+    for k in tqdm(range(n), disable = not show_progress):   
         if callable(ham):
             evol=u_evol(ham(k),d_sys,d_t)
 
@@ -657,7 +664,7 @@ def _separate_sys_bins(i_s, d_sys_total, sbins, bond):
     sbins[0].append(i_s)
     return nbins
 
-def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
+def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True) -> Bins:
     """ 
     Time evolution of a chiral waveguide system with delay times (no feedbacks)
     Structured memory-efficiently with separated system bins in the MPS chain
@@ -688,8 +695,8 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     d_t_total : ndarray
         List of sizes of the photonic Hilbert spaces.
 
-    taus : int, default: 1
-        List of delay times for nonmarkovian channels. Ordering coincides to order of feedback tensor spaces in the Hamiltonian from right to left.
+    show_progress : bool, default: True
+        Flag to print a progress bar.
 
     Returns
     -------
@@ -756,12 +763,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     nbins = _separate_sys_bins(i_s, d_sys_total, sbins, bond)
     nbins = _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
-    print_rate = max(round(n / 20.0), 1) # Print every 5%, 20/100
-    for k in range(n):
-        # Completion print out
-        if print_completion_flag and k % print_rate == 0:
-            print(str(round(k/n*100,2)) + '%')
-        
+    for k in tqdm(range(n), disable = not show_progress):           
         for i in callable_ham_indices:
             evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)
 

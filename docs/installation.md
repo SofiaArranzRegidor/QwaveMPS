@@ -14,7 +14,7 @@ The following packages are required to run the QwaveMPS:
 
 | Package | Version | 
 |----------|----------|
-| python  | 3.8+  | 
+| python  | 3.10+  | 
 | numpy  | 1.16.0+  | 
 | scipy  | 1.3.0+  | 
 | ncon  |   | 

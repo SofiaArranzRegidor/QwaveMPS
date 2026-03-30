@@ -12,10 +12,12 @@ It requires the module ncon (pip install --user ncon)
 import numpy as np
 import copy
 from ncon import ncon
+from tqdm import tqdm
 
 from QwaveMPS.simulation import _svd_tensors
 from QwaveMPS.operators import op_list_check,expectation_1bin,expectation_nbins,swap,single_time_expectation
 from QwaveMPS.parameters import InputParams
+
 
 __all__ = ['spectrum_w', 'transform_t_tau_to_t1_t2', 'spectral_intensity', 'time_dependent_spectrum',
            'correlation_2op_2t', 'correlation_4op_2t', 'correlation_2op_1t', 'correlation_4op_1t',
@@ -207,7 +209,7 @@ def time_dependent_spectrum(correlation_matrix:np.ndarray, input_params:InputPar
 # Wrapper functions designed in qutip sytle (these are less general)
 # ----------------------
 
-def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
+def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], params:InputParams, show_progress:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
     Calculates the two time correlation function :math:`\\langle A(t)B(t+t')\\rangle` for either single operators :math:`A` and :math:`B`, or each :math:`A/B` in a_op_list/b_op_list.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
@@ -227,8 +229,8 @@ def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
     params : InputParams
         Simulation parameters 
     
-    completion_print_flag : bool, default: True
-        Prints the percent completion of the of the outer loop over t values for the calculation.
+    show_progress : bool, default: True
+        Prints the completion of the outer loop over t values for the calculation.
         Note that each loop is shorter, resulting in the percents being weighted more heavily to the start of the calculation.
 
     Returns
@@ -256,14 +258,14 @@ def correlation_2op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
         ops_same_time.append(a_op_list @ b_op_list)
         ops_two_time.append(np.kron(a_op_list, b_op_list))
     
-    results, t_list =  correlations_2t(correlation_bins, ops_same_time, ops_two_time, params, completion_print_flag=completion_print_flag)
+    results, t_list =  correlations_2t(correlation_bins, ops_same_time, ops_two_time, params, show_progress=show_progress)
 
     if not list_flag:
         results = results[0]
 
     return results, t_list
 
-def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, completion_print_flag:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
+def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|list[np.ndarray], b_op_list:np.ndarray|list[np.ndarray], c_op_list:np.ndarray|list[np.ndarray], d_op_list:np.ndarray|list[np.ndarray], params:InputParams, show_progress:bool=True) -> tuple[list[np.ndarray]|np.ndarray, np.ndarray]:
     """ 
     Calculates the two time correlation function :math:`\\langle A(t)B(t+t')C(t+t')D(t)\\rangle` for either single operators :math:`A/B/C/D`, or each operator in the four lists.
     Provides list functionality as a single function call with a list of operators is much faster than individual function calls
@@ -289,8 +291,8 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
     params : InputParams
         Simulation parameters 
 
-    completion_print_flag : bool, default: True
-        Prints the percent completion of the of the outer loop over t values for the calculation.
+    show_progress : bool, default: True
+        Prints the completion of the outer loop over t values for the calculation.
         Note that each loop is shorter, resulting in the percents being weighted more heavily to the start of the calculation.
 
     Returns
@@ -319,7 +321,7 @@ def correlation_4op_2t(correlation_bins:list[np.ndarray], a_op_list:np.ndarray|l
         ops_same_time.append(a_op_list @ b_op_list @ c_op_list @ d_op_list)
         ops_two_time.append(np.kron(a_op_list @ d_op_list, b_op_list @ c_op_list))
     
-    results, t_list = correlations_2t(correlation_bins, ops_same_time, ops_two_time, params, completion_print_flag=completion_print_flag)
+    results, t_list = correlations_2t(correlation_bins, ops_same_time, ops_two_time, params, show_progress=show_progress)
 
     # Don't return as list
     if not list_flag:
@@ -589,7 +591,7 @@ def correlation_ss_4op(correlation_bins:list[np.ndarray], output_field_states:li
 # This is the logic, and are also more general functions 
 # (can calculate ANY arbitrary two time correlation functions on the output field)
 #-------------------------------------------
-def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, completion_print_flag:bool=False) -> tuple[list[np.ndarray], np.ndarray]:
+def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.ndarray], ops_two_time:list[np.ndarray], params:InputParams, show_progress:bool=False) -> tuple[list[np.ndarray], np.ndarray]:
     """ 
     General two-time correlation calculator.
     Take in list of time ordered normalized (with OC) time bins at position of relevance.
@@ -610,8 +612,8 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
     params : InputParams
         Simulation parameters 
        
-    completion_print_flag : bool, default=True
-        Flag to print completion loop number percent of the calculation (note this is not the percent completion, and later loops complete faster than earlier ones). 
+    show_progress : bool, default=True
+        Flag to display completion bar of the calculation (note this is not the percent completion, and later loops complete faster than earlier ones). 
 
     Returns
     -------
@@ -642,12 +644,8 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
         time_bin_list_copy[i] = right_bin #right normalized system bin    
         time_bin_list_copy[i-1]= left_bin * stemp[None,None,:] #OC on left bin
     
-    # Loop over to fill in correlation matrices values
-    if completion_print_flag:
-        print('Correlation Calculation Completion:')
-    loop_num = len(time_bin_list_copy) - 1
-    print_rate = max(round(loop_num / 20.0), 1) # Print every 5%, 20/100
-    for i in range(len(time_bin_list_copy)-1):
+    # Main loop for correlation calculation
+    for i in tqdm(range(len(time_bin_list_copy)-1), disable = not show_progress):
 
         i_1=time_bin_list_copy[0]
         i_2=time_bin_list_copy[1] 
@@ -687,10 +685,7 @@ def correlations_2t(correlation_bins:list[np.ndarray], ops_same_time:list[np.nda
             if j == 1:
                time_bin_list_copy[j] = stemp[:,None,None] * right_bin
         time_bin_list_copy=time_bin_list_copy[1:]    #Truncating the start of the list now that are done with that bin (t=i)
-        
-        if i % print_rate == 0 and completion_print_flag:
-            print(round((float(i)/loop_num)*100,1), '%')
-    
+            
     t_list = np.arange(len(correlation_bins)) * params.delta_t
     return correlations, t_list
 

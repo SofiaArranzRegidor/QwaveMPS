@@ -13,11 +13,7 @@ from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 
-import sys
-from pathlib import Path
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-import QwaveMPS.src as qmps
+import QwaveMPS as qmps
 import timeit
 
 #%% Test set 1, population dynamics
@@ -525,7 +521,7 @@ sys_initial_state=qmps.states.tls_ground() #TLS initially excited
 gaussian_width, gaussian_center = 0.5,1.5
 env = qmps.states.gaussian_envelope(input_params.tmax, input_params, gaussian_width,gaussian_center)
 
-wg_initial_state = qmps.states.fock_pulse(env, input_params.tmax, 1, input_params)
+wg_initial_state = qmps.states.fock_pulse([None,env], input_params.tmax, input_params, [0,1])
 
 Hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
 
@@ -580,7 +576,7 @@ sys_initial_state=qmps.states.tls_ground() #TLS initially excited
 gaussian_width, gaussian_center = 0.5,1.5
 env = qmps.states.gaussian_envelope(input_params.tmax, input_params, gaussian_width,gaussian_center)
 
-wg_initial_state = qmps.states.fock_pulse(env, input_params.tmax, 2, input_params)
+wg_initial_state = qmps.states.fock_pulse([None, env], input_params.tmax, input_params, [0,2])
 
 Hm=qmps.hamiltonian_1tls(input_params) # Create the Hamiltonian for a single TLS
 

@@ -31,7 +31,7 @@ def test_single_TLS(gamma_l, gamma_r, initial_pop):
     wg_initial_state = None
 
     Hm=qmps.hamiltonian_1tls(input_params)
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params, show_progress=False)
 
 
     # Calculate the two level system population

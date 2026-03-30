@@ -48,10 +48,10 @@ def test_fock_pulse(photon_num, initial_pop, gaussian_env):
         pulse_env = qmps.tophat_envelope(pulse_time, input_params)
         anal_env = lambda t: tophat(t, pulse_time)
 
-    wg_initial_state = qmps.fock_pulse(pulse_env,pulse_time, photon_num, input_params)
+    wg_initial_state = qmps.fock_pulse([None, pulse_env],pulse_time, input_params, [0, photon_num])
 
     Hm=qmps.hamiltonian_1tls(input_params)
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params, show_progress=False)
 
 
     # Calculate the two level system population
@@ -69,7 +69,7 @@ def test_fock_pulse(photon_num, initial_pop, gaussian_env):
 
     chiral = False
     pulse_env = np.append(pulse_env, np.zeros(len(tlist) - len(pulse_env)))
-    pulse_env = qmps.normalize_pulse_envelope(input_params.delta_t, pulse_env)
+    pulse_env = qmps.normalize_pulse_envelope_integral(input_params.delta_t, pulse_env)
     anal_pops = np.real(sigmaPlusSigmaMinus0N0N(tlist, pulse_env, photon_num, initial_pop, chirality=chiral))
     anal_flux_l = np.real(photonFluxMu(tlist, pulse_env,photon_num,'L', initial_pop, chirality=chiral))
     anal_flux_r = np.real(photonFluxMu(tlist, pulse_env,photon_num,'R', initial_pop, chirality=chiral))

@@ -195,7 +195,7 @@ print("Entanglement--- %s seconds ---" %(t.time() - start_time))
 
 plt.plot(tlist,np.real(ent_s),linewidth = 3,color = 'r',linestyle='-',label=r'$S_{\rm system}$')
 plt.plot(tlist,np.real(ent_s_tau),linewidth = 3,color = 'lime',linestyle='-',label=r'$S_{\rm circuit}$')
-plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm in}$')
+plt.plot(tlist,np.real(loop_sum_l + loop_sum_r),linewidth = 3,color = 'b',linestyle=':',label=r'$N^{\rm loop}$')
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Entropy/Population')
