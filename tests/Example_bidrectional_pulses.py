@@ -36,8 +36,8 @@ pulse_env_rect = qmps.tophat_envelope(pulse_time_rect, input_params)
 pulse_env_r = pulse_env_gauss
 pulse_env_l = pulse_env_rect
 
-wg_initial_state = qmps.fock_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [photon_num_l, photon_num_r])   
-#wg_initial_state = qmps.coherent_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [0.2, 0.5])   
+#wg_initial_state = qmps.fock_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [photon_num_l, photon_num_r])   
+wg_initial_state = qmps.coherent_pulse([pulse_env_l, pulse_env_r],pulse_time_gauss,input_params, [0.2, 0.5])   
 
 '''
 # Example trying to make a superposition state, here a (|N0> + |0N>) state

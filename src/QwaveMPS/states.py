@@ -774,7 +774,7 @@ def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:np.ndarray):
     """ 
     return np.exp(-np.abs(np.conj(pulse_env_val)*alpha)**2 / 2) * (np.conj(pulse_env_val)*alpha)**(n)/(np.sqrt(sci.special.factorial(n)))
 
-def _tensor_prod_alphaOmega(_, __) -> tuple[np.ndarray,np.ndarray]:
+def _tensor_prod_alphaOmega() -> tuple[np.ndarray,np.ndarray]:
     """
     Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a tensor product state.
     This is used when the bond dimension will be 1 for all bins, such as coherent states and single-time point squeezed states).
