@@ -620,7 +620,7 @@ def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable,
     bins = [calc_ak(k) for k in range(m)]    
     
     # Test print of the bins
-    #_matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
+    _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
 
     bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed
@@ -884,7 +884,7 @@ def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:Input
 #-------------------------
 def _product_fock_alphaOmega(photon_num:int, bond0:int=1) -> tuple[np.ndarray,np.ndarray]:
     """
-    Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a Fock state.
+    Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a Fock Product state.
     
     Parameters
     ----------    
@@ -913,7 +913,23 @@ def _product_fock_alphaOmega(photon_num:int, bond0:int=1) -> tuple[np.ndarray,np
     return a1, am
 
 
-def _popcount_array(x):
+def _popcount_array(x:np.ndarray) -> np.ndarray:
+    """
+    Calculates
+    
+    Parameters
+    ----------    
+    x : np.ndarray
+        Number of photons in the Fock State.
+
+    Returns
+    -------
+    a1 : np.ndarray
+        The alpha vector for the Fock State.
+
+    Examples
+    -------- 
+    """ 
     """Vectorized popcount."""
     return np.unpackbits(
         x[:, None].view(np.uint8), axis=1
@@ -947,14 +963,15 @@ def _generate_A_k_i_vectorized(i, photon_num, f_k):
     # build product ∏ f_k^(i) over set bits of M
     vals = np.ones_like(M, dtype=float)
 
-    for i in range(photon_num):
-        bit = (M >> i) & 1
-        vals *= np.where(bit, weights[i], 1.0)
+    for j in range(photon_num):
+        bit = (M >> j) & 1
+        vals *= np.where(bit, weights[j], 1.0)
 
     A = np.zeros((dim, dim), dtype=float)
     A[mask] = np.sqrt(sci.special.factorial(i)) * vals[mask]
 
-    return A
+    #TODO Fix that this logic generates the transpose, structure is bottom left triangular
+    return A.T
 
 def _product_fock_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[list[complex]]) -> np.ndarray:
     """
@@ -986,7 +1003,7 @@ def _product_fock_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[list[co
     dim = int(2**photon_num)
     ak=np.zeros([dim,dt,dim],dtype=complex)
     for i in range(dt):
-        ak[:, i, :] = _generate_A_k_i_vectorized(i, photon_num, pulse_env[:,k])
+        ak[:, i, :] =  _generate_A_k_i_vectorized(i, photon_num, pulse_env[:,k])
     return ak
 
 def product_fock_pulse(pulse_envs:list[list[list[complex]]],pulse_time:float,params:InputParams, photon_nums:list[int], bond0:int=1)->list[np.ndarray]:    
@@ -1017,7 +1034,7 @@ def product_fock_pulse(pulse_envs:list[list[list[complex]]],pulse_time:float,par
     Returns
     -------
     fock_pulse : list[ndarray]
-        A list of the incident time bins of the Fock pulse, with the first bin in index 0.
+        A list of the incident time bins of the Fock product state pulse, with the first bin in index 0.
     
     """ 
     # Checks that photon_nums and pulseEnvs are wrapped as lists, even in case of single channel
