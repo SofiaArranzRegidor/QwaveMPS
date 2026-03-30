@@ -5,7 +5,7 @@ Created on Thu Sep 25 11:33:34 2025
 
 @author: sofia
 """
-
+#%%
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.ticker import FuncFormatter
@@ -48,7 +48,8 @@ input_params = qmps.parameters.InputParams(
     gamma_r = 1,  
     bond_max=32 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
-tlist=np.arange(0,input_params.tmax+input_params.delta_t, input_params.delta_t)
+tmax = input_params.tmax
+tlist=np.arange(0,tmax+input_params.delta_t, input_params.delta_t)
 
 tau=1
 taus = [tau] * (N-1)

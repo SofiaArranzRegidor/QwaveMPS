@@ -168,6 +168,10 @@ def t_evol_mar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, params:InputPa
     return Bins(system_states=sbins,output_field_states=tbins, input_field_states=tbins_in,
                 correlation_bins=cor_list,schmidt=schmidt)
 
+#-------------------------
+# non-Markovian Evolution: All emitters in 1 system bin
+#-------------------------
+
 def _feedback_swapping(bin_list:list[np.ndarray], l_list:list[int], d_t:int, schmidt_list:list[np.ndarray], bond:int):
     """
     Private helper procedure used in the non-markovian simulation for swapping the various tau bins to the appropriate locations in the bin list after time evolution
@@ -521,7 +525,7 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[flo
     nbins, i_s = _initialize_feedback_loop(nbins, i_s, l_list, d_t, d_sys, bond, input_field_generator=None) # Modifies nbins in place, need to return i_s as it is reassigned in function
     for k in tqdm(range(n), disable = not show_progress):   
         if callable(ham):
-            evol=u_evol(ham(k),d_sys,d_t)
+            evol=u_evol(ham(k),d_sys,d_t,interacting_time_bin_num)
 
         in_state = next(input_field)
         
@@ -574,6 +578,10 @@ def t_evol_nmar(ham:Hamiltonian, i_s0:np.ndarray, i_n0:np.ndarray, taus:list[flo
     return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
             correlation_bins=nbins,schmidt=schmidts)
 
+#-------------------------
+# Efficient Chiral N-Emitter Implementation
+#  (1 time and sys bin interacting per local time evolution)
+#-------------------------
 
 def _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None):
     """
@@ -730,6 +738,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
 
     tbins_in = []
     schmidt=[]
+    tbins_in.append(states.wg_ground(d_t))
 
     
     input_field=states.input_state_generator(d_t_total, i_n0)
@@ -740,7 +749,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     callable_ham_indices = []
     for i in range(len(hams)):
         if not callable(hams[i]):
-            evols[i] = u_evol(hams[i],d_sys_total[i],d_t) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
+            evols[i] = u_evol(hams[i],d_sys_total[i],d_t)
         else:
             callable_ham_indices.append(i)
     swap_t_t=swap(d_t,d_t)
@@ -921,6 +930,11 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
 
+#-------------------------
+# Efficient Symmetrical N-Emitter Implementation
+#  (2 time and sys bins interacting per local time evolution)
+#-------------------------
+
 class Symmetrical_Coupling_Helper:     
     ordered_indices : np.ndarray
     d_sys_ordered : list[int]
@@ -1088,6 +1102,7 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
     help_obj = Symmetrical_Coupling_Helper(d_sys_total, l_list)
 
     tbins_in = []
+    tbins_in.append(states.wg_ground(d_t))
     schmidt=[]
     
     input_field=states.input_state_generator(d_t_total, i_n0)

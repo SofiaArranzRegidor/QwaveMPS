@@ -37,10 +37,10 @@ d_t_total=np.array([d_t_r])
 d_t = np.prod(d_t_total)
 input_params = qmps.parameters.InputParams(
     delta_t=0.01, # Time step of the simulation
-    tmax = 50,#30, # Maximum simulation time
+    tmax = 20,#30, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
-    gamma_l=1,
+    gamma_l=0,
     gamma_r = 1,  
     bond_max=64 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
@@ -72,7 +72,7 @@ i_s0[:,int(2**(len(d_sys_total))-1),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in
 #We can start with one excited and one ground, both excited, both ground, 
 # or with an entangled state like the following one
 # i_s0=1/np.sqrt(2)*(np.kron(i_s01,i_s02)+np.kron(i_s02,i_s01))
-i_n0 = qmps.states.fock_pulse(qmps.states.tophat_envelope(2, input_params), 2, 1, input_params, 'R')
+#i_n0 = qmps.states.fock_pulse(qmps.states.tophat_envelope(2, input_params), 2, input_params, 1)
 i_n0 = None
 
 """Choose the Hamiltonian"""
