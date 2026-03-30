@@ -22,7 +22,8 @@ from QwaveMPS.parameters import InputParams
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'basis', 'input_state_generator', 'coupling',
             'tophat_envelope', 'gaussian_envelope','exp_decay_envelope',
             'normalize_pulse_envelope_integral', 'normalize_pulse_envelope','left_normalize_bins',
-            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'addMPSs']
+            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'product_fock_pulse', 
+            'addMPSs']
 
 #--------------------
 #Initial basic states
@@ -133,7 +134,6 @@ def basis(dim:int, n:int=0) -> np.ndarray:
     basis_vec = np.zeros(dim, dtype=complex)
     basis_vec[n] = 1
     return basis_vec
-
 
 def input_state_generator(d_t_total:list[int], input_bins:list[np.ndarray]=None, bond0:int=1, default_state=None) -> Iterator[np.ndarray]:
     """
@@ -546,17 +546,13 @@ def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
 # Create the Pulse based on given matrix scheme
 #-------------------------
 #TODO Needs optimization work. Lot of room for performance improvements here.
-def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParams, pulse_alphaOmega:Callable, alphaOmega_args:list[tuple], pulse_ak:Callable, ak_args:list[tuple], bond0:int=1)->list[np.ndarray]:    
+def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable, alphaOmega_args:list[tuple], pulse_ak:Callable, ak_args:list[tuple], bond0:int=1)->list[np.ndarray]:    
     """
     Creates a pulse input field MPS with a pulse envelope. 
     Created quantum pulse is dependent on the matrix_args, and the alpha, omega, and ak matrices passed.
 
     Parameters
     ----------
-    pulse_envs : list[list[complex]]
-        List of time dependent pulse envelopes for each channel/tensorspace in the waveguide (d_t_total).
-        If None uses a top-hat pulse (constant amplitude).
-
     pulse_time : float
         Time length of the pulse (units of inverse coupling). 
         If the pulse envelope is of greater length it will be truncated from the tail.
@@ -633,15 +629,12 @@ def create_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputPar
 #-------------------------
 # Fock pulse MPS generator
 #-------------------------
-def _fock_alphaOmega(dim:int,photon_num:int, bond0:int=1) -> tuple[np.ndarray,np.ndarray]:
+def _fock_alphaOmega(photon_num:int, bond0:int=1) -> tuple[np.ndarray,np.ndarray]:
     """
     Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a Fock state.
     
     Parameters
-    ----------
-    dim : int
-        The dimension of the physical index of the MPS.
-    
+    ----------    
     photon_num : int
         Number of photons in the Fock State.
 
@@ -657,9 +650,12 @@ def _fock_alphaOmega(dim:int,photon_num:int, bond0:int=1) -> tuple[np.ndarray,np
     -------- 
 
     """ 
-    a1 = np.zeros([bond0,dim], dtype=complex)
-    am = np.zeros([dim,bond0], dtype=complex)
+    bond_dim = photon_num + 1
+    a1 = np.zeros([bond0,bond_dim], dtype=complex)
+    am = np.zeros([bond_dim,bond0], dtype=complex)
     a1[:,0] = 1
+    # Put the normalization factor of \sqrt(N!) in the first matrix via alpha
+    a1 *= np.sqrt(sci.special.factorial(photon_num))
     am[photon_num, 0] = 1
     return a1, am
 
@@ -744,10 +740,10 @@ def fock_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParam
     alphaOmega_args = []
     ak_args = []
     for i in range(channel_num):
-        alphaOmega_args.append((params.d_t_total[i], photon_nums[i]))
+        alphaOmega_args.append((photon_nums[i],))
         ak_args.append((photon_nums[i], pulse_envs[i]))
 
-    return create_pulse(pulse_envs, pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
+    return create_pulse(pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
 
 #-------------------------
 # Coherent pulse MPS generator
@@ -881,7 +877,174 @@ def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:Input
         alphaOmega_args.append(())
         ak_args.append((alphas[i], pulse_envs[i]))
 
-    return create_pulse(pulse_envs, pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
+    return create_pulse(pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
+
+#-------------------------
+# Product Fock States
+#-------------------------
+def _product_fock_alphaOmega(photon_num:int, bond0:int=1) -> tuple[np.ndarray,np.ndarray]:
+    """
+    Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a Fock state.
+    
+    Parameters
+    ----------    
+    photon_num : int
+        Number of photons in the Fock State.
+
+    Returns
+    -------
+    a1 : np.ndarray
+        The alpha vector for the Fock State.
+    am : np.ndarray
+        The omega vector for the Fock State.
+
+    Examples
+    -------- 
+
+    """ 
+    bond_dim = int(2**photon_num)
+    a1 = np.zeros([bond0,bond_dim], dtype=complex)
+    am = np.zeros([bond_dim,bond0], dtype=complex)
+    a1[:,0] = 1
+    # Put the normalization factor of 1/sqrt(N!) in the first matrix via alpha
+    a1 /= np.sqrt(sci.special.factorial(photon_num))
+
+    am[-1, 0] = 1
+    return a1, am
+
+
+def _popcount_array(x):
+    """Vectorized popcount."""
+    return np.unpackbits(
+        x[:, None].view(np.uint8), axis=1
+    ).sum(axis=1)
+
+#TODO Look over this logic and check it makes sense
+def _generate_A_k_i_vectorized(i, photon_num, f_k):
+    N = len(f_k)
+    dim = 2**photon_num
+
+    states = np.arange(dim, dtype=np.uint32)
+
+    S = states[None, :]   # columns
+    T = states[:, None]   # rows
+
+    # condition: S ⊆ T
+    subset_mask = (S & T) == S
+
+    # excitation number difference
+    pc = _popcount_array(states)
+    diff_mask = (pc[:, None] - pc[None, :]) == i
+
+    mask = subset_mask & diff_mask
+
+    # compute added modes
+    M = T ^ S  # bits added
+
+    # precompute weights for each bit position
+    weights = np.array(f_k)
+
+    # build product ∏ f_k^(i) over set bits of M
+    vals = np.ones_like(M, dtype=float)
+
+    for i in range(photon_num):
+        bit = (M >> i) & 1
+        vals *= np.where(bit, weights[i], 1.0)
+
+    A = np.zeros((dim, dim), dtype=float)
+    A[mask] = np.sqrt(sci.special.factorial(i)) * vals[mask]
+
+    return A
+
+def _product_fock_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[list[complex]]) -> np.ndarray:
+    """
+    Generates the tensors for the MPS factorization of a Fock Product State for a given bin/site, k.
+    
+    Parameters
+    ----------
+    k : int
+        The index of the bin of of the pulse being generated.
+
+    dt : int
+        The dimension of the physical index.
+    
+    photon_num : int
+        The number of photons in the Fock state.
+
+    pulse_env : list[list[complex]]
+        The pulse envelope of each photon of the pulse.
+
+    Returns
+    -------
+    ak : np.ndarray
+        The rank 3 tensor representing the k^th tensor of the MPS factorization of the Fock state.
+            
+    Examples
+    -------- 
+
+    """ 
+    dim = int(2**photon_num)
+    ak=np.zeros([dim,dt,dim],dtype=complex)
+    for i in range(dt):
+        ak[:, i, :] = _generate_A_k_i_vectorized(i, photon_num, pulse_env[:,k])
+    return ak
+
+def product_fock_pulse(pulse_envs:list[list[list[complex]]],pulse_time:float,params:InputParams, photon_nums:list[int], bond0:int=1)->list[np.ndarray]:    
+    """
+    Creates a Fock pulse with a product state for the photons for the input field MPS with a pulse envelope. 
+    Can create a state of fock pulses in multiple channels, e.g. of the form |N,M,L>
+
+    Parameters
+    ----------
+    pulse_envs : list[list[list[complex]]]
+        List of time dependent pulse envelopes for each photon for each channel/tensorspace in the waveguide (d_t_total).
+        Outermost list is for each channel, middle list is for each photon, inner most list is for each time point.
+        If None used for an envelope a top-hat pulse (constant amplitude) is used.
+
+    pulse_time : float
+        Time length of the pulse (units of inverse coupling). 
+        If the pulse envelope is of greater length it will be truncated from the tail.
+
+    params : InputParams
+        Class containing the input parameters
+    
+    photon_nums : list[int]
+        List of photon numbers in the Fock pulse for each channel/tensorspace in the waveguide.
+            
+    bond0 : int, default: 1
+        Default bond dimension of bins.
+    
+    Returns
+    -------
+    fock_pulse : list[ndarray]
+        A list of the incident time bins of the Fock pulse, with the first bin in index 0.
+    
+    """ 
+    # Checks that photon_nums and pulseEnvs are wrapped as lists, even in case of single channel
+    if np.isscalar(photon_nums):
+        photon_nums = [photon_nums]
+    if np.isscalar(pulse_envs[0]):
+        pulse_envs = [pulse_envs]
+
+    #TODO fix case where None is entered for a channel automatically
+
+    # Normalize the pulse envelopes and pad as necessary with 0's
+    m = int(round(pulse_time/params.delta_t,0))
+    channel_num = len(params.d_t_total)
+    
+    # In general might not have each envelope integrate to 1, could have assymetric contributions
+    # pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
+
+    # pack function arguments
+    alphaOmega_args = []
+    ak_args = []
+    pulse_envs = np.asarray(pulse_envs)
+    for i in range(channel_num):
+        alphaOmega_args.append((photon_nums[i],))
+        ak_args.append((photon_nums[i], pulse_envs[i]))
+
+    return create_pulse(pulse_time, params, _product_fock_alphaOmega, alphaOmega_args, _product_fock_pulse_ak, ak_args)
+
 
 #-------------------------
 # 
