@@ -745,9 +745,9 @@ def fock_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParam
 
     return create_pulse(pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
 
-#-------------------------
+#-----------------------------
 # Coherent pulse MPS generator
-#-------------------------
+#-----------------------------
 def calc_coherent_val(alpha:complex, pulse_env_val:complex, n:np.ndarray):
     """
     Calculates the coefficient for the projection of a coherent state, alpha, onto the number state, n.
@@ -878,6 +878,42 @@ def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:Input
         ak_args.append((alphas[i], pulse_envs[i]))
 
     return create_pulse(pulse_time, params, _tensor_prod_alphaOmega, alphaOmega_args, _coherent_ak, ak_args)
+
+#----------------------------
+#Squeezed pulse MPS generator
+#----------------------------
+
+def _squeezed_alphaOmega(dim:int,photon_num:int, bond0:int=1) -> tuple[np.ndarray,np.ndarray]:
+    """
+    Generates the alpha and omega vectors used to calculate the first/last tensors in the MPS factorization of a squeezed state.
+    
+    Parameters
+    ----------
+    dim : int
+        The dimension of the physical index of the MPS.
+    
+    photon_num : int
+        Number of photons limiting the squeezed State.
+
+    Returns
+    -------
+    a1 : np.ndarray
+        The alpha vector for the Fock State.
+    am : np.ndarray
+        The omega vector for the Fock State.
+
+        
+    Examples
+    -------- 
+
+    """ 
+    a1 = np.zeros([bond0,dim], dtype=complex)
+    am = np.zeros([dim,bond0], dtype=complex)
+    a1[:,0] = 1
+    am[photon_num, 0] = 1
+    return a1, am
+
+
 
 #-------------------------
 # Product Fock States
