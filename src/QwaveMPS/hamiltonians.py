@@ -15,10 +15,13 @@ from QwaveMPS.operators import *
 from QwaveMPS.parameters import InputParams
 from typing import Callable, TypeAlias
 
+from .symmetrical_coupling_helper import Symmetrical_Coupling_Helper
+
 # Type alias: Hamiltonian can be either a single ndarray or a callable indexed by time point for time dependent cases
 Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
-__all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_mar', 'hamiltonian_2tls_nmar', 'Hamiltonian']
+__all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_mar', 'hamiltonian_2tls_nmar', 'Hamiltonian',
+           'hamN2LSChiral', 'hamiltonian_1tls_chiral', 'hamiltonian_Ntls_sym_eff']
 
 def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
@@ -338,9 +341,6 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
 
 
 # Fix style/standardization of below functions
-
-__all__ += ['hamN2LSChiral', 'hamiltonian_1tls_chiral']
-
 def basicSigmaPlus(dim):
     return np.diag(np.ones(dim-1, dtype=complex), -1)
 
@@ -384,9 +384,67 @@ def hamN2LSChiral(t, deltaT, d_t_total, tlsNum, gammas=None, detuningLs=None, ph
     return H
 
 def hamiltonian_1tls_chiral(params:InputParams):
-    delta_t,d_sys_total, d_t_total =params.delta_t,params.d_sys_total,params.d_t_total
+    delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
 
     sigmaP = sigmaplus()
     sigmaM = sigmaminus()
     d_t = np.prod(d_t_total)
     return np.kron(delta_b(delta_t, d_t), sigmaP) + np.kron(delta_b_dag(delta_t, d_t), sigmaM)
+
+
+# Sym case, returns list of local hamiltonians
+def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:list[float]):
+    delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
+    helper_obj = Symmetrical_Coupling_Helper(d_sys_total)
+
+    delta_b_dag_l_single = delta_b_dag_l(delta_t, d_t_total)
+    delta_b_l_single = delta_b_l(delta_t, d_t_total)
+    delta_b_dag_r_single = delta_b_dag_r(delta_t, d_t_total)
+    delta_b_r_single = delta_b_r(delta_t, d_t_total)
+    d_t_eye = np.eye(params.d_t)
+    sys_eye = np.eye(2)
+
+    delta_b_dag_l_0 = np.kron(delta_b_dag_l_single, d_t_eye)
+    delta_b_dag_l_1 = np.kron(d_t_eye, delta_b_dag_l_single)
+
+    delta_b_l_0 = np.kron(delta_b_l_single, d_t_eye)
+    delta_b_l_1 = np.kron(d_t_eye, delta_b_l_single)
+
+    delta_b_dag_r_0 = np.kron(delta_b_dag_r_single, d_t_eye)
+    delta_b_dag_r_1 = np.kron(d_t_eye, delta_b_dag_r_single)
+
+    delta_b_r_0 = np.kron(delta_b_r_single, d_t_eye)
+    delta_b_r_1 = np.kron(d_t_eye, delta_b_r_single)
+
+    sigmap = sigmaplus()
+    sigmam = sigmaminus()
+
+
+    hams = [None] * helper_obj.interaction_num
+
+    for i in range(int(helper_obj.sys_num/2)):
+        sys_ind_r = helper_obj.ordered_indices[2*i]
+        sys_ind_l = helper_obj.ordered_indices[2*i+1]
+        ham = gamma_rs[sys_ind_l]*(np.kron(delta_b_dag_r_0, np.kron(sigmam, sys_eye)) 
+                          + np.kron(delta_b_r_0, np.kron(sigmap, sys_eye)))
+        ham += gamma_ls[sys_ind_l]*(np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
+                           + np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
+        ham += gamma_rs[sys_ind_r]*(np.kron(delta_b_dag_r_1, np.kron(sys_eye,sigmam))
+                            + np.kron(delta_b_r_1, np.kron(sys_eye,sigmap)))
+        ham += gamma_ls[sys_ind_r]*(np.kron(delta_b_dag_l_0, np.kron(sys_eye,sigmam))
+                            + np.kron(delta_b_l_0, np.kron(sys_eye,sigmap)))
+
+        hams[i] = ham
+
+    # Final hamiltonian coupling single emitter to single time bin
+    if helper_obj.odd_end:
+        sys_ind = helper_obj.ordered_indices[-1]
+
+        ham = gamma_rs[sys_ind]*(np.kron(delta_b_dag_r_single, sigmam) 
+                          + np.kron(delta_b_r_single, sigmap))
+        ham += gamma_ls[sys_ind]*(np.kron(delta_b_dag_l_single, sigmam) 
+                    + np.kron(delta_b_l_single, sigmap))
+
+        hams[-1] = ham
+
+    return hams

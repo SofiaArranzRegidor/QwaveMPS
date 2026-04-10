@@ -934,58 +934,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
 # Efficient Symmetrical N-Emitter Implementation
 #  (2 time and sys bins interacting per local time evolution)
 #-------------------------
-
-class Symmetrical_Coupling_Helper:     
-    ordered_indices : np.ndarray
-    d_sys_ordered : list[int]
-    fback_subchain_lengths : np.ndarray
-    odd_end : bool
-    sys_num : int
-
-    def __init__(self, d_sys_total, l_list):
-        self.sys_num = len(d_sys_total)
-        self.set_ordered_indices(self.sys_num)
-        self.set_d_sys_ordered(d_sys_total)
-        self.set_fback_subchain_lengths(l_list)
-        self.set_odd_end(self.sys_num)
-
-    # indexed from right to left of the MPS
-    def set_ordered_indices(self, sys_num):
-        indices = np.arange(sys_num, dtype=int)
-        half_point = int(round(sys_num/2))
-        first_half = indices[:half_point]
-        rev_end_half = indices[:half_point-1:-1]
-
-        result = np.zeros(sys_num, dtype=int)
-        result[::2] = first_half
-        result[1::2] = rev_end_half
-        self.ordered_indices = result
-
-    def set_d_sys_ordered(self, d_sys_total):
-        self.d_sys_ordered = d_sys_total[self.ordered_indices]
-
-    # Ordered from right to left in the MPS
-    def set_fback_subchain_lengths(self, l_list):
-        sys_num = len(l_list) + 1
-        self.fback_subchain_num = int((sys_num+1)/2) # Take ceiling of half
-        fback_subchain_lengths = np.zeros(self.fback_subchain_num, dtype=int)
-        fback_subchain_lengths[1:] = (l_list[1::] + l_list[1::][::-1])[:self.fback_subchain_num-1] # Truncate the first, used at front and not doubled up. Addition compresses to half length
-
-        # Check if need to halve the last case due to double counting middle l_list
-        if sys_num % 2 != 0:
-            fback_subchain_lengths[-1] /= 2 
-        
-        # Set the first value
-        fback_subchain_lengths[0] = l_list[0]
-
-        self.fback_subchain_lengths = fback_subchain_lengths
-
-    def set_odd_end(self, sys_num):
-        if sys_num % 2 == 0:
-            self.odd_end = False
-        else:
-            self.odd_end = True
-
+from .symmetrical_coupling_helper import Symmetrical_Coupling_Helper
 
 def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Coupling_Helper, bond):
     # OC starts in rightmost sys bin [-1]
@@ -994,20 +943,34 @@ def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Cou
     # Need to swap N-1 to pos. -2, N2 to pos. -4, etc.
 
     # Creation of swap matrices (indexed in sys_dim order, as this is prior to sys_bin reordering)
+    swap_loops = int((help_obj.sys_num - 1)/2)
+    moved_indices = 2*np.arange(1, swap_loops+1) + 1
+
     swap_matrices = np.zeros((help_obj.sys_num, help_obj.sys_num))
-    for i in range(help_obj.sys_num):
-        for j in range(help_obj.sys_num - i, i):
-            swap_matrices[i][j] = swap(d_sys_total[i], d_sys_total[j])
+    for loop_num, i in enumerate(range(help_obj.sys_num-1, help_obj.sys_num-1-swap_loops,-1)):
+        for j in range(loop_num+1, i):
+            swap_matrices[j][i] = swap(d_sys_total[j], d_sys_total[i])
 
     # Loop over bins that will be brought to the right
-    for i in range(help_obj.sys_num / 2):
-        # Move OC to the left bin (one that will be moved)
-        for j in range(i, help_obj.sys_num):
-            return
+    for i in range(swap_loops):
+        # Move OC to the leftmost bin (one that will be moved)
+        for j in range(2*i, help_obj.sys_num):
+            right_oc_bin = nbins[-1-j]
+            left_bin = nbins[-2-j]
+            contraction=ncon([left_bin,right_oc_bin],[[-1,-2,2],[2,-3,-4]])
+            left_bin, stemp, right_bin = _svd_tensors(contraction, bond, d_t, d_t)
+            left_oc_bin = left_bin * stemp[None,None,:]
+            
+            nbins[-1-j] = right_bin
+            nbins[-2-j] = left_oc_bin
             
         # Move this OC bin to the right to correct location
-        for j in range(None):
+        for j in range(help_obj.sys_num-1, ):
             return
+    
+    # Move OC to end of the chain    
+
+
     return nbins
 
 # Assume OC is in right most system bin
@@ -1072,7 +1035,7 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
-def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
+def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
     delta_t = params.delta_t
     tmax=params.tmax
     bond=params.bond_max
@@ -1099,7 +1062,8 @@ def t_evol_nmar_sym_efficient(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.nd
     if not (l_list == l_list[::-1]).all():
         raise ValueError("Delay times tau list must be symmetric over reversal.")
 
-    help_obj = Symmetrical_Coupling_Helper(d_sys_total, l_list)
+    help_obj = Symmetrical_Coupling_Helper(d_sys_total)
+    help_obj.set_fback_subchain_lengths(l_list)
 
     tbins_in = []
     tbins_in.append(states.wg_ground(d_t))
