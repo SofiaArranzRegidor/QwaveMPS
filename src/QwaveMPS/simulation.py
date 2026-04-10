@@ -944,32 +944,50 @@ def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Cou
 
     # Creation of swap matrices (indexed in sys_dim order, as this is prior to sys_bin reordering)
     swap_loops = int((help_obj.sys_num - 1)/2)
-    moved_indices = 2*np.arange(1, swap_loops+1) + 1
+    moved_indices = 2*np.arange(1, swap_loops+1) - 1 #(in reversed indexing)
 
-    swap_matrices = np.zeros((help_obj.sys_num, help_obj.sys_num))
+    swap_matrices = np.empty((help_obj.sys_num, help_obj.sys_num), dtype=object)
     for loop_num, i in enumerate(range(help_obj.sys_num-1, help_obj.sys_num-1-swap_loops,-1)):
         for j in range(loop_num+1, i):
-            swap_matrices[j][i] = swap(d_sys_total[j], d_sys_total[i])
+            swap_matrices[i][j] = swap(d_sys_total[i], d_sys_total[j]) # Always have i > j
 
     # Loop over bins that will be brought to the right
     for i in range(swap_loops):
-        # Move OC to the leftmost bin (one that will be moved)
-        for j in range(2*i, help_obj.sys_num):
-            right_oc_bin = nbins[-1-j]
-            left_bin = nbins[-2-j]
+        # Move OC to the leftmost bin (one that will be moved), OC starts in bin 2*i from right end
+        for j in range(2*i, help_obj.sys_num-1):
+            indexr = -1-j; indexl = -2-j
+            right_oc_bin = nbins[indexr]
+            left_bin = nbins[indexl]
             contraction=ncon([left_bin,right_oc_bin],[[-1,-2,2],[2,-3,-4]])
-            left_bin, stemp, right_bin = _svd_tensors(contraction, bond, d_t, d_t)
+            left_bin, stemp, right_bin = _svd_tensors(contraction, bond, d_sys_total[j+1-i], d_sys_total[j-i])
             left_oc_bin = left_bin * stemp[None,None,:]
             
-            nbins[-1-j] = right_bin
-            nbins[-2-j] = left_oc_bin
+            nbins[indexr] = right_bin
+            nbins[indexl] = left_oc_bin
             
-        # Move this OC bin to the right to correct location
-        for j in range(help_obj.sys_num-1, ):
-            return
-    
-    # Move OC to end of the chain    
+        # Move this OC bin to the right to correct location (starts at 0th bin everytime)
+        for j in range(help_obj.sys_num - moved_indices[i] - 1):
+            swapping_sys_ind = help_obj.sys_num - 1 - i
+            phi1 = ncon([nbins[j], nbins[j+1], swap_matrices[swapping_sys_ind][swapping_sys_ind-1-j]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_sys_total[swapping_sys_ind-1-j], d_sys_total[swapping_sys_ind])
+            nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC right bin
 
+        # Move the OC 1 index to the left (to be in an even indexed bin from the right end, prepares for next loop)
+        indexr = -1-moved_indices[i]; indexl = indexr - 1
+        right_oc_bin = nbins[indexr]
+        left_bin = nbins[indexl]
+        contraction=ncon([left_bin,right_oc_bin],[[-1,-2,2],[2,-3,-4]])
+        left_bin, stemp, right_bin = _svd_tensors(contraction, bond, d_sys_total[i+1], d_sys_total[-1-i])
+        left_oc_bin = left_bin * stemp[None,None,:]
+        
+        nbins[indexr] = right_bin
+        nbins[indexl] = left_oc_bin
+
+    # Move OC to end of the chain    
+    for j in range(int(not help_obj.odd_end), help_obj.sys_num - 1):
+        contraction=ncon([nbins[j],nbins[j+1]],[[-1,-2,2],[2,-3,-4]])
+        nbins[j], stemp, nbins[j+1] = _svd_tensors(contraction, bond, help_obj.d_sys_ordered[-1-j], help_obj.d_sys_ordered[-2-j])
+        nbins[j+1] = stemp[:,None,None] * nbins[j+1] # OC in right bin 
 
     return nbins
 
@@ -1035,7 +1053,7 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
-def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, print_completion_flag:bool=True) -> Bins:
+def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True) -> Bins:
     delta_t = params.delta_t
     tmax=params.tmax
     bond=params.bond_max
@@ -1109,12 +1127,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     nbins = _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj, bond)
     nbins = _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
-    print_rate = max(round(n / 20.0), 1) # Print every 5%, 20/100
-    for k in range(n):
-        # Completion print out
-        if print_completion_flag and k % print_rate == 0:
-            print(str(round(k/n*100,2)) + '%')
-        
+    for k in tqdm(range(n), disable = not show_progress):   
         #TODO Have to account for two system bin legs, and possibility of single sys/time leg
         for i in callable_ham_indices:
             evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)

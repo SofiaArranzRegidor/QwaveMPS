@@ -3,12 +3,14 @@ import numpy as np
 class Symmetrical_Coupling_Helper:     
     ordered_indices : np.ndarray
     d_sys_ordered : list[int]
+    l_list_ordered : list[int]
     fback_subchain_lengths : np.ndarray
     odd_end : bool
     sys_num : int
     interaction_num : int
 
     def __init__(self, d_sys_total):
+        d_sys_total = np.array(d_sys_total)
         self.sys_num = len(d_sys_total)
         self.set_ordered_indices(self.sys_num)
         self.set_d_sys_ordered(d_sys_total)
@@ -51,6 +53,8 @@ class Symmetrical_Coupling_Helper:
 
     # Ordered from right to left in the MPS
     def set_fback_subchain_lengths(self, l_list):
+        #self.l_list_ordered = l_list[self.ordered_indices]
+
         sys_num = len(l_list) + 1
         self.fback_subchain_num = int((sys_num+1)/2) # Take ceiling of half
         fback_subchain_lengths = np.zeros(self.fback_subchain_num, dtype=int)
