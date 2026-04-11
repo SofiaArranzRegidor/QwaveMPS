@@ -8,20 +8,20 @@ import scipy as sci
 from ncon import ncon
 import copy
 #%% Test the separation of the system bin, and it's reordering in preparation of the MPS
-N = 7
-d_sys_total = [2]*N; d_sys_total = [3,2,4,3,4,2,3]
+N = 5
+d_sys_total = [2]*N; #d_sys_total = [3,2,4,3,4,2,3]
 delta_t = 1
-taus = [2]*N
+taus = [2]*(N-1)
 
 help_obj = Symmetrical_Coupling_Helper(d_sys_total)
 l_list = Symmetrical_Coupling_Helper.calc_l_list(taus,d_sys_total,delta_t)
 help_obj.set_fback_subchain_lengths(l_list)
 
-bond = 16
+bond = 4
 sbins=[[] for x in range(N)] 
 i_s = np.zeros([1,np.prod(d_sys_total),1],dtype=complex)
 #i_s[:,int(np.prod(d_sys_total)-1),:] = 1
-i_s[:,6,:] = 1
+i_s[:,3,:] = 1
 
 nbins = qmps.simulation._separate_sys_bins(i_s, d_sys_total, sbins, bond)
 c_nbins = copy.deepcopy(nbins)

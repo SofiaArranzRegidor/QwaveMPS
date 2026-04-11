@@ -992,63 +992,49 @@ def _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj:Symmetrical_Cou
     return nbins
 
 # Assume OC is in right most system bin
-def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None):
+#TODO Currently only supports initializing feedback loops with vacuum bins, in future can expand to have option of incident pulse already inside of the WG.
+def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, help_obj:Symmetrical_Coupling_Helper, input_field_generator=None):
     sys_num = len(d_sys_total) 
-    fback_subchains = int((sys_num+1)/2) # Take ceiling of half
     
     swap_t_t=swap(d_t,d_t)
     swap_sys_t= []
     for i in range(sys_num):
-        swap_sys_t.append(swap(d_sys_total[i],d_t))
+        swap_sys_t.append(swap(help_obj.d_sys_ordered[i],d_t))
 
     if input_field_generator is None:
         input_field_generator = states.input_state_generator(d_t)
-    
-    fback_subchain_lengths = (l_list[1::] + l_list[1::][::-1])[:fback_subchains-1] # Truncate the first, used at front and not doubled up. Addition compresses to half length
-
-    # Check if need to halve the last case due to double counting middle l_list
-    if sys_num % 2 != 0:
-        fback_subchain_lengths[-1] /= 2 
-
-    # If N > 2 do last subchain explicitly for special case that may have one or two system bins 
-    # Do odd N case, single sys bin at end first
-    if sys_num % 2 != 0:
-        new_time_bin = next(input_field_generator)
-        nbins.append(new_time_bin)
-
-        pass
-
-    elif sys_num > 2 and sys_num % 2 == 0:
-        new_time_bin = next(input_field_generator)
-        nbins.append(new_time_bin)
-        pass
 
     # Add in the bins from the right using the generator, and swap to left side of the sys bins appropriately
     # End with OC in the right most bin on each loop, prep for next loop/after loop
-    for i in range(1,fback_subchains):
-        # Number of time bins to add for given subchain
-        for j in range(l_list[i] + l_list[-1-i]):
+    for i in range(help_obj.fback_subchain_num):
+        # Loop over the number of bins for that subcain
+        if i == 0:
+            num_bins_swap_over = help_obj.sys_num
+        else:
+            num_bins_swap_over = help_obj.sys_num - 2*i + int(help_obj.odd_end)
+
+        for j in range(help_obj.fback_subchain_lengths[-1-i]):
             new_time_bin = next(input_field_generator)
             nbins.append(new_time_bin)
-            oc_ind = -1
 
-    # Fill in the last feedback subchain after s_0/s_{n-1}
-    for j in range(l_list[0]):
-        new_time_bin = next(input_field_generator)
-        nbins.append(new_time_bin)
+            # Swap the incident time bin num_bins_swap_over to the left down the chain
+            for k in range(num_bins_swap_over):
+                phi1 = ncon([nbins[-2-k], nbins[-1-k], swap_sys_t[k]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                nbins[-2-k], stemp, nbins[-1-k] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[k])
+                nbins[-2-k] = nbins[-2-k] * stemp[None,None,:] #OC Left time bin
+            
+            # Move OC from time bin to first sys bin on the right
+            phi1 = ncon([nbins[-1-num_bins_swap_over], nbins[-num_bins_swap_over]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-1-num_bins_swap_over], stemp, nbins[-num_bins_swap_over] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[num_bins_swap_over-1])
+            nbins[-num_bins_swap_over] = stemp[:,None,None] * nbins[-num_bins_swap_over] #OC In right sys bin
 
-        # Swap s_0 with in bin, then s_{n-1} with in bin. Then move OC back to s_0
-        phi = ncon([nbins[-2], nbins[-1], swap_sys_t[0]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
-        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi, bond, d_t, d_sys_total[0])
-        nbins[-2] = nbins[-2] * stemp[None,None,:] #OC time bin, left bin
-
-        phi = ncon([nbins[-3], nbins[-2], swap_sys_t[-1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
-        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi, bond, d_t, d_sys_total[-1])
-        nbins[-2] = stemp[:,None,None] * nbins[-2] #OC last sys bin, on right
-
-        phi = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
-        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi, bond, d_sys_total[-1], d_sys_total[0])
-        nbins[-1] = stemp[:,None,None] * nbins[-1] #OC last sys bin, on right
+            # Move the OC back to the inital bin to prepare for the next loop
+            for k in range(num_bins_swap_over-2, -1, -1):
+                phi1 = ncon([nbins[-2-k], nbins[-1-k]], [[-1,-2,1],[1,-3,-4]])
+                nbins[-2-k], stemp, nbins[-1-k] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[k+1], help_obj.d_sys_ordered[k])
+                nbins[-2-k] = stemp[:,None,None] * nbins[-2-k] #OC in right sys bin
+        
+    return nbins
 
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...

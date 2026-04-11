@@ -22,6 +22,10 @@ class Symmetrical_Coupling_Helper:
     def calc_l_list(taus, d_sys_total, delta_t):
         sys_num = len(d_sys_total)
         taus = np.array(taus)
+        # N=2 case
+        if sys_num == 2:
+            return np.array(np.round(taus/delta_t, 0).astype(int))
+
         # In case of half taus specified, infer rest of taus by symmetry requirements
         if len(taus) == int(round((sys_num-1)/2)) and sys_num % 2 != 0:
             taus = np.append(taus, taus[::-1])
@@ -54,6 +58,12 @@ class Symmetrical_Coupling_Helper:
     # Ordered from right to left in the MPS
     def set_fback_subchain_lengths(self, l_list):
         #self.l_list_ordered = l_list[self.ordered_indices]
+        
+        #special case of N=2
+        if len(l_list) == 1:
+            self.fback_subchain_num = 1
+            self.fback_subchain_lengths = l_list
+            return
 
         sys_num = len(l_list) + 1
         self.fback_subchain_num = int((sys_num+1)/2) # Take ceiling of half
