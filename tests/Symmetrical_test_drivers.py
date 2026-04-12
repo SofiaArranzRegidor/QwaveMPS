@@ -8,10 +8,11 @@ import scipy as sci
 from ncon import ncon
 import copy
 #%% Test the separation of the system bin, and it's reordering in preparation of the MPS
-N = 5
-d_sys_total = [2]*N; #d_sys_total = [3,2,4,3,4,2,3]
+N = 8
+d_sys_total = [2]*N; d_sys_total = [3,2,4,3,4,2,3,3]
 delta_t = 1
-taus = [2]*(N-1)
+taus = [2]*(N-1); taus = [1,2,3,4,3,2,1]
+d_t = 3**2
 
 help_obj = Symmetrical_Coupling_Helper(d_sys_total)
 l_list = Symmetrical_Coupling_Helper.calc_l_list(taus,d_sys_total,delta_t)
@@ -45,3 +46,12 @@ for i in range(len(nbins)):
     nbins[-2-i] = left_bin * stemp[None,None,:]
 
 #%% Continuation of prior example: Test the initializations of the feedback loops (filling them with field bins)
+nbins_init = qmps.simulation._initialize_feedback_loop_sym_efficient(copy.deepcopy(nbins), l_list, d_t, d_sys_total, bond, help_obj, input_field_generator=None)
+
+#%%%
+print(len(nbins_init))
+for i in range(len(nbins_init)):
+    print(nbins_init[-1-i].shape)
+    #print(nbins_init[-1-i])
+    #print('='*50)
+# %%

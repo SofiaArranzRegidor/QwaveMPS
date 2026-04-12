@@ -1032,7 +1032,7 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
             for k in range(num_bins_swap_over-2, -1, -1):
                 phi1 = ncon([nbins[-2-k], nbins[-1-k]], [[-1,-2,1],[1,-3,-4]])
                 nbins[-2-k], stemp, nbins[-1-k] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[k+1], help_obj.d_sys_ordered[k])
-                nbins[-2-k] = stemp[:,None,None] * nbins[-2-k] #OC in right sys bin
+                nbins[-1-k] = stemp[:,None,None] * nbins[-1-k] #OC in right sys bin
         
     return nbins
 
