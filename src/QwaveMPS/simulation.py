@@ -24,7 +24,7 @@ from QwaveMPS.parameters import InputParams, Bins
 from typing import Callable, TypeAlias
 from QwaveMPS.hamiltonians import Hamiltonian
 from QwaveMPS.operators import *
-from QwaveMPS.operators import u_evol, swap
+from QwaveMPS.operators import u_evol, swap, u_evol_multi_emitter_bins
 from tqdm import tqdm
 
 __all__ = ['t_evol_mar', 't_evol_nmar', 't_evol_nmar_chiral']
@@ -1039,6 +1039,7 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
+#TODO Still have to appropriately save the Schmidt coefficients
 def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True) -> Bins:
     delta_t = params.delta_t
     tmax=params.tmax
@@ -1053,6 +1054,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     sys_num = len(d_sys_total)
     taus = np.array(taus)
 
+    '''
     # In case of half taus specified, infer rest of taus by symmetry requirements
     if len(taus) == int(round((sys_num-1)/2)) and sys_num % 2 != 0:
         taus = np.append(taus, taus[::-1])
@@ -1065,7 +1067,9 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     # Check errors
     if not (l_list == l_list[::-1]).all():
         raise ValueError("Delay times tau list must be symmetric over reversal.")
+    '''
 
+    l_list = Symmetrical_Coupling_Helper.calc_l_list(taus, d_sys_total, delta_t)
     help_obj = Symmetrical_Coupling_Helper(d_sys_total)
     help_obj.set_fback_subchain_lengths(l_list)
 
@@ -1085,7 +1089,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     # Also want to store the feedback lengths between each pair of bins
     # Helpful to store these things in an interior class that can get passed around
 
-
+    #TODO Have to account for two system bin legs, and possibility of single sys/time leg
     for i in range(len(hams)):
         if not callable(hams[i]):
             evols[i] = u_evol(hams[i],d_sys_total[i],d_t) #Feedback loop means time evolution involves an input and a feedback time bin. Can generalize this later, leaving 2 for now so it runs.
@@ -1095,8 +1099,8 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     swap_sys_t= []
     swap_t_sys = []
     for i in range(sys_num):
-        swap_sys_t.append(swap(d_sys_total[i],d_t))
-        swap_sys_t.append(d_t, swap(d_sys_total[i]))
+        swap_sys_t.append(swap(help_obj.d_sys_ordered[i],d_t))
+        swap_t_sys.append(swap(d_t, help_obj.d_sys_ordered[i]))
 
         
     # indexed with 0 being out of the WG, greater index is greater depth
@@ -1113,22 +1117,410 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     nbins = _reorder_sys_bins_sym_efficient(nbins, d_sys_total, help_obj, bond)
     nbins = _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
+    # N=2 is a special case, so programmed separately as its own subroutine
+    if sys_num == 2:
+        # Precalculations
+        time_evol_ncon_indices = _ncon_contraction_index_list(4)
+
+        # Prefetch the first feedback bin so that all iterations start with the feedback bin placed correct
+        # Move OC from s0 to s1
+        phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
+        nbins[-2] = nbins[-2] * stemp[None,None,:] #OC in left bin
+
+        # Move OC from s1 to first fback bin
+        phi1 = ncon([nbins[-3], nbins[-2]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
+        nbins[-3] = nbins[-3] * stemp[None,None,:] #OC in left bin
+
+        # Loop over moving the OC down the feedback chain
+        for j in range(l_list[0]-1):
+            phi1 = ncon([nbins[-(4+j)], nbins[-(3+j)]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-(4+j)], stemp, nbins[-(3+j)] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[-(4+j)] = nbins[-(3+j)] * stemp[None,None,:] #OC in left bin
+
+        # Loop over swapping the bin back up the feedback chain
+        for j in range(l_list[0]-2,-1,-1):
+            phi1 = ncon([nbins[-(4+j)], nbins[-(3+j)], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[-(4+j)], stemp, nbins[-(3+j)] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[-(3+j)] = stemp[:,None,None] * nbins[-(3+j)] #OC in right bin
+
+        # Move OC from s1 to first fback bin
+        phi1 = ncon([nbins[-3], nbins[-2]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
+        nbins[-2] = stemp[:,None,None] * nbins[-2]  #OC in Right bin
+
+        # Move OC from s0 to s1
+        phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
+        nbins[-1] = stemp[:,None,None] * nbins[-1] #OC in right bin
+
+        # Loop over, with the feedback bin beside the emitters at the start of each iteration
+        for k in tqdm(range(n), disable = not show_progress):   
+            #TODO Have to account for two system bin legs, and possibility of single sys/time leg
+            for i in callable_ham_indices:
+                evols[i] = u_evol_multi_emitter_bins(hams[i](k), help_obj.d_sys_ordered, d_t, 2)
+
+            in_state = next(input_field)
+            nbins.append(in_state)
+            t_k += delta_t
+
+            # Swap the incident bin with s0
+            phi1 = ncon([nbins[-2], nbins[-1], swap_sys_t[0]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[0])
+            nbins[-2] = nbins[-2] * stemp[None,None,:] #OC in left bin
+
+            # Swap the incident bin with s1
+            phi1 = ncon([nbins[-3], nbins[-2], swap_sys_t[1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
+            nbins[-3] = nbins[-3] * stemp[None,None,:] #OC in left bin
+
+            # Store the OC normed input bin
+            tbins_in.append(nbins[-3])
+
+            # Time evolve the system
+            phi1=ncon(nbins[-4:] + [evols[0]],time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
+        
+            # Separate the bins and store OC normed bins, leave OC in old tau bin
+            phi1, stemp, nbins[-1] = _svd_tensors(phi1, bond, d_t*d_t*help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
+            phi1 = phi1 * stemp[None,None,:] #OC in left bin
+            sbins[0].append(stemp[:,None,None] * nbins[-1]) #Store OC normed sys0 bin
+            
+            phi1, stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t*d_t, help_obj.d_sys_ordered[1])
+            phi1 = phi1 * stemp[None,None,:] #OC in left bin
+            sbins[1].append(stemp[:,None,None] * nbins[-2]) #Store OC normed sys1 bin
+
+            nbins[-4], stemp, nbins[-3] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[-4] = nbins[-4] * stemp[None,None,:] #OC in left bin
+            oc_normed_bins_lists[0].append(stemp[:,None,None] * nbins[-3]) #Store OC normed output time bin
+            oc_normed_bins_lists[1].append(nbins[-4]) #Store OC normed outgoing field bin
+
+            # Swap the old tau bin beyond the end of the chain, l-1 bins left
+            for j in range(4, l_list[0]+3):
+                phi1 = ncon([nbins[-(1+j)], nbins[-(j)], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                nbins[-(1+j)], stemp, nbins[-(j)] = _svd_tensors(phi1, bond, d_t, d_t)
+                nbins[-(1+j)] = nbins[-(1+j)] * stemp[None,None,:] #OC in left bin
+
+            # Put OC in one bin to the right, the next tau bin
+            phi1 = ncon([nbins[-(l_list[0]+3)], nbins[-(l_list[0]+2)]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-(l_list[0]+3)], stemp, nbins[-(l_list[0]+2)] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[-(l_list[0]+2)] = stemp[:,None,None] * nbins[-(l_list[0]+2)] #OC in right bin
+
+            # Swap the next tau bin back, l-1 bins right
+            for j in range(l_list[0]+1, 2, -1):
+                phi1 = ncon([nbins[-(1+j)], nbins[-j], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                nbins[-(1+j)], stemp, nbins[-j] = _svd_tensors(phi1, bond, d_t, d_t)
+                nbins[-j] = stemp[:,None,None] * nbins[-j] #OC in right bin
+
+            # Put the OC in S1  
+            phi1 = ncon([nbins[-3], nbins[-2]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
+            nbins[-2] = stemp[:,None,None] * nbins[-2] #OC in right bin
+
+            # Put OC in S0
+            phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
+            nbins[-1] = stemp[:,None,None] * nbins[-1] #OC in right bin
+
+        # Move the OC to the first outgoing field and truncate the list to prepare nbins for correlation calculations
+        phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
+        nbins[-2] = nbins[-1] * stemp[None,None,:] #OC in left bin
+
+        phi1 = ncon([nbins[-3], nbins[-2]], [[-1,-2,1],[1,-3,-4]])
+        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
+        nbins[-3] = nbins[-2] * stemp[None,None,:] #OC in left bin
+
+        # Move the OC over the feedback bins
+        for j in range(3,l_list[0]+3):
+            phi1 = ncon([nbins[-(j+1)], nbins[-j]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-(j+1)], stemp, nbins[-j] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[-(j+1)] = nbins[-(j+1)] * stemp[None,None,:] #OC in left bin
+
+        nbins = nbins[:-(l_list[0]+2)] # Truncate the nbins list
+        return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
+        correlation_bins=nbins,schmidt=schmidts)
+
+    # Otherwise have N\neq 2, and just have to careful around the edges, and especially for the N=3 case
+    # Precalculate required numbers
+    group_num = int((sys_num+1)/2)
+    sys_group_num = [2] * group_num
+    if help_obj.odd_end:
+        sys_group_num[-1] = 1
+    
+    # Calculate the fback_distances
+    fback_distances_j = [0] * group_num # The forward grabbed feedback bin (from the left of current emitter pair)
+    fback_distances_k = [0] * group_num # The backward grabbed feedback bin (from the right of current emitter pair)
+
+    # Case of first ones
+    if sys_num == 3:
+        fback_distances_j[0] = min(help_obj.fback_subchain_lengths[1], 2*help_obj.l_list_ordered[-1])
+    else:
+        fback_distances_j[0] = help_obj.fback_subchain_lengths[1]
+    
+    # Case of last ones
+    if not help_obj.odd_end:
+        fback_distances_j[-1] = max(0, help_obj.l_list_ordered[-1] - help_obj.l_list_ordered[-2] + 1)
+        fback_distances_k[-1] = max(0, help_obj.l_list_ordered[-3] - help_obj.l_list_ordered[-4] + 1)
+    else:
+        fback_distances_k[-1] = max(0, help_obj.l_list_ordered[-2] - help_obj.l_list_ordered[-3] + 1)
+
+    # Intermediate values
+    # loop over calculating the left numbers
+    for j in range(1,group_num-1):
+        # Special case for the second last group
+        if j == group_num -2:
+            if help_obj.odd_end:
+                fback_distances_j[j] = help_obj.l_list_ordered[2*j+1]
+            else:
+                fback_distances_j[j] = min(help_obj.fback_subchain_lengths[j+1]-1, 2*help_obj.l_list_ordered[2*j+2])
+            continue
+
+        fback_distances_j[j] = min(help_obj.fback_subchain_lengths[j+1], 2*help_obj.l_list_ordered[2*j+2])
+        
+    for j in range(1,group_num-1):    
+        # Special cases for second group
+        if j == 1:
+            fback_distances_k[j] = 0
+            continue
+
+        fback_distances_k[j] = max(0,help_obj.l_list_ordered[2*j-2]-help_obj.l_list_ordered[2*j-3]+1)
+        
+
+    time_evol_ncon_indices = _ncon_contraction_index_list(4)
+    if help_obj.odd_end:
+        end_time_evol_ncon_indices = _ncon_contraction_index_list(3)
+    else:
+        end_time_evol_ncon_indices = _ncon_contraction_index_list(4)
+
+
     for k in tqdm(range(n), disable = not show_progress):   
-        #TODO Have to account for two system bin legs, and possibility of single sys/time leg
+        #TODO Have to account for two system bin legs, and possibility of single sys/time leg, and correct emitter dims
         for i in callable_ham_indices:
-            evols[i] = u_evol(hams[i](k), d_sys_total[i], d_t)
+            evols[i] = u_evol_multi_emitter_bins(hams[i](k), d_sys_total[i], d_t)
 
         sbin_0 = nbins[-1]
         in_state = next(input_field)
         nbins.append(in_state)
-
-
         t_k += delta_t
-    
-    
-    #truncation_number = np.sum(l_list) + sys_num
-    nbins = nbins[:-truncation_number]
 
+        #=====================================================
+        # Time evolve the first emitter pair, (sN-1,s0)
+        #=====================================================
+
+        # Swap the incident field around s0
+        # Swap the incident bin with s0
+        phi1 = ncon([nbins[-2], nbins[-1], swap_sys_t[0]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+        nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[0])
+        nbins[-2] = nbins[-2] * stemp[None,None,:] #OC in left bin
+
+        # Swap the incident bin with s1
+        phi1 = ncon([nbins[-3], nbins[-2], swap_sys_t[1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+        nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
+        nbins[-3] = nbins[-3] * stemp[None,None,:] #OC in left bin
+
+        # Store the OC normed input bin
+        tbins_in.append(nbins[-3])
+
+        # Fetch the feedback bin
+        # Move the OC l[0] + 1/2 + j bins left
+        for j in range(3,help_obj.l_list_ordered[0] + sys_group_num[1] + fback_distances_j[0] + 3):
+            phi1 = ncon([nbins[-(j+1)], nbins[-j]], [[-1,-2,1],[1,-3,-4]])
+            nbins[-(j+1)], stemp, nbins[-j] = _svd_tensors(phi1, bond, nbins[-(j+1)].shape[1],nbins[-j].shape[1])
+            nbins[-(j+1)] = nbins[-(j+1)] * stemp[None,None,:] #OC in left bin
+
+        # Swap this feedback bin right (j-1) (over time bins), 1/2 over sys bins, l[0] over time bins
+        for j in range(-(help_obj.l_list_ordered[0] + sys_group_num[1] + fback_distances_j[0] + 3), -(help_obj.l_list_ordered[0] + sys_group_num[1] + 4)):
+            phi1 = ncon([nbins[j], nbins[j+1], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+
+        # Swap over 1/2 sys bins
+        ind = -(help_obj.l_list_ordered[0] + sys_group_num[1] + 4)
+        if sys_num != 3:
+            phi1 = ncon([nbins[ind], nbins[ind+1], swap_t_sys[3]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[ind], stemp, nbins[ind+1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[3], d_t)
+            nbins[ind+1] = stemp[:,None,None] * nbins[ind+1] #OC in right bin
+            ind += 1
+
+        phi1 = ncon([nbins[ind], nbins[ind+1], swap_t_sys[2]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+        nbins[ind], stemp, nbins[ind+1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[2], d_t)
+        nbins[ind+1] = stemp[:,None,None] * nbins[ind+1] #OC in right bin
+
+
+        # Swap over l[0] time bins
+        for j in range(-(4 + help_obj.l_list_ordered[0]), -4):
+            phi1 = ncon([nbins[j], nbins[j+1], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+
+        # Contract and time evolve
+        phi1=ncon(nbins[-4:] + [evols[0]],time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
+    
+        # Separate the bins and store OC normed bins, leave OC in old tau bin
+        phi1, stemp, nbins[-1] = _svd_tensors(phi1, bond, d_t*d_t*help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
+        phi1 = phi1 * stemp[None,None,:] #OC in left bin
+        sbins[0].append(stemp[:,None,None] * nbins[-1]) #Store OC normed sys0 bin
+        
+        phi1, stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t*d_t, help_obj.d_sys_ordered[1])
+        phi1 = phi1 * stemp[None,None,:] #OC in left bin
+        sbins[-1].append(stemp[:,None,None] * nbins[-2]) #Store OC normed sys1 bin
+
+        nbins[-4], stemp, nbins[-3] = _svd_tensors(phi1, bond, d_t, d_t)
+        nbins[-4] = nbins[-4] * stemp[None,None,:] #OC in left bin
+        oc_normed_bins_lists[0].append(stemp[:,None,None] * nbins[-3]) #Store OC normed output time bin
+        oc_normed_bins_lists[-1].append(nbins[-4]) #Store OC normed outgoing field bin
+
+        # Move the old feedback bin ALL the way left over the MPS chain (being careful of swaps over sys bins)
+        index = -4
+        for loop in range(help_obj.fback_subchain_num):
+            if loop == 1:
+                bin_num = help_obj.fback_subchain_lengths[loop] - 1
+            else:
+                bin_num = help_obj.fback_subchain_lengths[loop]
+            
+            for j in range(index, index-bin_num,-1):
+                phi1 = ncon([nbins[j-1], nbins[j], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                nbins[j-1], stemp, nbins[j] = _svd_tensors(phi1, bond, d_t, d_t)
+                nbins[j-1] = nbins[j-1] * stemp[None,None,:] #OC in left bin
+            index -= bin_num
+
+            # At emitters (if present)
+            if loop == help_obj.fback_subchain_num - 1:
+                break # Are complete (no emitters follow final feedback chain)
+            
+            phi1 = ncon([nbins[index-1], nbins[index], swap_t_sys[2*loop+2]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[index-1], stemp, nbins[index] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[2*loop+2], d_t)
+            nbins[index-1] = nbins[index-1] * stemp[None,None,:] #OC in left bin
+            index -= 1
+
+            # Check if this is the last group and have an odd number of emitters.
+            if sys_group_num[loop+1] != 1:
+                phi1 = ncon([nbins[index-1], nbins[index], swap_t_sys[2*loop+3]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                nbins[index-1], stemp, nbins[index] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[2*loop+3], d_t)
+                nbins[index-1] = nbins[index-1] * stemp[None,None,:] #OC in left bin
+                index -= 1
+
+        #=====================================================
+        # Time evolve the last emitter pair, (s_N-1/2, s_int(N-1/2))
+        #=====================================================
+        # Must be careful, have extra step of grabbing extra bin if N is even
+
+        # Even case
+        if help_obj.odd_end:
+            # Move the OC k+1 bins to the right (over time bins, getting to the fback bin)
+            for j in range(index, index + fback_distances_k[-1] + 1):
+                phi1 = ncon([nbins[j], nbins[j+1]], [[-1,2,1],[1,3,-4]])
+                nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
+                nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+            index += fback_distances_k[-1] + 1
+
+            # OC is now in Feedback bin, swap the OC to the right to get it right of emitter bins (chain num - (k+1))
+            for j in range(index, index + help_obj.fback_subchain_lengths[-1] - (fback_distances_k[-1] + 1)):
+                phi1 = ncon([nbins[j], nbins[j+1], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
+                nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+
+            index += help_obj.fback_subchain_lengths[-1] - (fback_distances_k[-1] + 1)
+
+        # Odd cases
+        else:
+            # Move the OC into the time bin immediately to the left of last emitter bin
+            for j in range(index, index+help_obj.fback_subchain_lengths[-1]):
+                phi1 = ncon([nbins[j], nbins[j+1]], [[-1,2,1],[1,3,-4]])
+                nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
+                nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+            index += help_obj.fback_subchain_lengths[-1]
+
+        # Move OC sys_group_num[-1] + (j+1) bins to the right (over emitter and time bins)
+        for j in range(index, index + sys_group_num[-1] + fback_distances_j[-1] + 1):
+            phi1 = ncon([nbins[j], nbins[j+1]], [[-1,2,1],[1,3,-4]])
+            nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, nbins[j].shape[1], nbins[j+1].shape[1])
+            nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+        index += sys_group_num[-1] + fback_distances_j[-1] + 1
+
+        # Have OC in appropriate bin, swap left over j bins to be right of emitter bin(s)
+        for j in range(index, index - fback_distances_j[-1], -1):
+            phi1 = ncon([nbins[j-1], nbins[j], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[j-1], stemp, nbins[j] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[j-1] = nbins[j-1] * stemp[None,None,:] #OC in left bin
+
+        index -= fback_distances_j[-1]
+
+        # Swap over the emitter bin(s)
+        if sys_group_num[-1] == 2:
+            phi1 = ncon([nbins[index-1], nbins[index], swap_sys_t[-2]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[index-1], stemp, nbins[index] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[-2])
+            nbins[index-1] = nbins[index-1] * stemp[None,None,:] #OC in left bin
+            index -= 1
+        phi1 = ncon([nbins[index-1], nbins[index], swap_sys_t[-1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+        nbins[index-1], stemp, nbins[index] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[-1])
+        nbins[index-1] = nbins[index-1] * stemp[None,None,:] #OC in left bin
+        index -= 1
+
+        # Contract and separate bins (3 vs 4 bins dependent on even vs odd N)
+        if help_obj.odd_end:
+            #  2 bins contraction, index/OC in time bin
+            phi1=ncon(nbins[index:index+2] + [evols[0]], end_time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
+        
+            # Separate the bins and store OC normed bins, leave OC in old tau bin
+            nbins[index], stemp, nbins[index+1] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[-1])
+            nbins[index] = nbins[index] * stemp[None,None,:] #OC in left bin
+
+            sbins[help_obj.ordered_indices[-1]].append(stemp[:,None,None] * nbins[index+1]) #Store OC normed sys end bin
+            oc_normed_bins_lists[help_obj.ordered_indices[-1]].append(nbins[index]) #Store OC normed outgoing field bin
+
+
+        else:
+            index -= 1
+            # Regular 4 bins, index/OC is right time bin
+            phi1=ncon(nbins[index:index+4] + [evols[0]], end_time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
+        
+            # Separate the bins and store OC normed bins, leave OC in old tau bin
+            phi1, stemp, nbins[index+3] = _svd_tensors(phi1, bond, d_t*d_t*help_obj.d_sys_ordered[-1], help_obj.d_sys_ordered[-2])
+            phi1 = phi1 * stemp[None,None,:] #OC in left bin
+            sbins[help_obj.ordered_indices[-2]].append(stemp[:,None,None] * nbins[index+3]) #Store OC normed sys second from end bin
+            
+            phi1, stemp, nbins[index+2] = _svd_tensors(phi1, bond, d_t*d_t, help_obj.d_sys_ordered[-1])
+            phi1 = phi1 * stemp[None,None,:] #OC in left bin
+            sbins[help_obj.ordered_indices[-1]].append(stemp[:,None,None] * nbins[index+2]) #Store OC normed sys end bin
+
+            nbins[index], stemp, nbins[index+1] = _svd_tensors(phi1, bond, d_t, d_t)
+            nbins[index] = nbins[index] * stemp[None,None,:] #OC in left bin
+            oc_normed_bins_lists[help_obj.ordered_indices[-2]].append(stemp[:,None,None] * nbins[index+1]) #Store OC normed output time bin
+            oc_normed_bins_lists[help_obj.ordered_indices[-1]].append(nbins[index]) #Store OC normed outgoing field bin
+
+
+        #=====================================================
+        # Iterate: Work backwards over all other emitter pairs, time evolving them, (sN-1-i, si)
+        #=====================================================
+        # Mostly the same for all cases, just have to be a little careful in case of the second last and second emitter pair
+
+
+
+        #=====================================================
+        # Move OC back into the s0 bin
+        #=====================================================
+        # Move the OC over emitter/time bins, (sys_group_num[1]*2 - 1) + l[0] + 2 bins right (end in index -1)
+
+        for j in range(-(2*sys_group_num[1] + help_obj.fback_subchain_lengths[0] + 2), -1, 1):
+            phi1 = ncon([nbins[j], nbins[j+1]], [[-1,2,1],[1,3,-4]])
+            nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, nbins[j].shape[1], nbins[j+1].shape[1])
+            nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
+        index = -1
+
+
+    # Move OC beyond all feedback loops and truncate nbins
+    # Move it N + \sum_i l[i] bins left (starts in -1)
+    truncation_num = -(sys_num + np.sum(l_list))
+    for j in range(-1, truncation_num, -1):
+        phi1 = ncon([nbins[j-1], nbins[j]], [[-1,2,1],[1,3,-4]])
+        nbins[j-1], stemp, nbins[j] = _svd_tensors(phi1, bond, nbins[j].shape[1], nbins[j+1].shape[1])
+        nbins[j-1] = nbins[j-1] * stemp[None,None,:] #OC in left bin
+
+
+    #truncation_number = np.sum(l_list) + sys_num
+    nbins = nbins[:truncation_num]
 
     return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
