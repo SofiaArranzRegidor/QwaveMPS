@@ -89,7 +89,7 @@ params = qmps.parameters.InputParams(
     d_t_total = [d_t_1]*2,
     gamma_l=1,
     gamma_r = 1,  
-    bond_max=32
+    bond_max=64
 )
 tmax = params.tmax
 tlist=np.arange(0,tmax+params.delta_t, params.delta_t)
@@ -134,7 +134,9 @@ fig, ax = plt.subplots(figsize=(7, 5))
 
 #plt.plot(tlist,np.real(out_flux),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{R}$')
 for i in range(N):
-    plt.plot(tlist,np.real(sys_pops[i]),linewidth = 3,linestyle='-',label=r'$n_{\rm TLS}^{('+str(i)+r')}$')
+    if i < int(N/2): curr_line_style = '-'
+    else: curr_line_style = '--'
+    plt.plot(tlist,np.real(sys_pops[i]),linewidth = 3,linestyle=curr_line_style,label=r'$n_{\rm TLS}^{('+str(i)+r')}$')
 
 #plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
 #plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
@@ -148,9 +150,11 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,5*N])
-plt.xlim([0.,50])
+plt.xlim([0.,5])
 
 plt.tight_layout()
 #plt.savefig('pops.pdf', bbox_inches='tight', dpi=400)
 
 plt.show()
+
+# %%
