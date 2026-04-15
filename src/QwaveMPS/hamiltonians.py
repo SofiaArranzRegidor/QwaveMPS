@@ -187,6 +187,9 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
     t2L = np.sqrt(gamma_l2)*(np.kron(sigmaminus2,delta_b_dag_l(delta_t,d_t_total)) 
     + np.kron(sigmaplus2,delta_b_l(delta_t,d_t_total)))
     
+    j_12 = 0.5*(np.sqrt(gamma_r1 * gamma_r2) + np.sqrt(gamma_l1 * gamma_l2)) * np.imag(np.exp(1j*phase))
+    h_exch = delta_t*j_12*np.kron(sigmaplus1 @ sigmaminus2 + sigmaminus1 @ sigmaplus2,np.eye(d_t))
+    
     if isinstance(omega1, np.ndarray) and isinstance(omega2, np.ndarray):
         omega1s = tuple(omega1)
         omega2s = tuple(omega2)
@@ -198,7 +201,7 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
             hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2s[t_k])/2*np.kron(sigmaminus2,np.eye(d_t)))
             +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
            
-            return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
+            return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
    
     elif isinstance(omega1, np.ndarray):
         omega1s = tuple(omega1)
@@ -209,7 +212,7 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
             hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(sigmaplus1,np.eye(d_t)) + np.conj(omega1s[t_k])/2*np.kron(sigmaminus1,np.eye(d_t)))
             +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
             
-            return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
+            return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
 
     elif isinstance(omega2, np.ndarray):
         omega2s = tuple(omega2)
@@ -220,7 +223,7 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
             hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2s[t_k])/2*np.kron(sigmaminus2,np.eye(d_t)))
             +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
              
-            return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L
+            return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
         
     else:
         hm_sys1=(delta_t*(omega1/2*np.kron(sigmaplus1,np.eye(d_t)) + np.conj(omega1)/2*np.kron(sigmaminus1,np.eye(d_t)))
@@ -229,7 +232,7 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
         hm_sys2=(delta_t*(omega2/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2)/2*np.kron(sigmaminus2,np.eye(d_t)))
         +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
  
-        hm_total = (hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L )
+        hm_total = hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
     return hm_total
 
 def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:float=0, omega2:float|np.ndarray=0, delta2:float=0) -> Hamiltonian:
