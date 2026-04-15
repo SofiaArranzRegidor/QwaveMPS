@@ -79,7 +79,7 @@ for i in range(len(nbins_init)):
 N = 8
 d_sys_total = [2]*N; #d_sys_total = [3,2,4,3,4,2,3,3]
 delta_t = 0.05
-taus = [2]*(N-1); taus = [1,2,1,2,1,2,1]; taus = [1,2,1,2,1,2,1]
+taus = [2]*(N-1); taus = [1,2,1,2,1,2,1]; taus = [0.5,1,0.5,1,0.5,1,0.5]
 d_t_1 = 3
 d_t = 3**2
 params = qmps.parameters.InputParams(
@@ -89,7 +89,7 @@ params = qmps.parameters.InputParams(
     d_t_total = [d_t_1]*2,
     gamma_l=1,
     gamma_r = 1,  
-    bond_max=64
+    bond_max=80
 )
 tmax = params.tmax
 tlist=np.arange(0,tmax+params.delta_t, params.delta_t)
