@@ -57,7 +57,7 @@ class Symmetrical_Coupling_Helper:
 
     # Ordered from right to left in the MPS
     def set_fback_subchain_lengths(self, l_list):
-        #self.l_list_ordered = l_list[self.ordered_indices]
+        self.l_list_ordered = l_list[np.delete(self.ordered_indices, np.argmax(self.ordered_indices))]
         
         #special case of N=2
         if len(l_list) == 1:
