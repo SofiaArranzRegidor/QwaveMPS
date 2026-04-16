@@ -79,17 +79,17 @@ for i in range(len(nbins_init)):
 N = 8
 d_sys_total = [2]*N; #d_sys_total = [3,2,4,3,4,2,3,3]
 delta_t = 0.05
-taus = [2]*(N-1); taus = [1,2,1,2,1,2,1]; taus = [0.5,1,0.5,1,0.5,1,0.5]
+taus = [2]*(N-1); taus = [1,2,1,2,1,2,1]; taus = [1,1,1,1]
 d_t_1 = 3
 d_t = 3**2
 params = qmps.parameters.InputParams(
     delta_t = delta_t,
-    tmax = 5,
+    tmax = 10,
     d_sys_total = d_sys_total,
     d_t_total = [d_t_1]*2,
     gamma_l=1,
     gamma_r = 1,  
-    bond_max=80
+    bond_max=120
 )
 tmax = params.tmax
 tlist=np.arange(0,tmax+params.delta_t, params.delta_t)
@@ -115,6 +115,7 @@ bins = qmps.t_evol_nmar_sym(hams, i_s0, i_n0, taus, params)
 #%%%
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
+import matplotlib.ticker as ticker
 
 
 sys_pop_op = qops.sigmaplus() @ qops.sigmaminus()
@@ -127,11 +128,11 @@ for i in range(len(d_sys_total)):
 
 fonts=18
 pic_style(fonts)
+plt.rcParams['figure.dpi'] = 500
 
 
 #fig, ax = plt.subplots(figsize=(4.5, 4))
 fig, ax = plt.subplots(figsize=(7, 5))
-
 #plt.plot(tlist,np.real(out_flux),linewidth = 3, color = 'skyblue',linestyle='--',label=r'$n_{R}$')
 for i in range(N):
     if i < int(N/2): curr_line_style = '-'
@@ -141,7 +142,7 @@ for i in range(N):
 #plt.plot(tlist,np.real(trans),linewidth = 3,color = 'orange',linestyle='-',label='T')
 #plt.plot(tlist,np.real(ref),linewidth = 3,color = 'b',linestyle=':',label='R')
 #plt.plot(tlist,total,linewidth = 3,color = 'g',linestyle='-',label='Total')
-plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1.1),labelspacing=0.2)
+plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1.0),labelspacing=0.2)
 plt.xlabel('Time, $\gamma t$')
 plt.ylabel('Populations')
 plt.grid(True, linestyle='--', alpha=0.6)
@@ -149,8 +150,12 @@ formatter = FuncFormatter(clean_ticks)
 ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
-plt.xlim([0.,5*N])
-plt.xlim([0.,5])
+#plt.xlim([0.,5*N])
+plt.xlim([0.,tmax])
+
+plt.minorticks_on()
+ax.xaxis.set_minor_locator(ticker.MultipleLocator(1))
+plt.grid(which='minor', color='gray', linestyle=':', alpha=0.5)
 
 plt.tight_layout()
 #plt.savefig('pops.pdf', bbox_inches='tight', dpi=400)
