@@ -533,8 +533,8 @@ def u_evol(Hm:np.ndarray|list, d_sys_total:np.ndarray, d_t_total:np.ndarray, int
     Hm : ndarray
         Hamiltonian of the system.
 
-    d_sys_total : ndarray
-        Sizes of the Hilbert spaces of the matter system.
+    d_sys : int, default: 2
+        Size of the Hilbert space of the matter system.
     
     d_t_total : ndarray
         List of sizes of the photonic Hilbert spaces.
@@ -547,42 +547,13 @@ def u_evol(Hm:np.ndarray|list, d_sys_total:np.ndarray, d_t_total:np.ndarray, int
     oper : ndarray
         Time evolution operator of shape ((d_sys,) + (d_t,)*interacting_timebins_num)*2.
     """ 
+    #TODO In future version restructure so that system dimension is to the far right of the system bins (easier in general case)
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    shape = (((d_t,)*interacting_timebins_num) + (d_sys,)) * 2
+    #shape = (((d_t,)*interacting_timebins_num) + (d_sys,)) * 2
+    shape = (((d_t,)*(interacting_timebins_num-1)) + (d_sys,) + (d_t,)) * 2
     sol= expm(-1j*Hm).reshape(shape)
     return sol
-
-def u_evol_multi_emitter_bins(Hm:np.ndarray|list, d_sys_list:list[int], d_t_total:np.ndarray, interacting_timebins_num:int=1) -> np.ndarray:
-    """
-    Creates a time evolution operator :math:`\\exp{-1j H}` for a given Hamiltonian,
-    and reshape to expected tensor shape, with the time bins to the left and the ordered
-    list of system dimensions to the right.
-
-    Parameters
-    ----------
-    Hm : ndarray
-        Hamiltonian of the system.
-
-    d_sys_list : list[int]
-        Sizes of the emitter Hilbert spaces .
-    
-    d_t_total : ndarray
-        List of sizes of the photonic Hilbert spaces.
-
-    interacting_timebins_num : int, default: 1
-        Number of light channels/feedback loops involved in the Hamiltonian.
-
-    Returns
-    -------
-    oper : ndarray
-        Time evolution operator of shape ((d_sys,) + (d_t,)*interacting_timebins_num)*2.
-    """ 
-    d_t=np.prod(d_t_total)
-    shape = (((d_t,)*interacting_timebins_num) + tuple(d_sys_list)) * 2
-    sol= expm(-1j*Hm).reshape(shape)
-    return sol
-
 
 #----------
 #Swap MPOs

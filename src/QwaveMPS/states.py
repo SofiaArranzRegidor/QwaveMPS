@@ -620,7 +620,7 @@ def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable,
     bins = [calc_ak(k) for k in range(m)]    
     
     # Test print of the bins
-    #_matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
+    _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
 
     bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed

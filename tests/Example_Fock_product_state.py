@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 
 
 photon_num_l = 0
-photon_num_r = 3
+photon_num_r = 2
 photon_num = max(photon_num_l, photon_num_r)
 gaussian_env = False
 params = qmps.parameters.InputParams(
-    delta_t=0.05, 
-    tmax = 20,
+    delta_t=0.02, 
+    tmax = 12,
     d_sys_total=np.array([2]),
     d_t_total=np.array([photon_num_l+1,photon_num_r+1]),
     gamma_l=0,
@@ -26,15 +26,15 @@ tlist=np.arange(0,tmax+delta_t,delta_t)
 
 sys_initial_state = qmps.tls_ground()
 
-pulse_centers = [3,8,13]
-sigmas = [1]*photon_num_r
+pulse_centers = [4,6]
+sigmas = [1,1]
 pulse_time_gauss = params.tmax
 pulse_envs_gaus = []
-for i in range(photon_num_r):
+for i in range(2):
     pulse_envs_gaus.append(qmps.gaussian_envelope(pulse_time_gauss, params, sigmas[i], pulse_centers[i]))
     pulse_envs_gaus[i] = qmps.normalize_pulse_envelope(pulse_envs_gaus[i])
-pulse_envs_left = np.ones(np.array(pulse_envs_gaus).shape)
-wg_initial_state = qmps.product_fock_pulse([pulse_envs_left, pulse_envs_gaus],pulse_time_gauss,params, [photon_num_l, photon_num_r])   
+
+wg_initial_state = qmps.product_fock_pulse([pulse_envs_gaus, pulse_envs_gaus],pulse_time_gauss,params, [photon_num_l, photon_num_r])   
 
 
 Hm=qmps.hamiltonian_1tls(params)
@@ -75,7 +75,7 @@ plt.plot(tlist, same_time_corrs_r_out[1],linewidth=lw, linestyle=':', label=r'$n
 plt.plot(tlist, same_time_corrs_l_out[0],linewidth=lw, linestyle='--', label=r'$n^{\rm out}_{L}$')
 
 
-plt.xlim((0,tmax))
+plt.xlim((0,12))
 plt.ylim((0,None))
 plt.xlabel(r'$\gamma t$')
 plt.ylabel(r'Pops')

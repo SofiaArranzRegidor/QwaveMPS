@@ -47,7 +47,7 @@ tls_pop_op = qmps.tls_pop()
 photon_pop_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 def timedProcess():
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params, show_progress=False)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
     tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
     photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
     net_flux_l = np.cumsum(photon_fluxes[0]) * input_params.delta_t
@@ -75,7 +75,6 @@ input_params = qmps.parameters.InputParams(
     phase=np.pi
 )
 tlist=np.arange(0,input_params.tmax+input_params.delta_t/2,input_params.delta_t)
-tau=input_params.tau
 
 sys_initial_state=qmps.states.tls_excited()
 wg_initial_state = None
@@ -87,12 +86,12 @@ tls_pop_op = qmps.tls_pop()
 
 """ Time evolution of the system"""
 def timedProcess():
-    bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,[tau],input_params,show_progress=False)
+    bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
     tls_pops = qmps.single_time_expectation(bins.system_states, tls_pop_op)
-    transmitted_flux = qmps.single_time_expectation(bins.output_field_states[1], flux_op)
+    transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
     net_transmitted_quanta = np.cumsum(transmitted_flux) * input_params.delta_t
     
-    loop_flux = qmps.single_time_expectation(bins.output_field_states[0], flux_op)
+    loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
     loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
     total_quanta = tls_pops + loop_sum + net_transmitted_quanta
 
@@ -121,7 +120,6 @@ input_params = qmps.parameters.InputParams(
     bond_max=4, # Maximum MPS bond dimension, sets truncation of entanglement
     phase=np.pi # Phase of interaction between the 2 TLS's
 )
-tau = input_params.tau
 tlist=np.arange(0,input_params.tmax+input_params.delta_t/2,input_params.delta_t)
 
 """ Choose the initial state"""
@@ -140,7 +138,7 @@ flux_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 """Calculate time evolution of the system"""
 def timedProcess():
-    bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state, input_params, show_progress=False)
+    bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
     tls_pops = qmps.single_time_expectation(bins.system_states, pop_ops)
     fluxes = qmps.single_time_expectation(bins.output_field_states, flux_ops)
 
@@ -172,7 +170,6 @@ input_params = qmps.parameters.InputParams(
     tau=0.5 # Time delay between the two TLS's
 )
 tlist=np.arange(0,input_params.tmax+input_params.delta_t/2,input_params.delta_t)
-tau = input_params.tau
 
 """ Choose the initial state and coupling"""
 tls1_initial_state=qmps.states.tls_excited()
@@ -195,13 +192,13 @@ flux_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 """ Time evolution of the system"""
 def timedProcess():
-    bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,[tau],input_params,show_progress=False)
+    bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 
     # Calculate time dependent TLS populations, and fluxes into/out of feedback loop
     tls_pops = qmps.single_time_expectation(bins.system_states, pop_ops)
-    photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states[1], flux_ops)
-    photon_fluxes_loop = qmps.single_time_expectation(bins.output_field_states[0], flux_ops)
+    photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states, flux_ops)
+    photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, flux_ops)
 
     # Use helper function to integrate over the flux into the loop in windows to get loop population
     loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
@@ -259,7 +256,7 @@ flux_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 """Calculate time evolution of the system"""
 def timedProcess():
-    bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+    bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
     tls_pops = qmps.single_time_expectation(bins.system_states, pop_ops)
     fluxes = qmps.single_time_expectation(bins.output_field_states, flux_ops)
 
@@ -269,7 +266,7 @@ def timedProcess():
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('2 TLS, Markovian population time:', min(times)/runs)
 
-bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+bins = qmps.t_evol_mar(hm,sys_initial_state,wg_initial_state,input_params)
 
 b_pop_r = flux_ops[1]
 def timedProcess():
@@ -301,7 +298,6 @@ input_params = qmps.parameters.InputParams(
     tau=0.5 # Time delay between the two TLS's
 )
 tlist=np.arange(0,input_params.tmax+input_params.delta_t/2,input_params.delta_t)
-tau=input_params.tau
 
 """ Choose the initial state and coupling"""
 tls1_initial_state=qmps.states.tls_excited()
@@ -321,13 +317,13 @@ flux_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 """ Time evolution of the system"""
 def timedProcess():
-    bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,[tau],input_params, show_progress=False)
+    bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 
     # Calculate time dependent TLS populations, and fluxes into/out of feedback loop
     tls_pops = qmps.single_time_expectation(bins.system_states, pop_ops)
-    photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states[1], flux_ops)
-    photon_fluxes_loop = qmps.single_time_expectation(bins.output_field_states[0], flux_ops)
+    photon_fluxes_out = qmps.single_time_expectation(bins.output_field_states, flux_ops)
+    photon_fluxes_loop = qmps.single_time_expectation(bins.loop_field_states, flux_ops)
 
     # Use helper function to integrate over the flux into the loop in windows to get loop population
     loop_sum_l = qmps.loop_integrated_statistics(photon_fluxes_loop[0], input_params)
@@ -339,13 +335,13 @@ def timedProcess():
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('2 TLS, Non-Markovian pops time:', min(times)/runs)
 
-bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,[tau],input_params,show_progress=False)
+bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 b_pop_r = flux_ops[1]
 def timedProcess():
-    flux_r = qmps.single_time_expectation(bins.output_field_states[1], b_pop_r)
-    flux_r_loop = qmps.single_time_expectation(bins.output_field_states[0], b_pop_r)
-    entropy_sys = qmps.entanglement(bins.schmidt[0])
-    entropy_tau = qmps.entanglement(bins.schmidt[1])
+    flux_r = qmps.single_time_expectation(bins.output_field_states, b_pop_r)
+    flux_r_loop = qmps.single_time_expectation(bins.loop_field_states, b_pop_r)
+    entropy_sys = qmps.entanglement(bins.schmidt)
+    entropy_tau = qmps.entanglement(bins.schmidt_tau)
 
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('2 TLS, Non-Markovian entropy/flux time:', min(times)/runs)
@@ -384,7 +380,7 @@ photon_pop_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 # Pops timing
 def timedProcess():
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
     tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
     photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
 
@@ -392,7 +388,7 @@ times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Markovian pops time:', min(times)/runs)
 
 # Prep for timing
-bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
 
 
@@ -444,7 +440,6 @@ input_params = qmps.parameters.InputParams(
     phase= 0#np.pi
 )
 tlist=np.arange(0,input_params.tmax+input_params.delta_t/2,input_params.delta_t)
-tau=input_params.tau
 
 sys_initial_state=qmps.states.tls_ground()
 wg_initial_state = None
@@ -457,18 +452,18 @@ tls_pop_op = qmps.tls_pop()
 
 # Pops timing
 def timedProcess():
-    bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,[tau],input_params,show_progress=False)
+    bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
     tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
-    photon_flux = qmps.single_time_expectation(bins.output_field_states[1], flux_op)
-    loop_flux = qmps.single_time_expectation(bins.output_field_states[0], flux_op)
+    photon_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
+    loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Non-Markovian pops time:', min(times)/runs)
 
 # Prep for timing
-bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,[tau],input_params,show_progress=False)
+bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
-photon_flux = qmps.single_time_expectation(bins.output_field_states[-1], flux_op)
+photon_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
 
 ops_same_time = []; ops_two_time = []
 b_dag = qmps.b_dag(input_params); b = qmps.b(input_params)
@@ -482,7 +477,7 @@ ops_same_time.append(b_dag@b_dag@b@b); ops_two_time.append(np.kron(flux_op, flux
 
 # Pops timing
 def timedProcess():
-    correlations, taus, t_ss = qmps.correlation_ss_1t(bins.correlation_bins, bins.output_field_states[-1], ops_same_time, ops_two_time, input_params)
+    correlations, taus, t_ss = qmps.correlation_ss_1t(bins.correlation_bins, bins.output_field_states, ops_same_time, ops_two_time, input_params)
     t_ss_index = int(round(t_ss/input_params.delta_t))
     
     # Calculating steady state little g's
@@ -494,7 +489,7 @@ def timedProcess():
 
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Non-Markovian Correlations/spectra time:', min(times)/runs)
-correlations, taus, t_ss = qmps.correlation_ss_1t(bins.correlation_bins, bins.output_field_states[-1], ops_same_time, ops_two_time, input_params)
+correlations, taus, t_ss = qmps.correlation_ss_1t(bins.correlation_bins, bins.output_field_states, ops_same_time, ops_two_time, input_params)
 print('\tSteady State time:', t_ss)
 
 
@@ -534,7 +529,7 @@ tls_pop_op = qmps.tls_pop()
 photon_pop_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 def timedProcess():
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
     tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
     photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
     net_flux_l = np.cumsum(photon_fluxes[0]) * input_params.delta_t
@@ -544,7 +539,7 @@ def timedProcess():
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Markovian, 1 photon pulse, pops time:', min(times)/runs)
 
-bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 ops_same_time = []; ops_two_time = []
 # Add in G1, both directions
@@ -553,7 +548,7 @@ ops_two_time.append(np.kron(qmps.b_dag_l(input_params), qmps.b_l(input_params)))
 ops_two_time.append(np.kron(qmps.b_dag_r(input_params), qmps.b_r(input_params))) 
 
 def timedProcess():
-    correlation, correlation_times = qmps.correlations_2t(bins.correlation_bins, ops_same_time, ops_two_time, input_params, show_progress=False)
+    correlation, correlation_times = qmps.correlations_2t(bins.correlation_bins, ops_same_time, ops_two_time, input_params, completion_print_flag=False)
 
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Markovian, 1 photon pulse, G1 correlation time:', min(times)/runs)
@@ -589,7 +584,7 @@ tls_pop_op = qmps.tls_pop()
 photon_pop_ops = [qmps.b_pop_l(input_params), qmps.b_pop_r(input_params)]
 
 def timedProcess():
-    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+    bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
     tls_pop = qmps.single_time_expectation(bins.system_states, tls_pop_op)
     photon_fluxes = qmps.single_time_expectation(bins.output_field_states, photon_pop_ops)
     net_flux_l = np.cumsum(photon_fluxes[0]) * input_params.delta_t
@@ -599,7 +594,7 @@ def timedProcess():
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Markovian, 2 photon pulse, pops time:', min(times)/runs)
 
-bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params,show_progress=False)
+bins = qmps.t_evol_mar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 ops_same_time = []; ops_two_time = []
 b_dag_l = qmps.b_dag_l(input_params) ; b_dag_r = qmps.b_dag_r(input_params)
@@ -612,7 +607,7 @@ ops_two_time.append(np.kron(photon_pop_ops[0], photon_pop_ops[0]))
 ops_two_time.append(np.kron(photon_pop_ops[1], photon_pop_ops[1])) 
 
 def timedProcess():
-    correlation, correlation_times = qmps.correlations_2t(bins.correlation_bins, ops_same_time, ops_two_time, input_params, show_progress=False)
+    correlation, correlation_times = qmps.correlations_2t(bins.correlation_bins, ops_same_time, ops_two_time, input_params, completion_print_flag=False)
 
 times = timeit.repeat(timedProcess, repeat=repeat, number=runs)
 print('1 TLS, Markovian, 2 photon pulse, G2 correlation time:', min(times)/runs)

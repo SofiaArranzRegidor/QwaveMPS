@@ -66,7 +66,6 @@ input_params = qmps.parameters.InputParams(
 tmax=input_params.tmax
 delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+delta_t/2,delta_t)
-tau = input_params.tau
 
 #%%
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -93,8 +92,7 @@ Hm=qmps.hamiltonian_1tls_feedback(input_params)
 #Time evolution calculation in the non-Markovian regime: 
     
 """ Time evolution of the system"""
-bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state, [tau],input_params)
-loop_states, output_field_states = bins.output_field_states[0], bins.output_field_states[1]
+bins = qmps.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 
 #%%
@@ -114,13 +112,13 @@ flux_op = qmps.b_pop(input_params)
 tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
 
 # Calculate the flux out of the system (exiting the loop)
-transmitted_flux = qmps.single_time_expectation(output_field_states, flux_op)
+transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
 
 # If we want to calculate the net transmitted quanta have to integrate the flux
 net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
 
 # Calculate the flux into the feedback loop
-loop_flux = qmps.single_time_expectation(loop_states, flux_op)
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
 # Helper function to integrate an operator over the feedback loop time points
 # Here returns a time dependent function (list) of the total excitation number
@@ -178,8 +176,7 @@ hm=qmps.hamiltonian_1tls_feedback(input_params)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """ Time evolution of the system"""
-bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state, [tau], input_params)
-loop_states, output_field_states = bins.output_field_states[0], bins.output_field_states[1]
+bins = qmps.t_evol_nmar(hm,sys_initial_state,wg_initial_state,input_params)
 
 #%% 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -188,8 +185,8 @@ loop_states, output_field_states = bins.output_field_states[0], bins.output_fiel
 
 """ Calculate population dynamics"""
 tls_pops = qmps.single_time_expectation(bins.system_states, qmps.tls_pop())
-transmitted_flux = qmps.single_time_expectation(output_field_states, flux_op)
-loop_flux = qmps.single_time_expectation(loop_states, flux_op)
+transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 
 """Integrate again over the total quanta in the feedback loop"""
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)

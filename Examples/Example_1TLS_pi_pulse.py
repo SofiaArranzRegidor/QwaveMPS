@@ -61,7 +61,6 @@ input_params = qmps.parameters.InputParams(
 tmax=input_params.tmax
 delta_t=input_params.delta_t
 tlist=np.arange(0,tmax+(delta_t/2),delta_t)
-tau = input_params.tau
 
 
 #%%
@@ -100,8 +99,7 @@ start_time=t.time()
 
 
 """Calculate time evolution of the system"""
-bins = qmps.simulation.t_evol_nmar(Hm,sys_initial_state,wg_initial_state, [tau], input_params)
-loop_states, output_field_states = bins.output_field_states[0], bins.output_field_states[1]
+bins = qmps.simulation.t_evol_nmar(Hm,sys_initial_state,wg_initial_state,input_params)
 
 #%%
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -116,7 +114,7 @@ flux_op= qmps.b_pop(input_params)
 tls_pop = qmps.single_time_expectation(bins.system_states,qmps.tls_pop())
 
 # Calculate the flux out of the system (exiting the loop)
-transmitted_flux = qmps.single_time_expectation(output_field_states, flux_op)
+transmitted_flux = qmps.single_time_expectation(bins.output_field_states, flux_op)
 
 # If we want to calculate the net transmitted quanta have to integrate the flux
 net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
@@ -125,7 +123,7 @@ net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
 net_transmitted_quanta = np.cumsum(transmitted_flux) * delta_t
 
 # Calculate the flux into the feedback loop
-loop_flux = qmps.single_time_expectation(loop_states, flux_op)
+loop_flux = qmps.single_time_expectation(bins.loop_field_states, flux_op)
 #  in the feedback loop
 loop_sum = qmps.loop_integrated_statistics(loop_flux, input_params)
 

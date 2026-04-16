@@ -49,7 +49,7 @@ d_sys1=2 # tls bin dimension
 d_sys_total=np.array([d_sys1]) #total system bin (in this case only 1 tls)
 
 #Choose the coupling:
-gamma_l,gamma_r=qmps.states.coupling('symmetrical',gamma=1)
+gamma_l,gamma_r=qmps.coupling('symmetrical',gamma=1)
 
 #Define input parameters
 input_params = qmps.parameters.InputParams(
@@ -305,57 +305,12 @@ print("2-photon pop--- %s seconds ---" %(t.time() - start_time))
 #Plot the results
 #^^^^^^^^^^^^^^^^
 #
-import scipy as sci
-# M = N-1, N >= 1
-def sigmaPlus0N0Nmin1(tList, pulseEnv, N, initialPop=0, zeta=-0.5, gamma=1, nInR=1, chirality=False):
-    chiralGamma = gamma / (1 + int(not chirality))
-    
-    integrand = np.exp(-zeta * tList) * np.conj(pulseEnv) * (1 - 2*sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N-1, initialPop, zeta, gamma, nInR, chirality))
-    return -np.sqrt(N*chiralGamma*nInR) * np.exp(zeta * tList) *\
-        sci.integrate.cumulative_trapezoid(integrand, dx=tList[1] - tList[0], initial=0) +\
-        np.sqrt(initialPop*(1-initialPop))*np.exp(zeta*tList) # I.C.
-
-def sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N, initialPop=0, zeta=-0.5, gamma=1, nInR=1, chirality=False):
-    chiralGamma = gamma / (1 + int(not chirality))
-    if N == 0:
-        return initialPop * np.exp(-gamma * tList)
-        
-    integrand = np.exp(gamma * tList) * pulseEnv * sigmaPlus0N0Nmin1(tList, pulseEnv, N, initialPop, zeta, gamma, nInR, chirality)
-    return -np.exp(-gamma * tList) * np.sqrt(N*chiralGamma*nInR) *\
-        sci.integrate.cumulative_trapezoid(integrand + np.conj(integrand), dx=tList[1] - tList[0], initial=0)+\
-        initialPop*np.exp(-gamma*tList)
-
-def photonFluxMu(tList, pulseEnv, N, mu, initialPop=0, zeta=-0.5, gamma=1, nInR=1, chirality=False):
-    # Assuming symmetric coupling
-    chiralGamma = gamma / (1 + int(not chirality))
-    gammaMu = 1.0/2
-    
-    if str(mu).upper() in {'L','0'}:
-        muIndex = 0
-    else:
-        muIndex = 1
-    
-    term1 = muIndex * N * np.conj(pulseEnv) * pulseEnv
-    term3 = muIndex * np.sqrt(N*chiralGamma) * pulseEnv * sigmaPlus0N0Nmin1(tList, pulseEnv, N, initialPop, zeta, gamma, nInR, chirality)
-    term2 = np.conj(term3)
-    term4 = chiralGamma * sigmaPlusSigmaMinus0N0N(tList, pulseEnv, N, initialPop, zeta, gamma, nInR, chirality)
-    return term1 + term2 + term3 + term4
-
-
 
 plt.plot(tlist,np.real(photon_fluxes[1]),linewidth = 3,color = 'violet',linestyle='-',label=r'$n_{R}$') # Photons transmitted to the right channel
 plt.plot(tlist,np.real(photon_fluxes[0]),linewidth = 3,color = 'green',linestyle=':',label=r'$n_{L}$') # Photons reflected to the left channel
 plt.plot(tlist,np.real(tls_pop),linewidth = 3, color = 'k',linestyle='-',label=r'$n_{TLS}$') # TLS population
 plt.plot(tlist,np.real(flux_in[1]),linewidth = 3, color = 'grey',linestyle='--',label=r'$n_{R}^{\rm in}$') # Photon flux in from right
 plt.plot(tlist,np.real(total_quanta),linewidth = 3,color = 'g',linestyle='-',label='Total') # Conservation check (for one excitation it should be 1)
-pulse_envelope  = qmps.normalize_pulse_envelope(delta_t, pulse_envelope)
-
-anal_tlist = tlist[:-1]
-anal_pop = sigmaPlusSigmaMinus0N0N(anal_tlist, pulse_envelope, 2, 0)
-anal_flux = photonFluxMu(anal_tlist, pulse_envelope, 2, 1, 0)
-plt.plot(anal_tlist, np.real(anal_flux), linestyle=':')
-plt.plot(anal_tlist, np.real(anal_pop), linestyle=':', label=r'$n_{TLS}^{\rm anal}')
-
 plt.legend()
 plt.xlabel(r'Time, $\gamma t$')
 plt.ylabel('Populations')
