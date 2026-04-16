@@ -3,8 +3,8 @@
 
 """
 QwaveMPS: Package to solve waveguide QED problems using MPS
-
 """
+
 #'''
 from QwaveMPS.correlation import *
 from QwaveMPS.hamiltonians import *
@@ -14,12 +14,12 @@ from QwaveMPS.simulation import *
 from QwaveMPS.states import *
 #'''
 '''
-import QwaveMPS.correlation as correlation
-import QwaveMPS.hamiltonians as hamiltonians
-import QwaveMPS.operators  as operators
-import QwaveMPS.parameters as parameters
-import QwaveMPS.simulation as simulation
-import QwaveMPS.states as states
+from . import correlation
+from . import hamiltonians
+from . import operators
+from . import parameters
+from . import simulation
+from . import states
 '''
 
 def cite():

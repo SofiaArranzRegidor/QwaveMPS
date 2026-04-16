@@ -214,3 +214,4 @@ docs/autoapi
 # Mac directory organization
 **/.DS_Store
 .vscode/settings.json
+.vscode/

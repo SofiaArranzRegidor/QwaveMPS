@@ -15,10 +15,13 @@ from QwaveMPS.operators import *
 from QwaveMPS.parameters import InputParams
 from typing import Callable, TypeAlias
 
+from .symmetrical_coupling_helper import Symmetrical_Coupling_Helper
+
 # Type alias: Hamiltonian can be either a single ndarray or a callable indexed by time point for time dependent cases
 Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
-__all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_mar', 'hamiltonian_2tls_nmar', 'Hamiltonian']
+__all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_mar', 'hamiltonian_2tls_nmar', 'Hamiltonian',
+           'hamN2LSChiral', 'hamiltonian_1tls_chiral', 'hamiltonian_Ntls_sym_eff']
 
 def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
@@ -58,17 +61,18 @@ def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0
     
     d_t_l=d_t_total[0]
     d_t_r=d_t_total[1]
+    d_t = np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    t1= np.sqrt(gamma_l)*(np.kron(sigmaplus(),delta_b_l(delta_t,d_t_total)) + np.kron(sigmaminus(),delta_b_dag_l(delta_t,d_t_total))) 
-    t2= np.sqrt(gamma_r)*(np.kron(sigmaplus(),delta_b_r(delta_t,d_t_total)) + np.kron(sigmaminus(),delta_b_dag_r(delta_t,d_t_total))) 
+    t1= np.sqrt(gamma_l)*(np.kron(delta_b_l(delta_t,d_t_total),sigmaplus()) + np.kron(delta_b_dag_l(delta_t,d_t_total),sigmaminus())) 
+    t2= np.sqrt(gamma_r)*(np.kron(delta_b_r(delta_t,d_t_total),sigmaplus()) + np.kron(delta_b_dag_r(delta_t,d_t_total),sigmaminus())) 
     if isinstance(omega, np.ndarray):
         omegas = tuple(omega)
         def hm_total(t_k):
-            hm_sys=delta_t*(omegas[t_k]/2*np.kron(sigmaplus(),np.eye(d_t_l*d_t_r)) + np.conj(omegas[t_k])/2*np.kron(sigmaminus(),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
+            hm_sys=delta_t*(omegas[t_k]/2*np.kron(np.eye(d_t),sigmaplus()) + np.conj(omegas[t_k])/2*np.kron(np.eye(d_t),sigmaminus())) + delta_t*delta*np.kron(np.eye(d_t),e(d_sys)) 
             hm = hm_sys+t1+t2
             return hm  
     else:
-        hm_sys=delta_t*(omega/2*np.kron(sigmaplus(),np.eye(d_t_l*d_t_r)) + np.conj(omega)/2*np.kron(sigmaminus(),np.eye(d_t_l*d_t_r))) +delta_t*delta*np.kron(e(d_sys),np.eye(d_t_l*d_t_r)) 
+        hm_sys=delta_t*(omega/2*np.kron(np.eye(d_t),sigmaplus()) + np.conj(omega)/2*np.kron(np.eye(d_t),sigmaminus())) +delta_t*delta*np.kron(np.eye(d_t),e(d_sys)) 
         hm_total=hm_sys+t1+t2
     return hm_total
  
@@ -112,18 +116,18 @@ def hamiltonian_1tls_feedback(params:InputParams,omega:float|np.ndarray=0, delta
     
     d_t=np.prod(d_t_total)
     d_sys=np.prod(d_sys_total)
-    t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t,d_t)*np.exp(-1j*phase),sigmaplus()),np.eye(d_t))
-    t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaplus()),delta_b(delta_t,d_t))
-    t3=np.sqrt(gamma_l)*np.kron(np.kron(delta_b_dag(delta_t,d_t)*np.exp(1j*phase),sigmaminus()),np.eye(d_t))
-    t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),sigmaminus()),delta_b_dag(delta_t,d_t))   
+    t1=np.sqrt(gamma_l)*np.kron(np.kron(delta_b(delta_t,d_t)*np.exp(-1j*phase),np.eye(d_t)),sigmaplus())
+    t2=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),delta_b(delta_t,d_t)),sigmaplus())
+    t3=np.sqrt(gamma_l)*np.kron(np.kron(delta_b_dag(delta_t,d_t)*np.exp(1j*phase),np.eye(d_t)),sigmaminus())
+    t4=np.sqrt(gamma_r)*np.kron(np.kron(np.eye(d_t),delta_b_dag(delta_t,d_t)),sigmaminus())   
     if isinstance(omega, np.ndarray):
         omegas = tuple(omega)
         def hm_total(t_k):  
-            hm_sys=delta_t*(omegas[t_k]/2*np.kron(np.kron(np.eye(d_t),sigmaplus()),np.eye(d_t)) +np.conj(omegas[t_k])/2*np.kron(np.kron(np.eye(d_t),sigmaminus()),np.eye(d_t)))
+            hm_sys=delta_t*(omegas[t_k]/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus()) +np.conj(omegas[t_k])/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus()))
             hm = hm_sys + t1 + t2 + t3 + t4
             return hm
     else:        
-        hm_sys=delta_t*(np.kron(omega/2*np.kron(np.eye(d_t),sigmaplus()),np.eye(d_t)) + np.conj(omega)/2*np.kron(np.kron(np.eye(d_t),sigmaminus()),np.eye(d_t)))
+        hm_sys=delta_t*(np.kron(omega/2*np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus()) + np.conj(omega)/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus()))
         hm_total = hm_sys + t1 + t2 + t3 + t4
     return hm_total
 
@@ -178,59 +182,59 @@ def hamiltonian_2tls_mar(params:InputParams, omega1:float|np.ndarray=0, delta1:f
     
  
     #interaction terms
-    t1R = np.sqrt(gamma_r1)*(np.kron(sigmaminus1,delta_b_dag_r(delta_t,d_t_total)) 
-    + np.kron(sigmaplus1,delta_b_r(delta_t,d_t_total)))
-    t1L = np.sqrt(gamma_l1)*(np.kron(sigmaminus1,delta_b_dag_l(delta_t,d_t_total)*np.exp(1j*phase)) 
-    + np.kron(sigmaplus1,delta_b_l(delta_t,d_t_total)*np.exp(-1j*phase)))
-    t2R = np.sqrt(gamma_r2)*(np.kron(sigmaminus2,delta_b_dag_r(delta_t,d_t_total)*np.exp(1j*phase)) 
-    + np.kron(sigmaplus2,delta_b_r(delta_t,d_t_total)*np.exp(-1j*phase)))                                                                                          
-    t2L = np.sqrt(gamma_l2)*(np.kron(sigmaminus2,delta_b_dag_l(delta_t,d_t_total)) 
-    + np.kron(sigmaplus2,delta_b_l(delta_t,d_t_total)))
+    t1R = np.sqrt(gamma_r1)*(np.kron(delta_b_dag_r(delta_t,d_t_total),sigmaminus1) 
+    + np.kron(delta_b_r(delta_t,d_t_total),sigmaplus1))
+    t1L = np.sqrt(gamma_l1)*(np.kron(delta_b_dag_l(delta_t,d_t_total)*np.exp(1j*phase),sigmaminus1) 
+    + np.kron(delta_b_l(delta_t,d_t_total)*np.exp(-1j*phase),sigmaplus1))
+    t2R = np.sqrt(gamma_r2)*(np.kron(delta_b_dag_r(delta_t,d_t_total)*np.exp(1j*phase),sigmaminus2) 
+    + np.kron(delta_b_r(delta_t,d_t_total)*np.exp(-1j*phase),sigmaplus2))                                                                                          
+    t2L = np.sqrt(gamma_l2)*(np.kron(delta_b_dag_l(delta_t,d_t_total),sigmaminus2) 
+    + np.kron(delta_b_l(delta_t,d_t_total),sigmaplus2))
     
     j_12 = 0.5*(np.sqrt(gamma_r1 * gamma_r2) + np.sqrt(gamma_l1 * gamma_l2)) * np.imag(np.exp(1j*phase))
-    h_exch = delta_t*j_12*np.kron(sigmaplus1 @ sigmaminus2 + sigmaminus1 @ sigmaplus2,np.eye(d_t))
+    h_exch = delta_t*j_12*np.kron(np.eye(d_t), sigmaplus1 @ sigmaminus2 + sigmaminus1 @ sigmaplus2)
     
     if isinstance(omega1, np.ndarray) and isinstance(omega2, np.ndarray):
         omega1s = tuple(omega1)
         omega2s = tuple(omega2)
         hm_total=[]
         def hm_total(t_k):
-            hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(sigmaplus1,np.eye(d_t)) + np.conj(omega1s[t_k])/2*np.kron(sigmaminus1,np.eye(d_t)))
-            +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
+            hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(np.eye(d_t),sigmaplus1) + np.conj(omega1s[t_k])/2*np.kron(np.eye(d_t),sigmaminus1))
+            +delta_t*delta1*np.kron(np.eye(d_t),e1)) 
             
-            hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2s[t_k])/2*np.kron(sigmaminus2,np.eye(d_t)))
-            +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
+            hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(np.eye(d_t),sigmaplus2) + np.conj(omega2s[t_k])/2*np.kron(np.eye(d_t),sigmaminus2))
+            +delta_t*delta2* np.kron(np.eye(d_t),e2)) 
            
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
    
     elif isinstance(omega1, np.ndarray):
         omega1s = tuple(omega1)
-        hm_sys2=(delta_t*(omega2/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2)/2*np.kron(sigmaminus2,np.eye(d_t)))
-        +delta_t*delta2* np.kron(e2,np.eye(d_t)))  
+        hm_sys2=(delta_t*(omega2/2*np.kron(np.eye(d_t),sigmaplus2) + np.conj(omega2)/2*np.kron(np.eye(d_t),sigmaminus2))
+        +delta_t*delta2* np.kron(np.eye(d_t),e2))  
 
         def hm_total(t_k):
-            hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(sigmaplus1,np.eye(d_t)) + np.conj(omega1s[t_k])/2*np.kron(sigmaminus1,np.eye(d_t)))
-            +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
+            hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(np.eye(d_t),sigmaplus1) + np.conj(omega1s[t_k])/2*np.kron(np.eye(d_t),sigmaminus1))
+            +delta_t*delta1*np.kron(np.eye(d_t),e1)) 
             
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
 
     elif isinstance(omega2, np.ndarray):
         omega2s = tuple(omega2)
-        hm_sys1=(delta_t*(omega1/2*np.kron(sigmaplus1,np.eye(d_t)) + np.conj(omega1)/2*np.kron(sigmaminus1,np.eye(d_t)))
-        +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
+        hm_sys1=(delta_t*(omega1/2*np.kron(np.eye(d_t),sigmaplus1) + np.conj(omega1)/2*np.kron(np.eye(d_t),sigmaminus1))
+        +delta_t*delta1*np.kron(np.eye(d_t),e1)) 
         
         def hm_total(t_k):
-            hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2s[t_k])/2*np.kron(sigmaminus2,np.eye(d_t)))
-            +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
+            hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(np.eye(d_t),sigmaplus2) + np.conj(omega2s[t_k])/2*np.kron(np.eye(d_t),sigmaminus2))
+            +delta_t*delta2* np.kron(np.eye(d_t),e2)) 
              
             return hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
         
     else:
-        hm_sys1=(delta_t*(omega1/2*np.kron(sigmaplus1,np.eye(d_t)) + np.conj(omega1)/2*np.kron(sigmaminus1,np.eye(d_t)))
-        +delta_t*delta1*np.kron(e1,np.eye(d_t))) 
+        hm_sys1=(delta_t*(omega1/2*np.kron(np.eye(d_t),sigmaplus1) + np.conj(omega1)/2*np.kron(np.eye(d_t),sigmaminus1))
+        +delta_t*delta1*np.kron(np.eye(d_t),e1)) 
      
-        hm_sys2=(delta_t*(omega2/2*np.kron(sigmaplus2,np.eye(d_t)) + np.conj(omega2)/2*np.kron(sigmaminus2,np.eye(d_t)))
-        +delta_t*delta2* np.kron(e2,np.eye(d_t))) 
+        hm_sys2=(delta_t*(omega2/2*np.kron(np.eye(d_t),sigmaplus2) + np.conj(omega2)/2*np.kron(np.eye(d_t),sigmaminus2))
+        +delta_t*delta2* np.kron(np.eye(d_t),e2)) 
  
         hm_total = hm_sys1 + hm_sys2 + t1R + t1L + t2R + t2L + h_exch
     return hm_total
@@ -285,57 +289,165 @@ def hamiltonian_2tls_nmar(params:InputParams,omega1:float|np.ndarray=0, delta1:f
     e2=np.kron(np.eye(d_sys1),e(d_sys2))   
     
     #interaction terms
-    t11 = np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_dag_l(delta_t,d_t_total),sigmaminus1),np.eye(d_t))    
-    t11hc = +np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_l(delta_t,d_t_total),sigmaplus1),np.eye(d_t))
-    t21 = np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t)*np.exp(1j*phase),sigmaminus1),delta_b_dag_r(delta_t,d_t_total))    
-    t21hc = +np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t)*np.exp(-1j*phase),sigmaplus1),delta_b_r(delta_t,d_t_total))
-    t12 = np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t)*np.exp(1j*phase),sigmaminus2),delta_b_dag_l(delta_t,d_t_total))
-    t12hc = +np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t)*np.exp(-1j*phase),sigmaplus2),delta_b_l(delta_t,d_t_total))  
-    t22 = np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_dag_r(delta_t,d_t_total),sigmaminus2),np.eye(d_t))
-    t22hc = +np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_r(delta_t,d_t_total),sigmaplus2),np.eye(d_t))
+    t11 = np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_dag_l(delta_t,d_t_total),np.eye(d_t)),sigmaminus1)    
+    t11hc = +np.sqrt(gamma_l1)*np.kron(np.kron(delta_b_l(delta_t,d_t_total),np.eye(d_t)),sigmaplus1)
+    t21 = np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t)*np.exp(1j*phase),delta_b_dag_r(delta_t,d_t_total)),sigmaminus1)    
+    t21hc = +np.sqrt(gamma_r1)*np.kron(np.kron(np.eye(d_t)*np.exp(-1j*phase),delta_b_r(delta_t,d_t_total)),sigmaplus1)
+    t12 = np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t)*np.exp(1j*phase),delta_b_dag_l(delta_t,d_t_total)),sigmaminus2)
+    t12hc = +np.sqrt(gamma_l2)*np.kron(np.kron(np.eye(d_t)*np.exp(-1j*phase),delta_b_l(delta_t,d_t_total)),sigmaplus2)  
+    t22 = np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_dag_r(delta_t,d_t_total),np.eye(d_t)),sigmaminus2)
+    t22hc = +np.sqrt(gamma_r2)*np.kron(np.kron(delta_b_r(delta_t,d_t_total),np.eye(d_t)),sigmaplus2)
      
     if isinstance(omega1, np.ndarray) and isinstance(omega2, np.ndarray):
         omega1s = tuple(omega1)
         omega2s = tuple(omega2)
         def hm_total(t_k):
-            hm_sys1 = (delta_t*(omega1s[t_k]/2*np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.conj(omega1s[t_k])/2*np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
-            hm_sys2 = (delta_t*(omega2s[t_k]/2*np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.conj(omega2s[t_k])/2*np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
+            hm_sys1 = (delta_t*(omega1s[t_k]/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.conj(omega1s[t_k])/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
+            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1)) 
+            hm_sys2 = (delta_t*(omega2s[t_k]/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.conj(omega2s[t_k])/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
+            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2)) 
             
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
    
     elif isinstance(omega1, np.ndarray):
         omega1s = tuple(omega1)
-        hm_sys2=(delta_t*(np.kron(omega2/2*np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.conj(omega2)/2*np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
+        hm_sys2=(delta_t*(np.kron(omega2/2*np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.conj(omega2)/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
+        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2)) 
         
         def hm_total(t_k):
-            hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.conj(omega1s[t_k])/2*np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
+            hm_sys1=(delta_t*(omega1s[t_k]/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.conj(omega1s[t_k])/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
+            +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1)) 
             
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
 
     elif isinstance(omega2, np.ndarray):
         omega2s = tuple(omega2)
-        hm_sys1=(delta_t*(np.kron(omega1/2*np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t)) + np.conj(omega1)/2*np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t)))
-        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
+        hm_sys1=(delta_t*(np.kron(omega1/2*np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.conj(omega1)/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
+        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1)) 
 
         def hm_total(t_k):
-            hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t)) + np.conj(omega2s[t_k])/2*np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t)))
-            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
+            hm_sys2=(delta_t*(omega2s[t_k]/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.conj(omega2s[t_k])/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
+            +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2)) 
              
             return hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
         
     else:
-        hm_sys1=(delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus1),np.eye(d_t))*omega1/2 + np.kron(np.kron(np.eye(d_t),sigmaminus1),np.eye(d_t))*np.conj(omega1/2))
-        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),e1),np.eye(d_t))) 
+        hm_sys1=(delta_t*(omega1/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus1) + np.conj(omega1/2)*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus1))
+        +delta_t*delta1*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e1)) 
         
-        hm_sys2=(delta_t*(np.kron(np.kron(np.eye(d_t),sigmaplus2),np.eye(d_t))*omega2/2 + np.kron(np.kron(np.eye(d_t),sigmaminus2),np.eye(d_t))*np.conj(omega2/2))
-        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),e2),np.eye(d_t))) 
+        hm_sys2=(delta_t*(omega2/2*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaplus2) + np.conj(omega2/2)*np.kron(np.kron(np.eye(d_t),np.eye(d_t)),sigmaminus2))
+        +delta_t*delta2* np.kron(np.kron(np.eye(d_t),np.eye(d_t)),e2)) 
         
         hm_total=hm_sys1 + hm_sys2 + t11 + t11hc + t21 + t21hc + t12 + t12hc + t22 + t22hc
     return hm_total
 
 
 
+# Fix style/standardization of below functions
+def basicSigmaPlus(dim):
+    return np.diag(np.ones(dim-1, dtype=complex), -1)
+
+def sigmaPlus(dimList, index):
+    identityDim1 = np.prod(dimList[:index], dtype=np.uint)
+    identityDim2 = np.prod(dimList[index+1:], dtype=np.uint)
+    return np.kron(np.kron(np.eye(identityDim1), basicSigmaPlus(dimList[index])), np.eye(identityDim2))
+
+def hamN2LSChiral(t, deltaT, d_t_total, tlsNum, gammas=None, detuningLs=None, phases=None, omegaPumps=None, pumpStarts=None, pumpEnds=None):
+    if gammas == None: gammas = np.ones(tlsNum)
+    if detuningLs == None: detuningLs = np.zeros(tlsNum)
+    if phases == None: phases = np.zeros(tlsNum)
+    if omegaPumps == None: omegaPumps = np.zeros(tlsNum)
+    if pumpStarts == None: pumpStarts = np.zeros(tlsNum)
+    if pumpEnds == None: pumpEnds = np.zeros(tlsNum)
+    
+    deltaB = delta_b(deltaT, np.prod(d_t_total))
+    deltaBDag = np.conj(deltaB).T
+    dTime = deltaB.shape[0]
+    dSys = 2
+    
+    dimList = (np.ones(tlsNum) * dSys).astype(int)
+    pumpCoeffs = np.array(omegaPumps) * (t >= np.array(pumpStarts)) * (t<= np.array(pumpEnds))
+    
+    H = np.zeros((dTime**tlsNum * np.prod(dimList),)*2, dtype=complex)
+    for i in range(tlsNum):
+        sigmaP = sigmaPlus(dimList, i)
+        
+        sigmaP = np.kron(np.eye(dTime**(i)), sigmaP)
+        sigmaM = sigmaP.T
+    
+        h2LS = deltaT * detuningLs[i]  * np.kron(np.eye(dTime), sigmaP @ sigmaM)                             
+        hPump = deltaT * pumpCoeffs[i] * np.kron(np.eye(dTime), sigmaP + sigmaM)
+        hInt = np.sqrt(gammas[i]) * ( np.kron(deltaB, sigmaP) + np.kron(deltaBDag, sigmaM))
+        
+        Hlocal = h2LS + hPump + hInt
+        
+        Hlocal = np.kron(np.eye(dTime**(tlsNum-i-1)), Hlocal)
+        H += Hlocal
+        
+    return H
+
+def hamiltonian_1tls_chiral(params:InputParams):
+    delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
+
+    sigmaP = sigmaplus()
+    sigmaM = sigmaminus()
+    d_t = np.prod(d_t_total)
+    return np.kron(delta_b(delta_t, d_t), sigmaP) + np.kron(delta_b_dag(delta_t, d_t), sigmaM)
+
+
+# Sym case, returns list of local hamiltonians
+def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:list[float]):
+    delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
+    helper_obj = Symmetrical_Coupling_Helper(d_sys_total)
+
+    delta_b_dag_l_single = delta_b_dag_l(delta_t, d_t_total)
+    delta_b_l_single = delta_b_l(delta_t, d_t_total)
+    delta_b_dag_r_single = delta_b_dag_r(delta_t, d_t_total)
+    delta_b_r_single = delta_b_r(delta_t, d_t_total)
+    d_t_eye = np.eye(params.d_t)
+    sys_eye = np.eye(2)
+
+    delta_b_dag_l_0 = np.kron(delta_b_dag_l_single, d_t_eye)
+    delta_b_dag_l_1 = np.kron(d_t_eye, delta_b_dag_l_single)
+
+    delta_b_l_0 = np.kron(delta_b_l_single, d_t_eye)
+    delta_b_l_1 = np.kron(d_t_eye, delta_b_l_single)
+
+    delta_b_dag_r_0 = np.kron(delta_b_dag_r_single, d_t_eye)
+    delta_b_dag_r_1 = np.kron(d_t_eye, delta_b_dag_r_single)
+
+    delta_b_r_0 = np.kron(delta_b_r_single, d_t_eye)
+    delta_b_r_1 = np.kron(d_t_eye, delta_b_r_single)
+
+    sigmap = sigmaplus()
+    sigmam = sigmaminus()
+
+
+    hams = [None] * helper_obj.interaction_num
+
+    for i in range(int(helper_obj.sys_num/2)):
+        sys_ind_r = helper_obj.ordered_indices[2*i]
+        sys_ind_l = helper_obj.ordered_indices[2*i+1]
+        ham = gamma_rs[sys_ind_l]*(np.kron(delta_b_dag_r_0, np.kron(sigmam, sys_eye)) 
+                          + np.kron(delta_b_r_0, np.kron(sigmap, sys_eye)))
+        ham += gamma_ls[sys_ind_l]*(np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
+                           + np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
+        ham += gamma_rs[sys_ind_r]*(np.kron(delta_b_dag_r_1, np.kron(sys_eye,sigmam))
+                            + np.kron(delta_b_r_1, np.kron(sys_eye,sigmap)))
+        ham += gamma_ls[sys_ind_r]*(np.kron(delta_b_dag_l_0, np.kron(sys_eye,sigmam))
+                            + np.kron(delta_b_l_0, np.kron(sys_eye,sigmap)))
+
+        hams[i] = ham
+
+    # Final hamiltonian coupling single emitter to single time bin
+    if helper_obj.odd_end:
+        sys_ind = helper_obj.ordered_indices[-1]
+
+        ham = gamma_rs[sys_ind]*(np.kron(delta_b_dag_r_single, sigmam) 
+                          + np.kron(delta_b_r_single, sigmap))
+        ham += gamma_ls[sys_ind]*(np.kron(delta_b_dag_l_single, sigmam) 
+                    + np.kron(delta_b_l_single, sigmap))
+
+        hams[-1] = ham
+
+    return hams
