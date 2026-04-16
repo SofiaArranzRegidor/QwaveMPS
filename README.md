@@ -40,7 +40,7 @@ pip install QwaveMPS
   
 ## Usage
 
-The following diagram summarizes the QwaveMPS framework, showing the main input and output parameters. For detailed usage information, see our [documentation](docs/usage.md).
+The following diagram summarizes the QwaveMPS framework, showing the main input and output parameters. For detailed usage information, see our [documentation](https://qwavemps.readthedocs.io).
 
 ![Diagram of the code workflow](docs/images/diagram.png)
 

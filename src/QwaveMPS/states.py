@@ -690,7 +690,7 @@ def _fock_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -> np
     ak=np.zeros([photon_dim,dt,photon_dim],dtype=complex)
     indices = np.arange(0,photon_dim,1)
     # Vectorize this...
-    for i in range(photon_dim):
+    for i in range(dt):
         ak[indices[:photon_dim-i], i, indices[i:]] = pulse_env[k]**i / np.sqrt(sci.special.factorial(i))    
     return ak
 
