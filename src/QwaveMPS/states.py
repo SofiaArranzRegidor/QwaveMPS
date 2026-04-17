@@ -444,8 +444,8 @@ def _fock_pulse(pulse_env_r:list[float],pulse_time:float,params:InputParams, pul
 
     pulse_envs = list(zip(pulse_envs[0], pulse_envs[1]))
 
-    ap1=np.zeros([bond0,time_bin_dim,dt],dtype=complex)
-    apm=np.zeros([dt,time_bin_dim,bond0],dtype=complex)
+    ap1=np.zeros([1,time_bin_dim,dt],dtype=complex)
+    apm=np.zeros([dt,time_bin_dim,1],dtype=complex)
 
     # Evaluate the first and last matrices (each iteration for L and R respectively)
     for i in range(channel_num):
