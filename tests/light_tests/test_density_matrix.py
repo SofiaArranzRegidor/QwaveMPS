@@ -45,10 +45,10 @@ def test_convert_to_dm_shapes():
     assert field_dm[0].shape == (1, 16, 1)
 
 
-def test_reshape_liouvillian_and_liouvillian_dm_shapes():
+def test_reshape_liouvillian_and_liouvillian_shapes():
     H = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
     c_op = np.array([[0.0, 1.0], [0.0, 0.0]], dtype=complex)
-    L = qmps.liouvillian_dm(H, [c_op])
+    L = qmps.liouvillian(H, [c_op])
     assert L.shape == (4, 4)
 
     reshaped = qmps.reshape_liouvillian(np.eye(16, dtype=complex), [2, 2])
@@ -72,7 +72,7 @@ def test_t_evol_mar_dm_matches_pure_state_without_losses():
 
     H = qmps.hamiltonian_1tls(params)
     bins = qmps.t_evol_mar(H, sys_state, wg_state, params)
-    bins_dm = qmps.t_evol_mar_dm(qmps.liouvillian_dm(H / params.delta_t), sys_dm, wg_dm, params)
+    bins_dm = qmps.t_evol_mar_dm(qmps.liouvillian(H / params.delta_t), sys_dm, wg_dm, params)
 
     pops = np.real(qmps.single_time_expectation(bins.system_states, qmps.tls_pop()))
     pops_dm = np.real(qmps.single_time_expectation_dm(bins_dm.system_states, qmps.spre(qmps.tls_pop())))
@@ -84,7 +84,7 @@ def test_t_evol_nmar_dm_returns_loop_bins():
     sys_dm = qmps.convert_to_dm(qmps.states.tls_excited())
     H = qmps.hamiltonian_1tls_feedback(params)
 
-    bins_dm = qmps.t_evol_nmar_dm(qmps.liouvillian_dm(H / params.delta_t), sys_dm, None, params)
+    bins_dm = qmps.t_evol_nmar_dm(qmps.liouvillian(H / params.delta_t), sys_dm, None, params)
 
     assert bins_dm.loop_field_states is not None
     assert len(bins_dm.loop_field_states) > 1
@@ -95,7 +95,7 @@ def test_dm_correlations_return_expected_shapes():
     params = _make_markov_params()
     sys_dm = qmps.convert_to_dm(qmps.states.tls_excited())
     H = qmps.hamiltonian_1tls(params)
-    bins_dm = qmps.t_evol_mar_dm(qmps.liouvillian_dm(H / params.delta_t), sys_dm, None, params)
+    bins_dm = qmps.t_evol_mar_dm(qmps.liouvillian(H / params.delta_t), sys_dm, None, params)
 
     g1, tlist = qmps.correlation_2op_2t_dm(
         bins_dm.correlation_bins,

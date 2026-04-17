@@ -24,7 +24,7 @@ __all__ = [
     "spre",
     "spost",
     "lindblad_dissipator",
-    "liouvillian_dm",
+    "liouvillian",
     "convert_to_dm",
 ]
 
@@ -162,7 +162,7 @@ def lindblad_dissipator(a):
     return spre(a) @ spost(np.transpose(np.conj(a))) - 0.5 * spre(ad_a) - 0.5 * spost(ad_a)
 
 
-def liouvillian_dm(H, c_ops=None):
+def liouvillian(H, c_ops=None):
     L = -1.0j * (spre(H) - spost(np.transpose(H)))
     if c_ops is not None:
         L += sum(lindblad_dissipator(c_op) for c_op in c_ops)
