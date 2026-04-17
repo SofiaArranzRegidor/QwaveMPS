@@ -85,7 +85,7 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     tbins_in.append([np.ones((1, 1)), vacuum_dm, np.ones((1, 1))])
     schmidt.append(np.zeros(1))
 
-    n = int(round(tmax / delta_t, 0))
+    n=int(tmax/delta_t)
     U_swap = swap(d_sys, d_t)
     U = reshape_liouvillian(expm(L * delta_t), [np.sqrt(d_sys), np.sqrt(d_t)])
 
