@@ -255,7 +255,7 @@ def entanglement_dm(sch):
         if len(sqrd_sch) == 0:
             ent_list.append(0.0)
             continue
-        ent_list.append(float(-np.sum(sqrd_sch * np.log2(sqrd_sch)) / 2))
+        ent_list.append(float(-np.sum(sqrd_sch * np.log2(sqrd_sch))))
     return ent_list
 
 

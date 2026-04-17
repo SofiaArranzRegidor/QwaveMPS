@@ -106,7 +106,7 @@ bins_dm = qmps.t_evol_nmar_dm(L, sys_initial_state_dm, wg_initial_state_dm, inpu
 # ---------------------
 #
 # Evaluate the population of each TLS separately and compute the
-# density-matrix entanglement from the stored Schmidt values.
+# operator entanglement from the stored Schmidt values.
 
 tls1_pop = np.kron(qmps.tls_pop(), np.eye(d_sys2))
 tls2_pop = np.kron(np.eye(d_sys1), qmps.tls_pop())
@@ -122,10 +122,10 @@ entanglement = qmps.entanglement_dm(bins_dm.schmidt)
 
 plt.plot(tlist, np.real(tls1_pops), linewidth=3, color="k", linestyle="-", label=r"$n_{\rm TLS1}$")
 plt.plot(tlist, np.real(tls2_pops), linewidth=3, color="skyblue", linestyle="--", label=r"$n_{\rm TLS2}$")
-plt.plot(tlist, np.real(entanglement), linewidth=3, color="r", linestyle="-", label=r"$S_{\rm sys}$")
+plt.plot(tlist, np.real(entanglement), linewidth=3, color="r", linestyle="-", label=r"Operator Entanglement")
 plt.legend()
 plt.xlabel(r"Time, $\gamma t$")
-plt.ylabel("Populations")
+plt.ylabel("Entropy / Population")
 plt.grid(True, linestyle="--", alpha=0.6)
 plt.ylim([0.0, 1.05])
 plt.xlim([0.0, input_params.tmax])

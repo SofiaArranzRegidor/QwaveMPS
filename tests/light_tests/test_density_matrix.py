@@ -79,16 +79,36 @@ def test_t_evol_mar_dm_matches_pure_state_without_losses():
     assert np.allclose(pops_dm, pops, atol=1e-8)
 
 
-def test_t_evol_nmar_dm_returns_loop_bins():
+def test_t_evol_nmar_dm_matches_pure_state_without_losses():
     params = _make_feedback_params()
+    sys_state = qmps.states.tls_excited()
     sys_dm = qmps.convert_to_dm(qmps.states.tls_excited())
+    wg_state = qmps.states.vacuum(params.tmax, params)
+    wg_dm = qmps.convert_to_dm(wg_state)
     H = qmps.hamiltonian_1tls_feedback(params)
 
-    bins_dm = qmps.t_evol_nmar_dm(qmps.liouvillian(H / params.delta_t), sys_dm, None, params)
+    bins = qmps.t_evol_nmar(H, sys_state, wg_state, params)
+    bins_dm = qmps.t_evol_nmar_dm(qmps.liouvillian(H / params.delta_t), sys_dm, wg_dm, params)
 
     assert bins_dm.loop_field_states is not None
     assert len(bins_dm.loop_field_states) > 1
     assert len(bins_dm.output_field_states) > 1
+
+    flux_op = qmps.b_pop(params)
+    tls_pops = np.real(qmps.single_time_expectation(bins.system_states, qmps.tls_pop()))
+    tls_pops_dm = np.real(qmps.single_time_expectation_dm(bins_dm.system_states, qmps.spre(qmps.tls_pop())))
+
+    transmitted_flux = np.real(qmps.single_time_expectation(bins.output_field_states, flux_op))
+    transmitted_flux_dm = np.real(
+        qmps.single_time_expectation_dm(bins_dm.output_field_states, qmps.spre(flux_op))
+    )
+
+    loop_flux = np.real(qmps.single_time_expectation(bins.loop_field_states, flux_op))
+    loop_flux_dm = np.real(qmps.single_time_expectation_dm(bins_dm.loop_field_states, qmps.spre(flux_op)))
+
+    assert np.allclose(tls_pops_dm, tls_pops, atol=1e-8)
+    assert np.allclose(transmitted_flux_dm, transmitted_flux, atol=1e-8)
+    assert np.allclose(loop_flux_dm, loop_flux, atol=1e-8)
 
 
 def test_dm_correlations_return_expected_shapes():
