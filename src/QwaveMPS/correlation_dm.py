@@ -9,6 +9,7 @@ import copy
 
 import numpy as np
 from ncon import ncon
+from tqdm import tqdm
 
 from QwaveMPS.operators import op_list_check, sigmaminus, sigmaplus
 from QwaveMPS.operators_dm import (
@@ -30,6 +31,12 @@ __all__ = [
     "correlations_1t_dm",
     "entanglement_dm",
 ]
+
+
+def _progress(iterable, enabled: bool, total: int, desc: str):
+    if not enabled:
+        return iterable
+    return tqdm(iterable, total=total, desc=desc, unit="step", dynamic_ncols=True)
 
 
 def correlation_2op_2t_dm(correlation_bins, a_op_list, b_op_list, params, completion_print_flag: bool = True):
@@ -157,7 +164,13 @@ def correlations_2t_dm(correlation_bins, ops_same_time, ops_two_time, params, co
     left = np.ones((1, 1))
     M_stack = np.array([np.einsum("a,b,abij->ij", tr_w, tr_w, op) for op in ops_two_time])
 
-    for i in range(len(time_bin_list_copy) - 1):
+    outer_loop = _progress(
+        range(len(time_bin_list_copy) - 1),
+        enabled=completion_print_flag,
+        total=max(len(time_bin_list_copy) - 1, 0),
+        desc="Two time correlation",
+    )
+    for i in outer_loop:
         if i != 0:
             left = ncon([left, time_bin_list_copy[i - 1], tr_w], [[-1, 1], [1, 2, -3], [2]])
 

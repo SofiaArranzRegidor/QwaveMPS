@@ -8,6 +8,7 @@ Density-matrix time evolution routines for QwaveMPS.
 import numpy as np
 from ncon import ncon
 from scipy.linalg import expm, svd
+from tqdm import tqdm
 
 from QwaveMPS.operators import swap
 from QwaveMPS.parameters import Bins
@@ -57,6 +58,10 @@ def _prepare_dm_input_bins(i_n0, params):
     return convert_to_dm(vacuum_state(params.tmax, params))
 
 
+def _progress(iterable, total: int, desc: str):
+    return tqdm(iterable, total=total, desc=desc, unit="step", dynamic_ncols=True)
+
+
 def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     delta_t = params.delta_t
     tmax = params.tmax
@@ -94,7 +99,7 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
         R_suffix[k] = absorb_right_env(R_suffix[k + 1], i_ns[k], tr_w)
 
     i_s = i_s0
-    for k in range(n):
+    for k in _progress(range(n), total=n, desc="t_evol_mar_dm"):
         i_nk = i_ns[k]
 
         phi1 = ncon([i_s, i_nk], [[-1, -2, 1], [1, -3, -4]])
@@ -183,7 +188,7 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     bin_sys_corr_list_tau = []
     bin_sys_corr_list = []
 
-    for k in range(n):
+    for k in _progress(range(n), total=n, desc="t_evol_nmar_dm"):
         i_tau = nbins[k]
         for i in range(k, k + l - 1):
             i_n = nbins[i + 1]

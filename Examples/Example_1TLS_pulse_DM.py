@@ -24,17 +24,19 @@ input_params = qmps.parameters.InputParams(
 )
 
 tlist = np.arange(0, input_params.tmax + input_params.delta_t / 2, input_params.delta_t)
-pulse_env = qmps.gaussian_envelope(input_params.tmax, input_params, gaussian_width=1.0, gaussian_center=3.0)
+#pulse_env = qmps.gaussian_envelope(input_params.tmax, input_params, gaussian_width=1.0, gaussian_center=3.0)
+pulse_env = qmps.tophat_envelope(2,input_params)
 
 sys_initial_state_dm = qmps.convert_to_dm(qmps.states.tls_ground())
 wg_initial_state_dm = qmps.convert_to_dm(
-    qmps.states.fock_pulse(pulse_env, input_params.tmax, 1, input_params, direction="R")
+    qmps.states.fock_pulse(pulse_env, input_params.tmax, 1, input_params, direction="R",bond0=2)
 )
+
 
 H = qmps.hamiltonian_1tls(input_params)
 d_t = int(np.prod(input_params.d_t_total))
-gamma_phi = 0.0
-gamma_decay = 0.00
+gamma_phi = 0.15
+gamma_decay = 0.05
 c_deph = np.sqrt(gamma_phi) * np.kron(qmps.tls_pop(), np.eye(d_t))
 c_decay = np.sqrt(gamma_decay) * np.kron(qmps.sigmaminus(), np.eye(d_t))
 L = qmps.liouvillian_dm(H / input_params.delta_t, [c_deph, c_decay])
@@ -56,6 +58,8 @@ g1, corr_tlist = qmps.correlation_2op_2t_dm(
 #%%
 spectrum, wlist = qmps.spectral_intensity(g1, input_params, padding=512)
 sw_dm =np.trapezoid(spectrum,corr_tlist,axis=0)
+
+
 
 fig, axes = plt.subplots(1, 2, figsize=(8.2, 3.0))
 axes[0].plot(tlist, np.real(tls_pops), color="black", label=r"$n_{\rm TLS}$")
