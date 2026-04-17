@@ -312,7 +312,7 @@ def normalize_pulse_envelope(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
 #-------------------------
 # Fock pulse MPS generator
 #-------------------------
-def fock_pulse(pulse_env:list[float],pulse_time:float, photon_num:int, params:InputParams, direction:str='R', bond0:int=1)->list[np.ndarray]:
+def fock_pulse(pulse_env:list[float],pulse_time:float, photon_num:int, params:InputParams, direction:str='R', bond0: int | None = None)->list[np.ndarray]:
     """
     Creates an Fock pulse input field state with a normalized pulse envelope
 
@@ -350,7 +350,8 @@ def fock_pulse(pulse_env:list[float],pulse_time:float, photon_num:int, params:In
 
     """ 
 
-
+    if bond0 is None:
+        bond0 = photon_num + 1
     if direction.upper() == 'L' or direction == 1 or len(params.d_t_total)==1:
         photon_num_l = photon_num
         photon_num_r = 0
