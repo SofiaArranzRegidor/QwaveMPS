@@ -430,10 +430,10 @@ def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:
         sys_ind_l = helper_obj.ordered_indices[2*i+1]
         ham = gamma_rs[sys_ind_l]*(np.kron(delta_b_dag_r_0, np.kron(sigmam, sys_eye)) 
                           + np.kron(delta_b_r_0, np.kron(sigmap, sys_eye)))
-        ham += gamma_ls[sys_ind_l]*(np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
-                           + np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
         ham += gamma_rs[sys_ind_r]*(np.kron(delta_b_dag_r_1, np.kron(sys_eye,sigmam))
                             + np.kron(delta_b_r_1, np.kron(sys_eye,sigmap)))
+        ham += gamma_ls[sys_ind_l]*(np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
+                           + np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
         ham += gamma_ls[sys_ind_r]*(np.kron(delta_b_dag_l_0, np.kron(sys_eye,sigmam))
                             + np.kron(delta_b_l_0, np.kron(sys_eye,sigmap)))
 

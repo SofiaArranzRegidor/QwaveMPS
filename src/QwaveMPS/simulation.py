@@ -1094,7 +1094,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
-    evols = [0] * sys_num
+    evols = [0] * len(hams)
     callable_ham_indices = []
 
     # Determine the number of sys/time legs and sys dims for each Hamiltonian (right to left / outside to inside)
@@ -1106,9 +1106,9 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     for i in range(len(hams)):
         if not callable(hams[i]):
             if i == len(hams)-1 and help_obj.odd_end:
-                evols[i] = u_evol_multi_emitter_bins(hams[i], [help_obj.d_sys_ordered[2*1]], d_t, 1)
+                evols[i] = u_evol_multi_emitter_bins(hams[i], [help_obj.d_sys_ordered[2*i]], d_t, 1)
             else:
-                evols[i] = u_evol_multi_emitter_bins(hams[i], [help_obj.d_sys_ordered[2*1],help_obj.d_sys_ordered[2*1+1]], d_t, 2)
+                evols[i] = u_evol_multi_emitter_bins(hams[i], [help_obj.d_sys_ordered[2*i],help_obj.d_sys_ordered[2*i+1]], d_t, 2)
         else:
             callable_ham_indices.append(i)
     swap_t_t=swap(d_t,d_t)
@@ -1153,7 +1153,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         for j in range(l_list[0]-1):
             phi1 = ncon([nbins[-(4+j)], nbins[-(3+j)]], [[-1,-2,1],[1,-3,-4]])
             nbins[-(4+j)], stemp, nbins[-(3+j)] = _svd_tensors(phi1, bond, d_t, d_t)
-            nbins[-(4+j)] = nbins[-(3+j)] * stemp[None,None,:] #OC in left bin
+            nbins[-(4+j)] = nbins[-(4+j)] * stemp[None,None,:] #OC in left bin
 
         # Loop over swapping the bin back up the feedback chain
         for j in range(l_list[0]-2,-1,-1):
@@ -1241,11 +1241,11 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         # Move the OC to the first outgoing field and truncate the list to prepare nbins for correlation calculations
         phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
         nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
-        nbins[-2] = nbins[-1] * stemp[None,None,:] #OC in left bin
+        nbins[-2] = nbins[-2] * stemp[None,None,:] #OC in left bin
 
         phi1 = ncon([nbins[-3], nbins[-2]], [[-1,-2,1],[1,-3,-4]])
         nbins[-3], stemp, nbins[-2] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[1])
-        nbins[-3] = nbins[-2] * stemp[None,None,:] #OC in left bin
+        nbins[-3] = nbins[-3] * stemp[None,None,:] #OC in left bin
 
         # Move the OC over the feedback bins
         for j in range(3,l_list[0]+3):
@@ -1260,6 +1260,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     # Otherwise have N\neq 2, and just have to careful around the edges, and especially for the N=3 case
     # Precalculate required numbers
     group_num = int((sys_num+1)/2)
+    two_groups_int = int(group_num == 2)
     sys_group_num = [2] * group_num
     if help_obj.odd_end:
         sys_group_num[-1] = 1
@@ -1269,17 +1270,23 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     fback_distances_k = [0] * group_num # The backward grabbed feedback bin (from the right of current emitter pair)
 
     # Case of first ones
-    if sys_num == 3:
+    if sys_num != 3:
         fback_distances_j[0] = min(help_obj.fback_subchain_lengths[1], 2*help_obj.l_list_ordered[-1])
     else:
         fback_distances_j[0] = help_obj.fback_subchain_lengths[1]
     
     # Case of last ones
-    if not help_obj.odd_end:
-        fback_distances_j[-1] = max(0, help_obj.l_list_ordered[-1] - help_obj.l_list_ordered[-2] + 1)
-        fback_distances_k[-1] = max(0, help_obj.l_list_ordered[-3] - help_obj.l_list_ordered[-4] + 1)
+    if group_num > 2:
+        if not help_obj.odd_end:
+            fback_distances_j[-1] = max(0, help_obj.l_list_ordered[-1] - help_obj.l_list_ordered[-2] + 1)
+            fback_distances_k[-1] = max(0, help_obj.l_list_ordered[-3] - help_obj.l_list_ordered[-4] + 1)
+        else:
+            fback_distances_k[-1] = max(0, help_obj.l_list_ordered[-2] - help_obj.l_list_ordered[-3] + 1)
+    # Special case if there's only two system groups
     else:
-        fback_distances_k[-1] = max(0, help_obj.l_list_ordered[-2] - help_obj.l_list_ordered[-3] + 1)
+        if not help_obj.odd_end:
+            fback_distances_j[-1] = max(0, help_obj.l_list_ordered[-1] - help_obj.l_list_ordered[-2])
+        fback_distances_k[-1] = 0
 
     # Intermediate values
     # loop over calculating the left numbers
@@ -1299,13 +1306,15 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         if j == 1:
             fback_distances_k[j] = 0
             continue
-
         fback_distances_k[j] = max(0,help_obj.l_list_ordered[2*j-2]-help_obj.l_list_ordered[2*j-3]+1)
         
+    # Adjust the second fback_distances_k due to first loop having one taken by first time evolution
+    if group_num > 2:
+        fback_distances_k[2] = max(0, fback_distances_k[2]-1)
 
     time_evol_ncon_indices = _ncon_contraction_index_list(4)
     if help_obj.odd_end:
-        end_time_evol_ncon_indices = _ncon_contraction_index_list(3)
+        end_time_evol_ncon_indices = _ncon_contraction_index_list(2)
     else:
         end_time_evol_ncon_indices = _ncon_contraction_index_list(4)
 
@@ -1314,9 +1323,9 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         #TODO Have to account for two system bin legs, and possibility of single sys/time leg, and correct emitter dims
         for i in callable_ham_indices:
             if i == len(hams)-1 and help_obj.odd_end:
-                evols[i] = u_evol_multi_emitter_bins(hams[i](k), [help_obj.d_sys_ordered[2*1]], d_t, 1)
+                evols[i] = u_evol_multi_emitter_bins(hams[i](k), [help_obj.d_sys_ordered[2*i]], d_t, 1)
             else:
-                evols[i] = u_evol_multi_emitter_bins(hams[i](k), [help_obj.d_sys_ordered[2*1],help_obj.d_sys_ordered[2*1+1]], d_t, 2)
+                evols[i] = u_evol_multi_emitter_bins(hams[i](k), [help_obj.d_sys_ordered[2*i],help_obj.d_sys_ordered[2*i+1]], d_t, 2)
 
         sbin_0 = nbins[-1]
         in_state = next(input_field)
@@ -1426,45 +1435,47 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         # Must be careful, have extra step of grabbing extra bin if N is even
 
         # Even case
-        if help_obj.odd_end:
+        if not help_obj.odd_end:
             # Move the OC k+1 bins to the right (over time bins, getting to the fback bin)
-            for j in range(index, index + fback_distances_k[-1] + 1):
-                phi1 = ncon([nbins[j], nbins[j+1]], [[-1,2,1],[1,3,-4]])
+            for j in range(index, index + fback_distances_j[-1] + 1):
+                phi1 = ncon([nbins[j], nbins[j+1]], [[-1,-2,1],[1,-3,-4]])
                 nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
                 nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
-            index += fback_distances_k[-1] + 1
+            index += fback_distances_j[-1] + 1
 
             # OC is now in Feedback bin, swap the OC to the right to get it right of emitter bins (chain num - (k+1))
-            for j in range(index, index + help_obj.fback_subchain_lengths[-1] - (fback_distances_k[-1] + 1)):
+            # If there are only two sysgroups need to move one bin fewer
+            for j in range(index, index + help_obj.fback_subchain_lengths[-1] - (fback_distances_j[-1] + 1) - two_groups_int):
                 phi1 = ncon([nbins[j], nbins[j+1], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
                 nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
                 nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
 
-            index += help_obj.fback_subchain_lengths[-1] - (fback_distances_k[-1] + 1)
+            index += help_obj.fback_subchain_lengths[-1] - (fback_distances_j[-1] + 1)- two_groups_int
 
         # Odd cases
         else:
             # Move the OC into the time bin immediately to the left of last emitter bin
-            for j in range(index, index+help_obj.fback_subchain_lengths[-1]):
+            # If there are only two sysgroups need to move one bin fewer
+            for j in range(index, index+help_obj.fback_subchain_lengths[-1]- two_groups_int):
                 phi1 = ncon([nbins[j], nbins[j+1]], [[-1,-2,1],[1,-3,-4]])
                 nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, d_t, d_t)
                 nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
-            index += help_obj.fback_subchain_lengths[-1]
+            index += help_obj.fback_subchain_lengths[-1]- two_groups_int
 
         # Move OC sys_group_num[-1] + (j+1) bins to the right (over emitter and time bins)
-        for j in range(index, index + sys_group_num[-1] + fback_distances_j[-1] + 1):
+        for j in range(index, index + sys_group_num[-1] + fback_distances_k[-1] + 1):
             phi1 = ncon([nbins[j], nbins[j+1]], [[-1,-2,1],[1,-3,-4]])
             nbins[j], stemp, nbins[j+1] = _svd_tensors(phi1, bond, nbins[j].shape[1], nbins[j+1].shape[1])
             nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
-        index += sys_group_num[-1] + fback_distances_j[-1] + 1
+        index += sys_group_num[-1] + fback_distances_k[-1] + 1
 
         # Have OC in appropriate bin, swap left over j bins to be right of emitter bin(s)
-        for j in range(index, index - fback_distances_j[-1], -1):
+        for j in range(index, index - fback_distances_k[-1], -1):
             phi1 = ncon([nbins[j-1], nbins[j], swap_t_t], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
             nbins[j-1], stemp, nbins[j] = _svd_tensors(phi1, bond, d_t, d_t)
             nbins[j-1] = nbins[j-1] * stemp[None,None,:] #OC in left bin
 
-        index -= fback_distances_j[-1]
+        index -= fback_distances_k[-1]
 
         # Swap over the emitter bin(s)
         if sys_group_num[-1] == 2:
@@ -1480,7 +1491,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         # Contract and separate bins (3 vs 4 bins dependent on even vs odd N)
         if help_obj.odd_end:
             #  2 bins contraction, index/OC in time bin
-            phi1=ncon(nbins[index:index+2] + [evols[0]], end_time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
+            phi1=ncon(nbins[index:index+2] + [evols[-1]], end_time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
         
             # Separate the bins and store OC normed bins, leave OC in old tau bin
             nbins[index], stemp, nbins[index+1] = _svd_tensors(phi1, bond, d_t, help_obj.d_sys_ordered[-1])
@@ -1493,7 +1504,7 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
         else:
             index -= 1
             # Regular 4 bins, index/OC is right time bin
-            phi1=ncon(nbins[index:index+4] + [evols[0]], end_time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
+            phi1=ncon(nbins[index:index+4] + [evols[-1]], end_time_evol_ncon_indices) #tau bin, system bin, future time bin + U operator contraction
         
             # Separate the bins and store OC normed bins, leave OC in old tau bin
             phi1, stemp, nbins[index+3] = _svd_tensors(phi1, bond, d_t*d_t*help_obj.d_sys_ordered[-1], help_obj.d_sys_ordered[-2])
