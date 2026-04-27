@@ -57,7 +57,7 @@ def op_list_check(op_list:object) -> bool:
 #-----------------------------
 # Helper functions to extend states/operators to higher tensor spaces
 #-----------------------------
-def extend_op(op:np.ndarray, dim_list:list[int], i:int) -> np.ndarray:
+def extend_op(op:np.ndarray, dim_list:list[int], i:int, reverse_dims:bool=False) -> np.ndarray:
     """
     Extends an operator to a higher tensor space, with identities used for the extension to the other tensor spaces.
     
@@ -77,8 +77,12 @@ def extend_op(op:np.ndarray, dim_list:list[int], i:int) -> np.ndarray:
     op_ext : ndarray
         The extended version of the operator to act over the total tensor space produced by dim_list.
     """ 
-    l_dim = int(np.prod(dim_list[:i]))
-    r_dim = int(np.prod(dim_list[i+1:]))
+    if reverse_dims:
+        r_dim = int(np.prod(dim_list[:i]))
+        l_dim = int(np.prod(dim_list[i+1:]))
+    else:
+        l_dim = int(np.prod(dim_list[:i]))
+        r_dim = int(np.prod(dim_list[i+1:]))
 
     return np.kron(np.kron(np.eye(l_dim), op), np.eye(r_dim))
 

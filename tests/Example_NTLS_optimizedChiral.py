@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Sep 25 11:33:34 2025
-
-@author: sofia
 """
 #%%
 import matplotlib.pyplot as plt
@@ -27,22 +25,21 @@ def clean_ticks(x, pos):
 #%%
 
 """Choose the time step and end time"""
-N=10
+N=4
 d_sys1=2 # first tls bin dimension 
 d_sys_total=np.array([d_sys1]*N) #total system bin dimension
 
-d_t_l=3 #Time right channel bin dimension
-d_t_r=3 #Time left channel bin dimension
+d_t_r=2 #Time left channel bin dimension
 d_t_total=np.array([d_t_r])
 d_t = np.prod(d_t_total)
 input_params = qmps.parameters.InputParams(
-    delta_t=0.01, # Time step of the simulation
-    tmax = 20,#30, # Maximum simulation time
+    delta_t=0.05, # Time step of the simulation
+    tmax = 10,#30, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=0,
     gamma_r = 1,  
-    bond_max=64 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
+    bond_max=32 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
 tlist=np.arange(0,input_params.tmax+input_params.delta_t, input_params.delta_t)
 
@@ -61,11 +58,11 @@ i_n0 = np.zeros([1,d_t,1],dtype=complex) #initial time bin
 i_s0 = np.zeros([1,np.prod(d_sys_total),1],dtype=complex) #system bin
 
 # Start with first 2 in chain excited
-#i_s0[:,int(2**(len(d_sys_total)-1) + 2**(len(d_sys_total)-2)),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
+i_s0[:,1 + 2,:] = 1
 # Just First one excited
-#i_s0[:,int(2**(len(d_sys_total)-1)),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
+#i_s0[:,int(2**(len(d_sys_total)-1)),:] = 1
 # All excited
-i_s0[:,int(2**(len(d_sys_total))-1),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
+#i_s0[:,int(2**(len(d_sys_total))-1),:] = 1
 
 
 

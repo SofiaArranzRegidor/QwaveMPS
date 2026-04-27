@@ -76,12 +76,12 @@ for i in range(len(nbins_init)):
     #print(nbins_init[-1-i])
     #print('='*50)
 # %%
-N = 7
+N = 4
 d_sys_total = [2]*N; #d_sys_total = [3,2,4,3,4,2,3,3]
 delta_t = 0.1#0.05
 taus = [2]*(N-1); taus = [1,2,1,2,1,2,1]; taus = [1]*(N-1)
 
-photon_num = 2
+photon_num = 1
 d_t_1 = photon_num+1
 d_t = d_t_1**2
 params = qmps.parameters.InputParams(
@@ -91,7 +91,7 @@ params = qmps.parameters.InputParams(
     d_t_total = [d_t_1]*2,
     gamma_l=1,
     gamma_r = 1,  
-    bond_max=24#16#32
+    bond_max=64#24
 )
 tmax = params.tmax
 tlist=np.arange(0,tmax+params.delta_t, params.delta_t)
@@ -103,19 +103,19 @@ help_obj.set_fback_subchain_lengths(l_list)
 i_s0 = np.zeros([1,np.prod(d_sys_total),1],dtype=complex) #system bin
 
 # Start with first 2 in chain excited
-#i_s0[:,int(2**(len(d_sys_total)-1) + 2**(len(d_sys_total)-2)),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
+i_s0[:,int(2**(len(d_sys_total)-1) + 2**(len(d_sys_total)-2)),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
 # Just First one excited
 #i_s0[:,int(2**(len(d_sys_total)-1)),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
 # All excited
 #i_s0[:,int(2**(len(d_sys_total))-1),:] = 1; 
 # None excited
-i_s0[:,0,:] = 1; 
+#i_s0[:,0,:] = 1; 
 
 # WG
 pulse_time = 2
 pulse_env = qmps.tophat_envelope(pulse_time, params)
-#i_n0 = None
-i_n0 = qmps.fock_pulse([pulse_env, pulse_env], pulse_time, params, [0,photon_num])
+i_n0 = None
+#i_n0 = qmps.fock_pulse([pulse_env, pulse_env], pulse_time, params, [photon_num,photon_num])
 
 gamma_ls = [0.5]*N; gamma_rs = [0.5]*N
 hams = qmps.hamiltonian_Ntls_sym_eff(params, gamma_ls, gamma_rs)

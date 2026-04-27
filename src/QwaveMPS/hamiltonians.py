@@ -21,7 +21,7 @@ from .symmetrical_coupling_helper import Symmetrical_Coupling_Helper
 Hamiltonian: TypeAlias = np.ndarray | Callable[[int], np.ndarray]
 
 __all__ = ['hamiltonian_1tls', 'hamiltonian_1tls_feedback', 'hamiltonian_2tls_mar', 'hamiltonian_2tls_nmar', 'Hamiltonian',
-           'hamN2LSChiral', 'hamiltonian_1tls_chiral', 'hamiltonian_Ntls_sym_eff']
+           'hamN2LSChiral', 'hamN2LS', 'hamiltonian_1tls_chiral', 'hamiltonian_Ntls_sym_eff']
 
 def hamiltonian_1tls(params:InputParams, omega:float|np.ndarray=0, delta:float=0) -> Hamiltonian:
     """
@@ -352,32 +352,36 @@ def sigmaPlus(dimList, index):
     identityDim2 = np.prod(dimList[index+1:], dtype=np.uint)
     return np.kron(np.kron(np.eye(identityDim1), basicSigmaPlus(dimList[index])), np.eye(identityDim2))
 
-def hamN2LSChiral(t, deltaT, d_t_total, tlsNum, gammas=None, detuningLs=None, phases=None, omegaPumps=None, pumpStarts=None, pumpEnds=None):
-    if gammas == None: gammas = np.ones(tlsNum)
-    if detuningLs == None: detuningLs = np.zeros(tlsNum)
-    if phases == None: phases = np.zeros(tlsNum)
-    if omegaPumps == None: omegaPumps = np.zeros(tlsNum)
-    if pumpStarts == None: pumpStarts = np.zeros(tlsNum)
-    if pumpEnds == None: pumpEnds = np.zeros(tlsNum)
+def hamN2LSChiral(params:InputParams, gammas=None, detuningLs=None, phases=None, omegaPumps=None):
+    delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
+    tlsNum = len(d_sys_total)
+   
+    if gammas is None: gammas = np.ones(tlsNum)
+    if detuningLs is None: detuningLs = np.zeros(tlsNum)
+    if phases is None: phases = np.zeros(tlsNum)
+    else: phases = np.insert(phases,0,0)
+    if omegaPumps is None: omegaPumps = np.zeros(tlsNum)
     
-    deltaB = delta_b(deltaT, np.prod(d_t_total))
+    dTime = np.prod(d_t_total)
+    deltaB = delta_b(delta_t, dTime)
     deltaBDag = np.conj(deltaB).T
-    dTime = deltaB.shape[0]
     dSys = 2
     
     dimList = (np.ones(tlsNum) * dSys).astype(int)
-    pumpCoeffs = np.array(omegaPumps) * (t >= np.array(pumpStarts)) * (t<= np.array(pumpEnds))
+    pumpCoeffs = np.array(omegaPumps)
     
     H = np.zeros((dTime**tlsNum * np.prod(dimList),)*2, dtype=complex)
     for i in range(tlsNum):
         sigmaP = sigmaPlus(dimList, i)
         
+        # Baking the time bin identities for the tensor spaces left of the system bin to the sys ops
         sigmaP = np.kron(np.eye(dTime**(i)), sigmaP)
         sigmaM = sigmaP.T
     
-        h2LS = deltaT * detuningLs[i]  * np.kron(np.eye(dTime), sigmaP @ sigmaM)                             
-        hPump = deltaT * pumpCoeffs[i] * np.kron(np.eye(dTime), sigmaP + sigmaM)
-        hInt = np.sqrt(gammas[i]) * ( np.kron(deltaB, sigmaP) + np.kron(deltaBDag, sigmaM))
+        h2LS = delta_t * detuningLs[i]  * np.kron(np.eye(dTime), sigmaP @ sigmaM)                             
+        hPump = delta_t * pumpCoeffs[i] * np.kron(np.eye(dTime), sigmaP + sigmaM)
+        hInt = np.sqrt(gammas[i]) * ( np.exp(1j*phases[i])*np.kron(deltaB, sigmaP)
+                                      + np.exp(-1j*phases[i])*np.kron(deltaBDag, sigmaM))
         
         Hlocal = h2LS + hPump + hInt
         
@@ -386,19 +390,81 @@ def hamN2LSChiral(t, deltaT, d_t_total, tlsNum, gammas=None, detuningLs=None, ph
         
     return H
 
-def hamiltonian_1tls_chiral(params:InputParams):
+#TODO Add in pump logic
+def hamN2LS(params:InputParams, gamma_ls=None, gamma_rs=None, detuningLs=None, phases=None, omegaPumps=None):
     delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
+    tlsNum = len(d_sys_total)
+
+    if gamma_ls is None: gamma_ls = np.ones(tlsNum)*0.5
+    if gamma_rs is None: gamma_rs = np.ones(tlsNum)*0.5
+    if detuningLs is  None: detuningLs = np.zeros(tlsNum)
+    if phases is None: phases = np.zeros(tlsNum) 
+    else: phases = np.insert(phases,0,0)
+    if omegaPumps is None: omegaPumps = np.zeros(tlsNum)
+    
+    dTime = np.prod(d_t_total)
+
+    delta_br = delta_b_r(delta_t, d_t_total)
+    delta_bl = delta_b_l(delta_t, d_t_total)
+    dSys = 2
+    
+    sys_dim_list = (np.ones(tlsNum) * dSys).astype(int)
+    time_dim_list = (np.ones(tlsNum) * dTime).astype(int)
+    omegaPumps = np.array(omegaPumps)
+    H = np.zeros((np.prod(time_dim_list) * np.prod(sys_dim_list),)*2, dtype=complex)
+    
+    deltaBr_list = []
+    deltaBDagr_list = []
+    deltaBl_list = []
+    deltaBDagl_list = []
+
+    for i in range(tlsNum):
+        br = extend_op(delta_br, time_dim_list, i, reverse_dims=True)
+        bl = extend_op(delta_bl, time_dim_list, i, reverse_dims=True)
+        deltaBr_list.append(br)
+        deltaBl_list.append(bl)
+
+        deltaBDagr_list.append(np.conj(br).T)
+        deltaBDagl_list.append(np.conj(bl).T)
+    
+    total_time_eye = np.eye(np.prod(time_dim_list))
+    
+    for i in range(tlsNum):
+        sigmaP = extend_op(sigmaplus(), sys_dim_list, i, reverse_dims=True)
+        sigmaM = sigmaP.T
+        phase_ind_l = (i+1) % tlsNum
+
+        h2LS = delta_t * detuningLs[i]  * np.kron(total_time_eye, sigmaP @ sigmaM)                             
+        hPump = delta_t * omegaPumps[i] * np.kron(total_time_eye, sigmaP + sigmaM)
+        hInt_r = np.sqrt(gamma_rs[i]) * (np.exp(1j*phases[i]) * np.kron(deltaBr_list[i], sigmaP)
+                                    + np.exp(-1j*phases[i]) * np.kron(deltaBDagr_list[i], sigmaM))
+        hInt_l = np.sqrt(gamma_ls[i]) * (np.exp(1j*phases[phase_ind_l]) * np.kron(deltaBl_list[tlsNum-1-i], sigmaP)
+                                    + np.exp(-1j*phases[phase_ind_l]) * np.kron(deltaBDagl_list[tlsNum-1-i], sigmaM))
+
+        Hlocal = h2LS + hPump + hInt_r + hInt_l
+        H += Hlocal
+        
+    return H
+
+
+def hamiltonian_1tls_chiral(params:InputParams, gamma=1, phase=None):
+    delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
+
+    if phase == None: phase = 0
 
     sigmaP = sigmaplus()
     sigmaM = sigmaminus()
     d_t = np.prod(d_t_total)
-    return np.kron(delta_b(delta_t, d_t), sigmaP) + np.kron(delta_b_dag(delta_t, d_t), sigmaM)
+    return np.sqrt(gamma) * (np.kron(np.exp(1j*phase)*delta_b(delta_t, d_t), sigmaP) \
+        + np.exp(-1j*phase)* np.kron(delta_b_dag(delta_t, d_t), sigmaM))
 
 
-# Sym case, returns list of local hamiltonians
-def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:list[float]):
+# Sym case, returns LIST of local hamiltonians
+def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:list[float], phases=None):
     delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
     helper_obj = Symmetrical_Coupling_Helper(d_sys_total)
+    if phases is None: phases = np.zeros(len(d_sys_total))
+    else: phases = np.insert(phases,0,0)
 
     delta_b_dag_l_single = delta_b_dag_l(delta_t, d_t_total)
     delta_b_l_single = delta_b_l(delta_t, d_t_total)
@@ -422,31 +488,40 @@ def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:
     sigmap = sigmaplus()
     sigmam = sigmaminus()
 
+    N = len(d_sys_total)
 
     hams = [None] * helper_obj.interaction_num
 
     for i in range(int(helper_obj.sys_num/2)):
         sys_ind_r = helper_obj.ordered_indices[2*i]
         sys_ind_l = helper_obj.ordered_indices[2*i+1]
-        ham = gamma_rs[sys_ind_l]*(np.kron(delta_b_dag_r_0, np.kron(sigmam, sys_eye)) 
-                          + np.kron(delta_b_r_0, np.kron(sigmap, sys_eye)))
-        ham += gamma_rs[sys_ind_r]*(np.kron(delta_b_dag_r_1, np.kron(sys_eye,sigmam))
-                            + np.kron(delta_b_r_1, np.kron(sys_eye,sigmap)))
-        ham += gamma_ls[sys_ind_l]*(np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
-                           + np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
-        ham += gamma_ls[sys_ind_r]*(np.kron(delta_b_dag_l_0, np.kron(sys_eye,sigmam))
-                            + np.kron(delta_b_l_0, np.kron(sys_eye,sigmap)))
+
+        phase_ind_r2 = (sys_ind_r+1) % N
+        phase_ind_l2 = (sys_ind_l+1) % N
+
+
+        ham = np.sqrt(gamma_rs[sys_ind_r])*(np.exp(-1j*phases[sys_ind_r])*np.kron(delta_b_dag_r_1, np.kron(sys_eye,sigmam))
+                            + np.exp(1j*phases[sys_ind_r])*np.kron(delta_b_r_1, np.kron(sys_eye,sigmap)))
+        ham += np.sqrt(gamma_ls[sys_ind_r])*(np.exp(-1j*phases[phase_ind_r2])*np.kron(delta_b_dag_l_0, np.kron(sys_eye,sigmam))
+                            + np.exp(1j*phases[phase_ind_r2])*np.kron(delta_b_l_0, np.kron(sys_eye,sigmap)))
+
+        ham += np.sqrt(gamma_rs[sys_ind_l])*(np.exp(-1j*phases[sys_ind_l])*np.kron(delta_b_dag_r_0, np.kron(sigmam, sys_eye)) 
+                          + np.exp(1j*phases[sys_ind_l])*np.kron(delta_b_r_0, np.kron(sigmap, sys_eye)))
+        ham += np.sqrt(gamma_ls[sys_ind_l])*(np.exp(-1j*phases[phase_ind_l2])*np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
+                           + np.exp(1j*phases[phase_ind_l2])*np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
 
         hams[i] = ham
 
     # Final hamiltonian coupling single emitter to single time bin
     if helper_obj.odd_end:
         sys_ind = helper_obj.ordered_indices[-1]
+        phase_ind_2 = (sys_ind+1) % N
 
-        ham = gamma_rs[sys_ind]*(np.kron(delta_b_dag_r_single, sigmam) 
-                          + np.kron(delta_b_r_single, sigmap))
-        ham += gamma_ls[sys_ind]*(np.kron(delta_b_dag_l_single, sigmam) 
-                    + np.kron(delta_b_l_single, sigmap))
+        ham = np.sqrt(gamma_rs[sys_ind])*(np.exp(1j*phases[sys_ind])*np.kron(delta_b_r_single, sigmap)
+                         + np.exp(-1j*phases[sys_ind])*np.kron(delta_b_dag_r_single, sigmam))
+        
+        ham += np.sqrt(gamma_ls[sys_ind])*(np.exp(1j*phases[phase_ind_2])*np.kron(delta_b_l_single, sigmap)
+                        + np.exp(-1j*phases[phase_ind_2])*np.kron(delta_b_dag_l_single, sigmam))
 
         hams[-1] = ham
 

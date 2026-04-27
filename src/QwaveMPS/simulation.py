@@ -675,17 +675,37 @@ def _separate_sys_bins(i_s, d_sys_total, sbins, bond):
     nbins = []
     sys_num = len(d_sys_total)
 
-    for i in range(-1, -sys_num, -1):
-        sys_i, stemp, i_s = _svd_tensors(i_s, bond, d_sys_total[i], np.prod(d_sys_total[:i]))
+    for i in range(sys_num-1):
+        sys_i, stemp, i_s = _svd_tensors(i_s, bond, d_sys_total[i], np.prod(d_sys_total[i+1:]))
         nbins.append(sys_i)
         i_s = stemp[:,None,None] * i_s #OC sys bin
-        sbins[i].append(sys_i * stemp[None,None,:])
+        sbins[-1-i].append(sys_i * stemp[None,None,:])
 
     nbins.append(i_s)
     sbins[0].append(i_s)
+
+    '''
+    # Do swaps to take in s0, s1, s2, ... but rearrange to have ..., s2, s1, s0 (s0 on left)
+    swap_matrices = np.empty((sys_num, sys_num), dtype=object)
+    for i in range(sys_num):
+        for j in range(i):
+            swap_matrices[i][j] = swap(d_sys_total[j], d_sys_total[i]) # Always have i > j
+    # Swap N-1 bins left
+    for i in range(sys_num-1):
+        # Swap the leftmost bin to right of s0
+        for j in range(sys_num-1-i):
+            phi1 = ncon([nbins[-2-j], nbins[-1-j], swap_matrices[][]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+            nbins[-2-j], stemp, nbins[-1-j] = _svd_tensors(phi1, bond, d_sys_total[], d_sys_total[k])
+            nbins[-2-j] = nbins[-2-j] * stemp[None,None,:] #OC left bin
+
+
+        # Move OC back to the right
+        for j in range(sys_num-1-i):
+
+    '''
     return nbins
 
-def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True) -> Bins:
+def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True,store_total_sys_flag:bool=False) -> Bins:
     """ 
     Time evolution of a chiral waveguide system with delay times (no feedbacks)
     Structured memory-efficiently with separated system bins in the MPS chain
@@ -767,18 +787,28 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
             callable_ham_indices.append(i)
     swap_t_t=swap(d_t,d_t)
     swap_sys_t= []
+    swap_t_sys = []
     for i in range(sys_num):
         swap_sys_t.append(swap(d_sys_total[i],d_t))
+        swap_t_sys.append(swap(d_t, d_sys_total[i]))
     taus = np.array(taus)
     l_list=np.array(np.round(taus/delta_t, 0).astype(int)) #time steps between system and feedback
-        
+    
     # indexed with 0 being out of the WG, greater index is greater depth
     oc_normed_bins_lists = [[states.wg_ground(d_t)] for x in range(sys_num)]
     schmidts = [[np.zeros(1)] for x in range(sys_num)]
     sbins=[[] for x in range(sys_num)] 
     
     i_s=i_s0      
+
+    # Vars stored when storing total/grouped up sys information
+    schmidt_sysInput_vs_wgOutput = []
+    sbins_total = []
+    total_sys_contraction_indices = _ncon_contraction_index_list(sys_num, operator_flag=False)
     
+    cumsum_ls = np.cumsum(l_list)
+    cumprod_dims = np.cumprod(d_sys_total[:-1])[::-1]
+
     #first l time bins in vacuum (for no feedback part)    
     
     # Separate the system bins and initialize the feedback loop with bins
@@ -896,6 +926,34 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
                 # Save next schmidt, containing all but previous systems and their loops
                 schmidts[j+1].append(stemp)
 
+        #OC is in rightmost sys bin (sys_0)
+        if store_total_sys_flag:
+            # Create a copy so no need to return
+            copy_nbins = copy.deepcopy(nbins[-(sys_num + cumsum_ls[-1]):])
+
+            oc_ind = -1
+            # Loop over the various emitter bins to be fetched
+            for i in range(feedback_bin_num):
+                # Move the OC to the right of the sys bin
+                for j in range(cumsum_ls[i]):
+                    phi1 = ncon([copy_nbins[oc_ind-1], copy_nbins[oc_ind]], [[-1,-2,1],[1,-3,-4]])
+                    copy_nbins[oc_ind-1], stemp, copy_nbins[oc_ind] = _svd_tensors(phi1, bond, copy_nbins[oc_ind-1].shape[1], copy_nbins[oc_ind].shape[1])
+                    oc_ind -= 1
+                    copy_nbins[oc_ind] = copy_nbins[oc_ind] * stemp[None,None,:]  #OC left bin
+                # OC is in bin left of next emitter bin
+                # Swap the emitter bin to the right to be grouped together
+                for j in range(cumsum_ls[i]):
+                    phi1 = ncon([copy_nbins[oc_ind-1], copy_nbins[oc_ind], swap_sys_t[i+1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                    copy_nbins[oc_ind-1], stemp, copy_nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_sys_total[i+1])
+                    copy_nbins[oc_ind] = stemp[:,None,None] * copy_nbins[oc_ind] #OC right bin
+                    oc_ind += 1
+                oc_ind -= 1
+
+            # Save the collective emitter bin (OC is in rightmost bin)
+            # Last stemp is schmidts between emitters and ingoing field vs. rest of WG and outgoing field
+            # total_emitter_state.append(ncon(nbins[oc_ind:], inds))
+            schmidt_sysInput_vs_wgOutput.append(stemp)
+            sbins_total.append(ncon(copy_nbins[oc_ind:], total_sys_contraction_indices))
 
         t_k += delta_t
         #tlist.append(currT)
@@ -939,9 +997,13 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     
     truncation_number = np.sum(l_list) + sys_num
     nbins = nbins[:-truncation_number]
-
-    return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
+    result = Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
+
+    if store_total_sys_flag:
+        return result, sbins_total, schmidt_sysInput_vs_wgOutput
+    else:
+        return result
 
 #-------------------------
 # Efficient Symmetrical N-Emitter Implementation
@@ -1053,7 +1115,7 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
 #TODO Still have to appropriately save the Schmidt coefficients
-def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float], params:InputParams, show_progress:bool=True) -> Bins:
+def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float],params:InputParams,show_progress:bool=True,store_total_sys_flag:bool=False) -> Bins:
     delta_t = params.delta_t
     tmax=params.tmax
     bond=params.bond_max
@@ -1124,7 +1186,26 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     schmidts = [[np.zeros(1)] for x in range(sys_num)]
     sbins=[[] for x in range(sys_num)] 
     
-    i_s=i_s0      
+    i_s=i_s0     
+
+    # Vars stored when storing total/grouped up sys information
+    schmidt_sysInput_vs_wgOutput = []
+    sbins_total = []
+    total_sys_contraction_indices = _ncon_contraction_index_list(sys_num, operator_flag=False)
+    
+    cumsum_ls = np.repeat(np.cumsum(help_obj.l_list_ordered)[::2], 2)
+    if help_obj.odd_end:
+        cumsum_ls = cumsum_ls[:-1]
+    else:
+        cumsum_ls = cumsum_ls[:-2]
+    left_indices = (sys_num-2) - 2*np.arange(int(sys_num/2))
+    right_indices = 2*np.arange(int((sys_num+1)/2)) + int(sys_num%2 == 0)
+    transpose_indices = np.append([left_indices], right_indices) + 1
+    transpose_indices = np.insert(transpose_indices, 0, 0)
+    transpose_indices = np.append(transpose_indices, sys_num+1)
+
+    # cumprod_dims = np.cumprod(d_sys_total[:-1])[::-1]
+ 
     
     #first l time bins in vacuum (for no feedback part)    
     
@@ -1238,6 +1319,11 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
             nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
             nbins[-1] = stemp[:,None,None] * nbins[-1] #OC in right bin
 
+            #OC is in rightmost sys bin (sys_0)
+            if store_total_sys_flag:
+                sbins_total.append(ncon(nbins[-2:], total_sys_contraction_indices))
+
+
         # Move the OC to the first outgoing field and truncate the list to prepare nbins for correlation calculations
         phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
         nbins[-2], stemp, nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1], help_obj.d_sys_ordered[0])
@@ -1254,8 +1340,14 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
             nbins[-(j+1)] = nbins[-(j+1)] * stemp[None,None,:] #OC in left bin
 
         nbins = nbins[:-(l_list[0]+2)] # Truncate the nbins list
-        return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
-        correlation_bins=nbins,schmidt=schmidts)
+
+        result =  Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
+                        correlation_bins=nbins,schmidt=schmidts)
+        if store_total_sys_flag:
+            return result, sbins_total, schmidt_sysInput_vs_wgOutput
+        else:
+            return result
+
 
     # Otherwise have N\neq 2, and just have to careful around the edges, and especially for the N=3 case
     # Precalculate required numbers
@@ -1500,7 +1592,6 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
             sbins[help_obj.ordered_indices[-1]].append(stemp[:,None,None] * nbins[index+1]) #Store OC normed sys end bin
             oc_normed_bins_lists[help_obj.ordered_indices[-1]].append(nbins[index]) #Store OC normed outgoing field bin
 
-
         else:
             index -= 1
             # Regular 4 bins, index/OC is right time bin
@@ -1519,7 +1610,6 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
             nbins[index] = nbins[index] * stemp[None,None,:] #OC in left bin
             oc_normed_bins_lists[help_obj.ordered_indices[-2]].append(stemp[:,None,None] * nbins[index+1]) #Store OC normed output time bin
             oc_normed_bins_lists[help_obj.ordered_indices[-1]].append(nbins[index]) #Store OC normed outgoing field bin
-
 
         #=====================================================
         # Iterate: Work backwards over all other emitter pairs, time evolving them, (sN-1-i, si)
@@ -1617,6 +1707,44 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
             nbins[j+1] = stemp[:,None,None] * nbins[j+1] #OC in right bin
         index = -1
 
+        #OC is in rightmost sys bin (sys_0)
+        if store_total_sys_flag:
+            # Create a copy so no need to return
+            copy_nbins = copy.deepcopy(nbins[-(sys_num + cumsum_ls[-1]):])
+
+            # Move the OC into the left system bin, S_{N-1}
+            phi1 = ncon([copy_nbins[-2], copy_nbins[-1]], [[-1,-2,1],[1,-3,-4]])
+            copy_nbins[-2], stemp, copy_nbins[-1] = _svd_tensors(phi1, bond, help_obj.d_sys_ordered[1],help_obj.d_sys_ordered[0])
+            copy_nbins[-2] = copy_nbins[-2] * stemp[None,None,:]  #OC left bin
+
+            oc_ind = -2
+            # Loop over the various emitter bins to be fetched
+            for i in range(sys_num-2):
+                # Move the OC to the right of the sys bin
+                for j in range(cumsum_ls[i]):
+                    phi1 = ncon([copy_nbins[oc_ind-1], copy_nbins[oc_ind]], [[-1,-2,1],[1,-3,-4]])
+                    copy_nbins[oc_ind-1], stemp, copy_nbins[oc_ind] = _svd_tensors(phi1, bond, copy_nbins[oc_ind-1].shape[1], copy_nbins[oc_ind].shape[1])
+                    oc_ind -= 1
+                    copy_nbins[oc_ind] = copy_nbins[oc_ind] * stemp[None,None,:]  #OC left bin
+                # OC is in bin left of next emitter bin
+                # Swap the emitter bin to the right to be grouped together
+                for j in range(cumsum_ls[i]):
+                    phi1 = ncon([copy_nbins[oc_ind-1], copy_nbins[oc_ind], swap_sys_t[i+1]], [[-1,2,1],[1,3,-4], [-2,-3,2,3]])
+                    copy_nbins[oc_ind-1], stemp, copy_nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_sys_total[i+2])
+                    copy_nbins[oc_ind] = stemp[:,None,None] * copy_nbins[oc_ind] #OC right bin
+                    oc_ind += 1
+                oc_ind -= 1
+
+            # Save the collective emitter bin (OC is in rightmost bin)
+            # Last stemp is schmidts between emitters and ingoing field vs. rest of WG and outgoing field
+            # total_emitter_state.append(ncon(nbins[oc_ind:], inds))
+            schmidt_sysInput_vs_wgOutput.append(stemp)
+            # Reindex the sysbins to be 0-> N from right to left before contraction
+            grouped_sys_bins = np.transpose(copy_nbins[oc_ind:], transpose_indices)
+
+            sbins_total.append(ncon(grouped_sys_bins, total_sys_contraction_indices))
+
+
 
     # Move OC beyond all feedback loops and truncate nbins
     # Move it N + \sum_i l[i] bins left (starts in -1)
@@ -1630,5 +1758,10 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     #truncation_number = np.sum(l_list) + sys_num
     nbins = nbins[:truncation_num]
 
-    return Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
+    result = Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
+
+    if store_total_sys_flag:
+        return result, sbins_total, schmidt_sysInput_vs_wgOutput
+    else:
+        return result
