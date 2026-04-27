@@ -802,12 +802,14 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     i_s=i_s0      
 
     # Vars stored when storing total/grouped up sys information
-    schmidt_sysInput_vs_wgOutput = []
-    sbins_total = []
+    schmidt_sysInput_vs_wgOutput = [np.zeros(1)]
+    sbins_total = [i_s0]
+
     total_sys_contraction_indices = _ncon_contraction_index_list(sys_num, operator_flag=False)
     
     cumsum_ls = np.cumsum(l_list)
-    cumprod_dims = np.cumprod(d_sys_total[:-1])[::-1]
+    prod_dims = np.prod(d_sys_total)
+    #cumprod_dims = np.cumprod(d_sys_total[:-1])[::-1]
 
     #first l time bins in vacuum (for no feedback part)    
     
@@ -953,7 +955,12 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
             # Last stemp is schmidts between emitters and ingoing field vs. rest of WG and outgoing field
             # total_emitter_state.append(ncon(nbins[oc_ind:], inds))
             schmidt_sysInput_vs_wgOutput.append(stemp)
-            sbins_total.append(ncon(copy_nbins[oc_ind:], total_sys_contraction_indices))
+            grouped_sys_bins = ncon(copy_nbins[oc_ind:], total_sys_contraction_indices)
+            
+            # Line to reshape all system legs into single leg
+            grouped_sys_bins = grouped_sys_bins.reshape(grouped_sys_bins.shape[0], prod_dims, grouped_sys_bins.shape[-1])
+
+            sbins_total.append(grouped_sys_bins)
 
         t_k += delta_t
         #tlist.append(currT)
@@ -1114,7 +1121,7 @@ def _initialize_feedback_loop_sym_efficient(nbins, l_list, d_t, d_sys_total, bon
 
 # Setup as pairs of systems of 0,N-1, 1,N-2, 2,N-3, ...
 # Have to be careful of edge cases for first pair, when N=2, and the last pair in case N is even vs odd
-#TODO Still have to appropriately save the Schmidt coefficients
+#TODO Still have to appropriately save any desired Schmidt coefficients (best time might just be with the store_total_sys_flag when everything is time evolved)
 def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, taus:list[float],params:InputParams,show_progress:bool=True,store_total_sys_flag:bool=False) -> Bins:
     delta_t = params.delta_t
     tmax=params.tmax
@@ -1189,8 +1196,8 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     i_s=i_s0     
 
     # Vars stored when storing total/grouped up sys information
-    schmidt_sysInput_vs_wgOutput = []
-    sbins_total = []
+    schmidt_sysInput_vs_wgOutput = [np.zeros(1)]
+    sbins_total = [i_s0]
     total_sys_contraction_indices = _ncon_contraction_index_list(sys_num, operator_flag=False)
     
     cumsum_ls = np.repeat(np.cumsum(help_obj.l_list_ordered)[::2], 2)
@@ -1204,7 +1211,8 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
     transpose_indices = np.insert(transpose_indices, 0, 0)
     transpose_indices = np.append(transpose_indices, sys_num+1)
 
-    # cumprod_dims = np.cumprod(d_sys_total[:-1])[::-1]
+    prod_dims = np.prod(d_sys_total)
+    #cumprod_dims = np.cumprod(d_sys_total[:-1])[::-1]
  
     
     #first l time bins in vacuum (for no feedback part)    
@@ -1321,8 +1329,10 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
 
             #OC is in rightmost sys bin (sys_0)
             if store_total_sys_flag:
-                sbins_total.append(ncon(nbins[-2:], total_sys_contraction_indices))
+                grouped_sys_bins = ncon(nbins[-2:], total_sys_contraction_indices)
+                grouped_sys_bins = grouped_sys_bins.reshape(grouped_sys_bins.shape[0], prod_dims, grouped_sys_bins.shape[-1])
 
+                sbins_total.append(grouped_sys_bins)
 
         # Move the OC to the first outgoing field and truncate the list to prepare nbins for correlation calculations
         phi1 = ncon([nbins[-2], nbins[-1]], [[-1,-2,1],[1,-3,-4]])
@@ -1740,9 +1750,11 @@ def t_evol_nmar_sym(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, tau
             # total_emitter_state.append(ncon(nbins[oc_ind:], inds))
             schmidt_sysInput_vs_wgOutput.append(stemp)
             # Reindex the sysbins to be 0-> N from right to left before contraction
-            grouped_sys_bins = np.transpose(copy_nbins[oc_ind:], transpose_indices)
+            grouped_sys_bins = ncon(copy_nbins[oc_ind:], total_sys_contraction_indices)
+            grouped_sys_bins = np.transpose(grouped_sys_bins, transpose_indices)
+            grouped_sys_bins = grouped_sys_bins.reshape(grouped_sys_bins.shape[0], prod_dims, grouped_sys_bins.shape[-1])
 
-            sbins_total.append(ncon(grouped_sys_bins, total_sys_contraction_indices))
+            sbins_total.append(grouped_sys_bins)
 
 
 

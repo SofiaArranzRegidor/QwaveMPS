@@ -757,7 +757,7 @@ def single_time_expectation(normalized_bins:list[np.ndarray], ops_list:np.ndarra
 
     return result
 
-def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:InputParams) -> np.ndarray:
+def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:InputParams, tau:float=None) -> np.ndarray:
     """
     Calculates the time dependent integral of the function over all points in the feedback loop at each time point of the system evolution.
     This is a moving windowed integral over the function, with the window size of length tau (the feedback time)
@@ -777,8 +777,8 @@ def loop_integrated_statistics(time_dependent_func:np.ndarray[complex], params:I
         List of values for the integration of time_dependent_func over the feedback loop at each time point.
         This is a moving integral over the function, for a window of length tau.
     """
-
-    tau = params.tau
+    if tau is None:
+        tau = params.tau
     delta_t = params.delta_t
 
     n=len(time_dependent_func) 
