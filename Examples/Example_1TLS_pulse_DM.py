@@ -58,6 +58,7 @@ pulse_time = 2.0
 photon_num = 1
 pulse_env = qmps.tophat_envelope(pulse_time, input_params)
 
+input_params.bond_max = 2
 wg_initial_state_dm = qmps.convert_to_dm(
     qmps.states.fock_pulse(
         pulse_env,
@@ -67,6 +68,7 @@ wg_initial_state_dm = qmps.convert_to_dm(
         direction="R",
     )
 )
+input_params.bond_max = 10
 
 
 #%%
