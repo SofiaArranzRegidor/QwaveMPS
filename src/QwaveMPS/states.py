@@ -1278,16 +1278,16 @@ def _noom_state(pulse_envs:list[list[float]],pulse_time:float,params:InputParams
     apk_c=ncon([calc_ak(m-1), apm],[[-1,-2,1],[1,-3,-4]])            
     
     for k in range(m-2,1,-1):
-        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond0, time_bin_dim, time_bin_dim)
+        apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
         apk_c = stemp[None,None,:] * apk_c
         apk_c = ncon([calc_ak(k),apk_c],[[-1,-2,1],[1,-3,-4]]) # k-1
         apk_can.append(i_n_r)        
     
-    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond0, time_bin_dim, time_bin_dim)
+    apk_c, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
     apk_can.append(i_n_r)
     apk_c = apk_c * stemp[None,None,:]
     apk_c = ncon([ap1,apk_c],[[-1,-2,1],[1,-3,-4]])
-    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond0, time_bin_dim, time_bin_dim)
+    i_n_l, stemp, i_n_r = sim._svd_tensors(apk_c, bond, time_bin_dim, time_bin_dim)
     i_n_l = i_n_l * stemp[None,None,:]
     apk_can.append(i_n_r)
     apk_can.append(i_n_l)
