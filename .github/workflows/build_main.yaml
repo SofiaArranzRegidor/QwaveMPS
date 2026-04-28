@@ -1,8 +1,9 @@
 name: build
 
 on:
-  push: # Add dev for temp testing
-    branches: [main]
+# Only test on PR to avoid double testing...
+#  push: # Add dev for temp testing
+#    branches: [main]
   pull_request:
     branches: [main]
 
