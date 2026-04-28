@@ -65,7 +65,6 @@ wg_initial_state_dm = qmps.convert_to_dm(
         photon_num,
         input_params,
         direction="R",
-        bond0=2,
     )
 )
 
