@@ -65,10 +65,19 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
     """
     u, s, vt = svd(tensor.reshape(tensor.shape[0]*d_1, tensor.shape[-1]*d_2), full_matrices=False)
     chi = min(bond_max, len(s))
+    total_weight = np.sum(s**2)
+    discarded_weight = np.sum(s[chi:]**2)
+
+    if total_weight > 0:
+        disc_weight = discarded_weight / total_weight
+    else:
+        disc_weight = 0.0
     epsilon = 1e-10 #to avoid dividing by zero
     s_norm = s[:chi] / (norm(s[:chi])+ epsilon)
     u = u[:, :chi].reshape(tensor.shape[0],d_1,chi)
     vt = vt[:chi, :].reshape(chi,d_2,tensor.shape[-1])
+    if disc_weight > 1e-6:
+        print(f"Warning: SVD discarded weight = {disc_weight:.3e}; max bond may be too small")
     return u, s_norm, vt
 
 # ------------------------------------------------------
