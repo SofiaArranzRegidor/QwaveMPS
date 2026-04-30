@@ -29,7 +29,7 @@ N=4
 d_sys1=2 # first tls bin dimension 
 d_sys_total=np.array([d_sys1]*N) #total system bin dimension
 
-d_t_r=2 #Time left channel bin dimension
+d_t_r=3 #Time left channel bin dimension
 d_t_total=np.array([d_t_r])
 d_t = np.prod(d_t_total)
 input_params = qmps.parameters.InputParams(
