@@ -546,7 +546,7 @@ def _contract_omega(omega:np.ndarray, ak:np.ndarray) -> np.ndarray:
 # Create the Pulse based on given matrix scheme
 #-------------------------
 #TODO Needs optimization work. Lot of room for performance improvements here.
-def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable, alphaOmega_args:list[tuple], pulse_ak:Callable, ak_args:list[tuple], bond0:int=1)->list[np.ndarray]:    
+def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable, alphaOmega_args:list[tuple], pulse_ak:Callable, ak_args:list[tuple], bond0:int=1, bond_max:int=None)->list[np.ndarray]:    
     """
     Creates a pulse input field MPS with a pulse envelope. 
     Created quantum pulse is dependent on the matrix_args, and the alpha, omega, and ak matrices passed.
@@ -577,6 +577,10 @@ def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable,
 
     bond0 : int, default: 1
         Default bond dimension of bins.
+
+    bond_max : int, default: None
+        Max bond dimension of the created pulse. Default is the bond_max value in params.
+
     
     Returns
     -------
@@ -586,7 +590,7 @@ def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable,
     """ 
     delta_t = params.delta_t
     d_t_total = params.d_t_total
-    bond_max = params.bond_max
+    if bond_max is None: bond_max = params.bond_max
     
     m = int(round(pulse_time/delta_t,0))
     time_bin_dim = np.prod(d_t_total)
@@ -744,7 +748,8 @@ def fock_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParam
         alphaOmega_args.append((photon_nums[i],))
         ak_args.append((photon_nums[i], pulse_envs[i]))
 
-    return create_pulse(pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
+    bond_max_eff = np.prod(np.array(photon_nums) + 1)
+    return create_pulse(pulse_time, params, _fock_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args, bond_max=bond_max_eff)
 
 #-----------------------------
 # Coherent pulse MPS generator

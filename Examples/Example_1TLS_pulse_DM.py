@@ -58,17 +58,14 @@ pulse_time = 2.0
 photon_num = 1
 pulse_env = qmps.tophat_envelope(pulse_time, input_params)
 
-input_params.bond_max = 2
 wg_initial_state_dm = qmps.convert_to_dm(
     qmps.states.fock_pulse(
-        pulse_env,
+        [None,pulse_env],
         input_params.tmax,
-        photon_num,
         input_params,
-        direction="R",
+        [0,photon_num]
     )
 )
-input_params.bond_max = 10
 
 
 #%%
@@ -129,7 +126,8 @@ g1, corr_tlist = qmps.correlation_2op_2t_dm(
 # sinc-squared envelope of a top-hat pulse.
 
 spectrum, wlist = qmps.spectral_intensity(g1, input_params, padding=1064)
-sw_dm = np.trapezoid(spectrum, corr_tlist, axis=0)
+trap_integrate = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+sw_dm = trap_integrate(spectrum, corr_tlist, axis=0)
 analytic_sinc = np.abs(np.sinc(wlist / np.pi)) ** 2
 
 
@@ -174,3 +172,5 @@ axes[1].legend()
 
 fig.tight_layout()
 plt.show()
+
+# %%
