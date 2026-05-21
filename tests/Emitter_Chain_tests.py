@@ -15,7 +15,7 @@ from pathlib import Path
 from matplotlib.colors import Normalize
 from numpy.linalg import matrix_power
 
-save_dir = Path('/home/mattkozma/Documents/QWaveMPS_Scripts/data/emitterCascade/benchmarks')
+save_dir = Path('/home/mattkozma/Documents/QWaveMPS_Scripts/figs/emitterCascade/benchmarks')
 save_flag = True
 
 #Parameters for plots style
@@ -755,7 +755,7 @@ plt.show()
 #%%% Setup simulation parameters
 N = 4
 d_sys_total = [2]*N; #d_sys_total = [3,2,4,3,4,2,3,3]
-delta_t = 0.1#0.05
+delta_t = 0.4#0.1#0.05
 taus = [2]*(N-1); taus = [1,2,1,2,1,2,1];
 tau = 0.4
 taus = [tau]*(N-1)
@@ -764,12 +764,12 @@ photon_num = 3
 d_t_1 = photon_num+1
 params = qmps.parameters.InputParams(
     delta_t = delta_t,
-    tmax = 10,
+    tmax = 5,#10,
     d_sys_total = d_sys_total,
     d_t_total = [d_t_1]*2,
     gamma_l=1,
     gamma_r = 1,  
-    bond_max=128#24
+    bond_max=36#128#24
 )
 tmax = params.tmax
 tlist=np.arange(0,tmax+params.delta_t, params.delta_t)

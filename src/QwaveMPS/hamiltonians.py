@@ -460,11 +460,12 @@ def hamiltonian_1tls_chiral(params:InputParams, gamma=1, phase=None):
 
 
 # Sym case, returns LIST of local hamiltonians
-def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:list[float], phases=None):
+def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:list[float], phases=None, omega_pumps=None):
     delta_t,d_sys_total, d_t_total = params.delta_t,params.d_sys_total,params.d_t_total
     helper_obj = Symmetrical_Coupling_Helper(d_sys_total)
     if phases is None: phases = np.zeros(len(d_sys_total))
     else: phases = np.insert(phases,0,0)
+    if omega_pumps is None: omega_pumps = np.zeros(len(d_sys_total))
 
     delta_b_dag_l_single = delta_b_dag_l(delta_t, d_t_total)
     delta_b_l_single = delta_b_l(delta_t, d_t_total)
@@ -472,6 +473,7 @@ def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:
     delta_b_r_single = delta_b_r(delta_t, d_t_total)
     d_t_eye = np.eye(params.d_t)
     sys_eye = np.eye(2)
+    d_t_eye_2 = np.kron(d_t_eye, d_t_eye)
 
     delta_b_dag_l_0 = np.kron(delta_b_dag_l_single, d_t_eye)
     delta_b_dag_l_1 = np.kron(d_t_eye, delta_b_dag_l_single)
@@ -510,6 +512,12 @@ def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:
         ham += np.sqrt(gamma_ls[sys_ind_l])*(np.exp(-1j*phases[phase_ind_l2])*np.kron(delta_b_dag_l_1, np.kron(sigmam,sys_eye)) 
                            + np.exp(1j*phases[phase_ind_l2])*np.kron(delta_b_l_1, np.kron(sigmap,sys_eye)))
 
+        ham += delta_t*(omega_pumps[sys_ind_r]/2*np.kron(np.kron(d_t_eye_2,sys_eye),sigmaplus())
+                            + np.conj(omega_pumps[sys_ind_r])/2*np.kron(np.kron(d_t_eye_2,sys_eye),sigmaminus()))
+        
+        ham += delta_t*(omega_pumps[sys_ind_l]/2*np.kron(np.kron(d_t_eye_2,sigmaplus()),sys_eye)
+                            + np.conj(omega_pumps[sys_ind_l])/2*np.kron(np.kron(d_t_eye_2,sigmaminus()),sys_eye))
+
         hams[i] = ham
 
     # Final hamiltonian coupling single emitter to single time bin
@@ -522,6 +530,9 @@ def hamiltonian_Ntls_sym_eff(params:InputParams, gamma_ls:list[float], gamma_rs:
         
         ham += np.sqrt(gamma_ls[sys_ind])*(np.exp(1j*phases[phase_ind_2])*np.kron(delta_b_l_single, sigmap)
                         + np.exp(-1j*phases[phase_ind_2])*np.kron(delta_b_dag_l_single, sigmam))
+        
+        ham += delta_t*(omega_pumps[sys_ind]/2*np.kron(d_t_eye,sigmaplus())
+                            + np.conj(omega_pumps[sys_ind])/2*np.kron(d_t_eye,sigmaminus()))
 
         hams[-1] = ham
 

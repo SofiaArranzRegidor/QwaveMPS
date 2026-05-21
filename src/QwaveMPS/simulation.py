@@ -76,7 +76,9 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
     else:
         disc_weight = 0.0
     if disc_weight > 1e-6:
-        print(f"Warning: SVD discarded weight = {disc_weight:.3e}; max bond may be too small")
+        _svd_tensors.error_num += 1
+        _svd_tensors.error_weight = max(disc_weight, _svd_tensors.error_weight)
+        #print(f"Warning: SVD discarded weight = {disc_weight:.3e}; max bond may be too small")
     # End of block
 
     epsilon = 1e-10 #to avoid dividing by zero
@@ -84,6 +86,14 @@ def _svd_tensors(tensor:np.ndarray, bond_max:int, d_1:int, d_2:int) -> np.ndarra
     u = u[:, :chi].reshape(tensor.shape[0],d_1,chi)
     vt = vt[:chi, :].reshape(chi,d_2,tensor.shape[-1])
     return u, s_norm, vt
+
+# initialize cache attributes for _svd_tensors
+_svd_tensors.error_num = 0
+_svd_tensors.error_weight = 0
+
+def _reset_svd_tensors():
+    _svd_tensors.error_num = 0
+    _svd_tensors.error_weight = 0
 
 # ------------------------------------------------------
 # Time evolution: Markovian and non-Markovian evolutions
