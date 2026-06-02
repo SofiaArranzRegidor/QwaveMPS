@@ -425,3 +425,5 @@ ax.set_ylabel(r'Time, $\gamma t$')
 ax.set_xlabel(r'Time, $\gamma(t+t^\prime)$')
 cbar.set_label(r'$G^{(2)}_{LR}(t,t^\prime)\ [\gamma^{2}]$')
 plt.show()
+
+# %%
