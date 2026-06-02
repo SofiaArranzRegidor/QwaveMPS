@@ -427,7 +427,7 @@ def _matrix_text_print(ap1:np.ndarray, apm:np.ndarray, ak:np.ndarray, time_bin_d
     for i in range(time_bin_dim):
         print(np.real(ak[:,i,:]))
 
-def _single_pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:int, pulse_bin_num:int) -> list[list[complex]]:
+def _single_pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:int, pulse_bin_num:int,delta_t:int) -> list[list[complex]]:
     """
     Prepares the pulse envelope so that they are tail truncated or padded (with 0's) to be of 
     length of the given pulse time. Also normalizes each pulse envelope to ensure it they are
@@ -463,6 +463,7 @@ def _single_pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:in
         else:
             pulse_envs[i] = np.array(pulse_envs[i])
         pulse_envs[i] = normalize_pulse_envelope(pulse_envs[i])
+        # pulse_envs[i] = normalize_pulse_envelope_integral(delta_t,pulse_envs[i])
     
     # Pad envelopes as necessary to be of length m
     for i in range(channel_num):
@@ -735,7 +736,7 @@ def fock_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParam
     # Normalize the pulse envelopes and pad as necessary with 0's
     m = int(round(pulse_time/params.delta_t,0))
     channel_num = len(params.d_t_total)
-    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
+    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m,params.delta_t)
 
     # pack function arguments
     alphaOmega_args = []
@@ -871,7 +872,7 @@ def coherent_pulse(pulse_envs:list[list[complex]],pulse_time:float, params:Input
     # Normalize the pulse envelopes and pad as necessary with 0's
     m = int(round(pulse_time/params.delta_t,0))
     channel_num = len(params.d_t_total)
-    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
+    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m,params.delta_t)
 
     # pack function arguments
     alphaOmega_args = []
@@ -920,8 +921,43 @@ def _squeezed_alphaOmega(photon_num:int,zeta:complex, bond0:int=1) -> tuple[np.n
     for i in range(photon_dim):
         if i%2 == 0:
             j=i/2 
-            am[i,:] = sci.special.factorial(i) / (2**j*sci.special.factorial(j))*g**j   
+            am[i,:] = sci.special.factorial(i) / (2**j*sci.special.factorial(j))*g**j
     return a1, am
+
+def _squeezed_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -> np.ndarray:
+    """
+    Generates the tensors for the MPS factorization of a Fock State for a given bin/site, k.
+    
+    Parameters
+    ----------
+    k : int
+        The index of the bin of of the pulse being generated.
+
+    dt : int
+        The dimension of the physical index.
+    
+    photon_num : int
+        The number of photons in the Fock state.
+
+    pulse_env : list[complex]
+        The pulse envelope of the pulse.
+
+    Returns
+    -------
+    ak : np.ndarray
+        The rank 3 tensor representing the k^th tensor of the MPS factorization of the Fock state.
+            
+    Examples
+    -------- 
+
+    """ 
+    photon_dim = photon_num+1
+    ak=np.zeros([photon_dim,dt,photon_dim],dtype=complex)
+    indices = np.arange(0,photon_dim,1)
+    # Vectorize this...
+    for i in range(dt):
+        ak[indices[:photon_dim-i], i, indices[i:]] = pulse_env[k]**i / np.sqrt(sci.special.factorial(i))    
+    return ak
 
 def squeezed_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParams, zetas:list[complex],bond0:int=1)->list[np.ndarray]:    
     """
@@ -962,7 +998,7 @@ def squeezed_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputP
     # Normalize the pulse envelopes and pad as necessary with 0's
     m = int(round(pulse_time/params.delta_t,0))
     channel_num = len(params.d_t_total)
-    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m)
+    pulse_envs = _single_pulse_env_preparation(pulse_envs, channel_num, m,params.delta_t)
 
     # pack function arguments
     alphaOmega_args = []
@@ -972,7 +1008,7 @@ def squeezed_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputP
         alphaOmega_args.append((photon_num,zetas[i]))
         ak_args.append((photon_num, pulse_envs[i]))
 
-    return create_pulse(pulse_time, params, _squeezed_alphaOmega, alphaOmega_args, _fock_pulse_ak, ak_args)
+    return create_pulse(pulse_time, params, _squeezed_alphaOmega, alphaOmega_args, _squeezed_pulse_ak, ak_args)
 
 
 
@@ -1225,9 +1261,7 @@ def calc_tmsv_coeffs(zeta:complex, pulse_env_val:complex, n:np.ndarray):
     zeta_local = zeta*pulse_env_val
     r = np.abs(zeta_local)
     eiphi = np.exp(1j * np.angle(zeta_local))
-    result = np.where(n % 2 == 0,
-        1/np.cosh(r) * (-eiphi * np.tanh(r))**(n),
-        0)
+    result = np.where(n % 2 == 0,1/np.cosh(r) * (-eiphi * np.tanh(r))**(n),0)
     return result
 
 
