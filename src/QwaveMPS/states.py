@@ -22,7 +22,7 @@ import scipy.special as sp
 import warnings
 
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'basis', 'input_state_generator', 'coupling',
-            'tophat_envelope', 'gaussian_envelope','exp_decay_envelope', 'normalize_pulse_envelope','left_normalize_bins',
+            'tophat_envelope', 'gaussian_envelope','exp_decay_envelope', 'normalize_pulse_envelope','normalize_pulse_envelope_integral','left_normalize_bins',
             'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse','squeezed_pulse', 'product_fock_pulse', 
             'addMPSs']
 
@@ -313,27 +313,27 @@ def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, d
     pulse_envelope = np.exp(-time_diffs * decay_rate)
     return pulse_envelope
 
-# def normalize_pulse_envelope_integral(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
-#     """
-#     Normalizes a given pulse envelope so that the integral of the square magnitude is 1.
+def normalize_pulse_envelope_integral(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
+    """
+    Normalizes a given pulse envelope so that the integral of the square magnitude is 1.
 
-#     Parameters
-#     ----------
-#     delta_t : float
-#         Time step size for the simulation.
+    Parameters
+    ----------
+    delta_t : float
+        Time step size for the simulation.
         
-#     pulse_env : np.ndarray[float]
-#         Time dependent pulse envelope that is being normalized.
+    pulse_env : np.ndarray[float]
+        Time dependent pulse envelope that is being normalized.
 
-#     Returns
-#     -------
-#     pulse_env : np.ndarray[float]
-#         The normalized time dependent pulse envelope.
+    Returns
+    -------
+    pulse_env : np.ndarray[float]
+        The normalized time dependent pulse envelope.
 
-#     """ 
-#     norm_factor = np.sum(np.abs(np.array(pulse_env))**2) * delta_t
-#     pulse_env /= np.sqrt(norm_factor)
-#     return pulse_env
+    """ 
+    norm_factor = np.sum(np.abs(np.array(pulse_env))**2) * delta_t
+    pulse_env /= np.sqrt(norm_factor)
+    return pulse_env
 
 def normalize_pulse_envelope(pulse_env:np.ndarray)->np.ndarray:
     """
