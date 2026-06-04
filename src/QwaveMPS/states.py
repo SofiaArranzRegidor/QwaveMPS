@@ -18,11 +18,12 @@ from collections.abc import Iterator
 from typing import Callable
 from QwaveMPS import simulation as sim
 from QwaveMPS.parameters import InputParams
+import scipy.special as sp
+import warnings
 
 __all__ = ['wg_ground', 'tls_ground', 'tls_excited', 'vacuum', 'basis', 'input_state_generator', 'coupling',
-            'tophat_envelope', 'gaussian_envelope','exp_decay_envelope',
-            'normalize_pulse_envelope_integral', 'normalize_pulse_envelope','left_normalize_bins',
-            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse', 'product_fock_pulse', 
+            'tophat_envelope', 'gaussian_envelope','exp_decay_envelope', 'normalize_pulse_envelope','left_normalize_bins',
+            'fock_pulse', 'create_pulse', 'calc_coherent_val', 'coherent_pulse','squeezed_pulse', 'product_fock_pulse', 
             'addMPSs']
 
 #--------------------
@@ -312,27 +313,27 @@ def exp_decay_envelope(pulse_time:float, params:InputParams, decay_rate:float, d
     pulse_envelope = np.exp(-time_diffs * decay_rate)
     return pulse_envelope
 
-def normalize_pulse_envelope_integral(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
-    """
-    Normalizes a given pulse envelope so that the integral of the square magnitude is 1.
+# def normalize_pulse_envelope_integral(delta_t:float, pulse_env:np.ndarray)->np.ndarray:
+#     """
+#     Normalizes a given pulse envelope so that the integral of the square magnitude is 1.
 
-    Parameters
-    ----------
-    delta_t : float
-        Time step size for the simulation.
+#     Parameters
+#     ----------
+#     delta_t : float
+#         Time step size for the simulation.
         
-    pulse_env : np.ndarray[float]
-        Time dependent pulse envelope that is being normalized.
+#     pulse_env : np.ndarray[float]
+#         Time dependent pulse envelope that is being normalized.
 
-    Returns
-    -------
-    pulse_env : np.ndarray[float]
-        The normalized time dependent pulse envelope.
+#     Returns
+#     -------
+#     pulse_env : np.ndarray[float]
+#         The normalized time dependent pulse envelope.
 
-    """ 
-    norm_factor = np.sum(np.abs(np.array(pulse_env))**2) * delta_t
-    pulse_env /= np.sqrt(norm_factor)
-    return pulse_env
+#     """ 
+#     norm_factor = np.sum(np.abs(np.array(pulse_env))**2) * delta_t
+#     pulse_env /= np.sqrt(norm_factor)
+#     return pulse_env
 
 def normalize_pulse_envelope(pulse_env:np.ndarray)->np.ndarray:
     """
@@ -463,7 +464,6 @@ def _single_pulse_env_preparation(pulse_envs:list[list[complex]], channel_num:in
         else:
             pulse_envs[i] = np.array(pulse_envs[i])
         pulse_envs[i] = normalize_pulse_envelope(pulse_envs[i])
-        # pulse_envs[i] = normalize_pulse_envelope_integral(delta_t,pulse_envs[i])
     
     # Pad envelopes as necessary to be of length m
     for i in range(channel_num):
@@ -624,9 +624,6 @@ def create_pulse(pulse_time:float,params:InputParams, pulse_alphaOmega:Callable,
         return ak
 
     bins = [calc_ak(k) for k in range(m)]    
-    
-    # Test print of the bins
-    # _matrix_text_print(bins[0], bins[-1], bins[3], time_bin_dim)
 
     bins_l_normed = left_normalize_bins(bins, bond_max)        
     return bins_l_normed
@@ -929,9 +926,60 @@ def _squeezed_alphaOmega(photon_num:int,zeta:complex, bond0:int=1) -> tuple[np.n
             am[i,:] = sci.special.factorial(i) / (2**j*sci.special.factorial(j))*g**j
     return a1, am
 
+def squeezed_probs(zeta, dt):
+    """
+    Gives the list of photons probabilities P_2n
+    
+    Parameters
+    ----------    
+    zeta : float
+        squeezing parameter
+    
+    dt : int
+        time bin dimension
+        
+    Returns
+    -------
+    probs : np.ndarray
+        probability of number of photons
+        
+    """
+    
+    photon_num = dt-1 
+    
+    probs = np.zeros(photon_num + 1)
+
+    for m in range(photon_num + 1):
+        if m % 2 == 0:
+            n = m // 2
+            probs[m] = (sp.factorial(2*n)/(2**(2*n) * sp.factorial(n)**2)* np.tanh(zeta)**(2*n)/ np.cosh(zeta))
+    return probs
+
+def squeezed_bin_cutoff(zeta, dt):
+    """
+    Gives the list of photons probabilities P_2n
+    
+    Parameters
+    ----------    
+    zeta : float
+        squeezing parameter
+    
+    dt : int
+        time bin dimension
+        
+    Returns
+    -------
+    1 - retained_prob : float
+        Difference between considering the full subspace or limited one
+    
+    """
+    probs = squeezed_probs(zeta, dt)
+    retained_prob = np.sum(probs)
+    return 1 - retained_prob
+
 def _squeezed_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -> np.ndarray:
     """
-    Generates the tensors for the MPS factorization of a Fock State for a given bin/site, k.
+    Generates the tensors for the MPS factorization of a Squeezed State for a given bin/site, k.
     
     Parameters
     ----------
@@ -942,7 +990,7 @@ def _squeezed_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -
         The dimension of the physical index.
     
     photon_num : int
-        The number of photons in the Fock state.
+        The number of photons considered.
 
     pulse_env : list[complex]
         The pulse envelope of the pulse.
@@ -950,7 +998,7 @@ def _squeezed_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -
     Returns
     -------
     ak : np.ndarray
-        The rank 3 tensor representing the k^th tensor of the MPS factorization of the Fock state.
+        The rank 3 tensor representing the k^th tensor of the MPS factorization of the state.
             
     Examples
     -------- 
@@ -959,15 +1007,17 @@ def _squeezed_pulse_ak(k:int, dt:int, photon_num:int, pulse_env:list[complex]) -
     photon_dim = photon_num+1
     ak=np.zeros([photon_dim,dt,photon_dim],dtype=complex)
     indices = np.arange(0,photon_dim,1)
-    # Vectorize this...
-    for i in range(dt):
-        ak[indices[:photon_dim-i], i, indices[i:]] = pulse_env[k]**i / np.sqrt(sci.special.factorial(i))    
+    i_vals = np.arange(dt)
+    coeffs = pulse_env[k] ** i_vals / np.sqrt(sci.special.factorial(i_vals))
+    
+    for i, coeff in enumerate(coeffs):
+        ak[indices[:photon_dim - i], i, indices[i:]] = coeff
     return ak
 
 def squeezed_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputParams, zetas:list[complex],bond0:int=1)->list[np.ndarray]:    
     """
-    Creates a Fock pulse input field MPS with a pulse envelope. 
-    Can create a state of fock pulses in multiple channels, e.g. of the form |N,M,L>
+    Creates a squeezed pulse input field MPS with a pulse envelope. 
+    Can create a state of squezed pulses in multiple channels, e.g. of the form |N,M,L>
 
     Parameters
     ----------
@@ -983,15 +1033,15 @@ def squeezed_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputP
         Class containing the input parameters
     
     photon_nums : list[int]
-        List of photon numbers in the Fock pulse for each channel/tensorspace in the waveguide.
+        List of photon numbers for each channel/tensorspace in the waveguide.
             
     bond0 : int, default: 1
         Default bond dimension of bins.
     
     Returns
     -------
-    fock_pulse : list[ndarray]
-        A list of the incident time bins of the Fock pulse, with the first bin in index 0.
+    squeezed_pulse : list[ndarray]
+        A list of the incident time bins of the squeezed pulse, with the first bin in index 0.
     
     """ 
     # Checks that photon_nums and pulseEnvs are wrapped as lists, even in case of single channel
@@ -999,7 +1049,15 @@ def squeezed_pulse(pulse_envs:list[list[complex]],pulse_time:float,params:InputP
         zetas = [zetas]
     if np.isscalar(pulse_envs[0]):
         pulse_envs = [pulse_envs]
-
+    #checking with one of the dimensions
+    for r in zetas:
+        tail_prob = squeezed_bin_cutoff(r,params.d_t_total[0])
+        if tail_prob > 1e-6:    
+            warnings.warn(f"Photon cutoff may be too small for "
+            f"squeezing parameter r={r:.2f}. "
+            f"Estimated neglected probability = {tail_prob:.2e}.",
+            UserWarning,stacklevel=2)
+        
     # Normalize the pulse envelopes and pad as necessary with 0's
     m = int(round(pulse_time/params.delta_t,0))
     channel_num = len(params.d_t_total)
