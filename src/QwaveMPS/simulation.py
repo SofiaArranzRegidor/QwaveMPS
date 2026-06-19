@@ -677,13 +677,13 @@ def _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, inpu
             # Move OC sys_num-i bins to the right, back to nbins[-1]
             phi1 = ncon([nbins[oc_ind], nbins[oc_ind+1]], [[-1,-2,1],[1,-3,-4]])
             oc_ind = oc_ind+1
-            nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_sys_total[-1-i])
+            nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_t, d_sys_total[i])
             nbins[oc_ind] = stemp[:,None,None] * nbins[oc_ind] #OC time bin
 
             for k in range(sys_num-i-2):
                 phi1 = ncon([nbins[oc_ind], nbins[oc_ind+1]], [[-1,-2,1],[1,-3,-4]])
                 oc_ind = oc_ind + 1
-                nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_sys_total[-1-i-k], d_sys_total[-2-i-k])
+                nbins[oc_ind-1], stemp, nbins[oc_ind] = _svd_tensors(phi1, bond, d_sys_total[i-k], d_sys_total[i-k-1])
                 nbins[oc_ind] = stemp[:,None,None] * nbins[oc_ind] #OC time bin
 
     return nbins
@@ -795,13 +795,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     n=int(round(tmax/delta_t,0))
     t_k=0
     t_0=0
-    evols = [0] * sys_num
-    callable_ham_indices = []
-    for i in range(len(hams)):
-        if not callable(hams[i]):
-            evols[i] = u_evol(hams[i],d_sys_total[i],d_t)
-        else:
-            callable_ham_indices.append(i)
+
     swap_t_t=swap(d_t,d_t)
     swap_sys_t= []
     swap_t_sys = []
@@ -832,6 +826,23 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     
     # Separate the system bins and initialize the feedback loop with bins
     nbins = _separate_sys_bins(i_s, d_sys_total, sbins, bond)
+
+    # Get hams and reverse relevant lists to go from right to left
+    hams = hams[::-1]
+    d_sys_total = d_sys_total[::-1]
+    swap_sys_t = swap_sys_t[::-1]
+    swap_t_sys = swap_t_sys[::-1]
+
+
+    evols = [0] * sys_num
+    callable_ham_indices = []
+    for i in range(len(hams)):
+        if not callable(hams[i]):
+            evols[i] = u_evol(hams[i],d_sys_total[i],d_t)
+        else:
+            callable_ham_indices.append(i)
+
+
     nbins = _initialize_feedback_loop_chiral(nbins, l_list, d_t, d_sys_total, bond, input_field_generator=None) # Modifies nbins in place
     
     for k in tqdm(range(n), disable = not show_progress):           
@@ -990,6 +1001,7 @@ def t_evol_nmar_chiral(hams:list[np.ndarray], i_s0:np.ndarray, i_n0:np.ndarray, 
     
     truncation_number = np.sum(l_list) + sys_num
     nbins = nbins[:-truncation_number]
+    sbins = sbins[::-1]
     result = Bins(system_states=sbins,output_field_states=oc_normed_bins_lists, input_field_states=tbins_in,
         correlation_bins=nbins,schmidt=schmidts)
 

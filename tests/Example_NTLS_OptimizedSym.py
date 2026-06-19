@@ -27,25 +27,26 @@ def clean_ticks(x, pos):
 #%%
 
 """Choose the time step and end time"""
-N=5
+N=4
 d_sys1=2 # first tls bin dimension 
 d_sys_total=np.array([d_sys1]*N) #total system bin dimension
 
-d_t_l=3 #Time right channel bin dimension
-d_t_r=3 #Time left channel bin dimension
-d_t_total=np.array([d_t_r])
+d_t_l=2 #Time right channel bin dimension
+d_t_r=2 #Time left channel bin dimension
+d_t_total=np.array([d_t_l, d_t_r])
 d_t = np.prod(d_t_total)
 gamma_ls = [0.5]*N
 gamma_rs = [0.5]*N
 input_params = qmps.parameters.InputParams(
     delta_t=0.05, # Time step of the simulation
-    tmax = 20,#30, # Maximum simulation time
+    tmax = 15,#30, # Maximum simulation time
     d_sys_total=d_sys_total,
     d_t_total=d_t_total,
     gamma_l=0,
     gamma_r = 1,  
-    bond_max=64 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
+    bond_max=16 # Maximum bond dimension, simulation parameter that adjusts truncation of entanglement information
 )
+tmax = input_params.tmax
 tlist=np.arange(0,input_params.tmax+input_params.delta_t, input_params.delta_t)
 
 
@@ -53,6 +54,7 @@ tlist=np.arange(0,input_params.tmax+input_params.delta_t, input_params.delta_t)
 
 tau=0.5
 taus = [tau] * (N-1)
+pumps = [2]+[0]*(N-2) + [2]
 #taus = [1,0.5,1,0.5,1,0.5,1]
 
 """ Choose the initial state and coupling"""
@@ -67,8 +69,10 @@ i_s0 = np.zeros([1,np.prod(d_sys_total),1],dtype=complex) #system bin
 # Just First one excited
 #i_s0[:,int(2**(len(d_sys_total)-1)),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
 # All excited
-i_s0[:,int(2**(len(d_sys_total))-1),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
+#i_s0[:,int(2**(len(d_sys_total))-1),:] = 1; #i_s0[:,d_sys1-1,:] = 10e-9 # TLS in |0> state
 
+# Ground state
+i_s0[:,0,:] = 1
 
 
 #We can start with one excited and one ground, both excited, both ground, 
@@ -127,7 +131,7 @@ ax.xaxis.set_major_formatter(formatter)
 ax.yaxis.set_major_formatter(formatter)
 plt.ylim([0.,1.05])
 plt.xlim([0.,5*N])
-plt.xlim([0.,50])
+plt.xlim([0.,tmax])
 
 plt.tight_layout()
 #plt.savefig('pops.pdf', bbox_inches='tight', dpi=400)
