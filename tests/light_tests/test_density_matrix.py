@@ -167,6 +167,43 @@ def test_reshape_liouvillian_and_liouvillian_shapes():
     assert reshaped.shape == (4, 4, 4, 4)
 
 
+def test_row_major_superoperators_match_matrix_multiplication():
+    op = np.array([[0.2, 1.0j], [-0.4j, 0.7]], dtype=complex)
+    rho = np.array([[0.6, 0.1j], [-0.1j, 0.4]], dtype=complex)
+    rho_vec = rho.reshape(-1)
+
+    left_result = (qmps.spre(op) @ rho_vec).reshape(rho.shape)
+    right_result = (qmps.spost(op) @ rho_vec).reshape(rho.shape)
+
+    assert np.allclose(left_result, op @ rho)
+    assert np.allclose(right_result, rho @ op)
+
+
+def test_lindblad_dissipator_action_and_rate():
+    a = np.array([[0.0, 1.0], [0.0, 0.0]], dtype=complex)
+    rho = np.array([[0.3, 0.2j], [-0.2j, 0.7]], dtype=complex)
+    gamma = 0.25
+    adag = a.conj().T
+    expected = gamma * (a @ rho @ adag - 0.5 * (adag @ a @ rho + rho @ adag @ a))
+
+    result = (qmps.lindblad_dissipator(a, gamma) @ rho.reshape(-1)).reshape(rho.shape)
+
+    assert np.allclose(result, expected)
+
+
+def test_liouvillian_matches_master_equation_action():
+    H = np.array([[0.3, 0.2j], [-0.2j, -0.1]], dtype=complex)
+    a = np.array([[0.0, 0.4], [0.0, 0.0]], dtype=complex)
+    rho = np.array([[0.6, 0.1], [0.1, 0.4]], dtype=complex)
+    adag_a = a.conj().T @ a
+    expected = -1.0j * (H @ rho - rho @ H)
+    expected += a @ rho @ a.conj().T - 0.5 * (adag_a @ rho + rho @ adag_a)
+
+    result = (qmps.liouvillian(H, [a]) @ rho.reshape(-1)).reshape(rho.shape)
+
+    assert np.allclose(result, expected)
+
+
 def test_single_time_expectation_dm_for_excited_state():
     excited_dm = qmps.convert_to_dm(qmps.states.tls_excited())
     bins = [[np.ones((1, 1)), excited_dm, np.ones((1, 1))]]
