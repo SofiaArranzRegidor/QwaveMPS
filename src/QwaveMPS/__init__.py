@@ -9,9 +9,12 @@ QwaveMPS: Package to solve waveguide QED problems using MPS
 from QwaveMPS.correlation import *
 from QwaveMPS.hamiltonians import *
 from QwaveMPS.operators import *
+from QwaveMPS.operators_dm import *
 from QwaveMPS.parameters import *
 from QwaveMPS.simulation import *
+from QwaveMPS.simulation_dm import *
 from QwaveMPS.states import *
+from QwaveMPS.correlation_dm import *
 #'''
 '''
 import QwaveMPS.correlation as correlation
