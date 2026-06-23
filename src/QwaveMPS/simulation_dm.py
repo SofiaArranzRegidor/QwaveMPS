@@ -5,6 +5,8 @@
 Density-matrix time evolution routines for QwaveMPS.
 """
 
+import warnings
+
 import numpy as np
 from ncon import ncon
 from scipy.linalg import expm, svd
@@ -23,6 +25,8 @@ from QwaveMPS.operators_dm import (
 )
 
 __all__ = ["t_evol_mar_dm", "t_evol_nmar_dm"]
+
+DIAGNOSTIC_WARNING_THRESHOLD = 1e-3
 
 
 def _svd_tensor_dm(tensor: np.ndarray, bond_max: int, d1: int, d2: int, tol: float = 0):
@@ -63,6 +67,41 @@ def _prepare_dm_input_bins(i_n0, params):
 
 def _progress(iterable, total: int, desc: str):
     return tqdm(iterable, total=total, desc=desc, unit="step", dynamic_ncols=True)
+
+
+def _rho_diagnostics(rho):
+    """Return relative Hermiticity and absolute trace errors for a density matrix."""
+    rho_norm = np.linalg.norm(rho)
+    herm_err = np.linalg.norm(rho - rho.conj().T) / rho_norm if rho_norm != 0 else np.inf
+    trace_err = abs(np.trace(rho) - 1.0)
+    return float(herm_err), float(trace_err)
+
+
+def _final_system_diagnostics(system_bin, d_sys_total, regime):
+    """Reconstruct, report, and validate the final reduced system density matrix."""
+    left, system, right = system_bin
+    rho_tensor = ncon(
+        [left, system, right],
+        [[-1, 1], [1, -2, 2], [2, -3]],
+    )
+    d_sys = int(np.prod(d_sys_total))
+    rho = rho_tensor.reshape(d_sys, d_sys)
+    herm_err, trace_err = _rho_diagnostics(rho)
+
+    print(f"{regime} final Hermiticity violation={herm_err:.3e}")
+    print(f"{regime} final trace-preservation violation={trace_err:.3e}")
+
+    if herm_err > DIAGNOSTIC_WARNING_THRESHOLD or trace_err > DIAGNOSTIC_WARNING_THRESHOLD:
+        warnings.warn(
+            f"{regime} simulation final diagnostics exceed "
+            f"{DIAGNOSTIC_WARNING_THRESHOLD:g}: "
+            f"Hermiticity violation={herm_err:.3e}, "
+            f"trace-preservation violation={trace_err:.3e}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    return herm_err, trace_err
 
 
 def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
@@ -162,6 +201,8 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
 
     cor_list[-1] = i_n * stemp[None, None, :]
     cor_list.append(ncon([i_st, tr_s], [[-1, 2, -3], [2]]))
+
+    _final_system_diagnostics(sbins[-1], d_sys_total, "Markovian DM")
 
     return Bins(
         system_states=sbins,
@@ -330,6 +371,8 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     nbins_con = trace_left(nbins[n:], tr_w)
     out = ncon([nbins_con, i_stemp, tr_s], [[-1, 3], [3, 4, -2], [4]])
     cor_list.append(out)
+
+    _final_system_diagnostics(sbins[-1], d_sys_total, "Non-Markovian DM")
 
     bins = Bins(
         system_states=sbins,

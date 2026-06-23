@@ -3,9 +3,16 @@ Light tests for the density-matrix API.
 """
 
 import numpy as np
+import pytest
 
 import QwaveMPS as qmps
-from QwaveMPS.simulation_dm import _prepare_dm_input_bins, _svd_tensor_dm
+from QwaveMPS.simulation_dm import (
+    DIAGNOSTIC_WARNING_THRESHOLD,
+    _final_system_diagnostics,
+    _prepare_dm_input_bins,
+    _rho_diagnostics,
+    _svd_tensor_dm,
+)
 
 
 def _make_markov_params():
@@ -69,6 +76,49 @@ def test_prepare_dm_input_bins_yields_input_then_vacuum():
         next(input_field),
         qmps.convert_to_dm(qmps.states.wg_ground(4)),
     )
+
+
+def test_rho_diagnostics_for_valid_density_matrix():
+    rho = np.array([[0.25, 0.0], [0.0, 0.75]], dtype=complex)
+
+    herm_err, trace_err = _rho_diagnostics(rho)
+
+    assert herm_err == 0.0
+    assert trace_err == 0.0
+
+
+def test_final_system_diagnostics_prints_and_warns(capsys):
+    rho_tensor = np.array([[[1.2], [0.0], [0.0], [0.0]]], dtype=complex)
+    system_bin = [np.ones((1, 1)), rho_tensor, np.ones((1, 1))]
+
+    with pytest.warns(RuntimeWarning, match="final diagnostics exceed"):
+        herm_err, trace_err = _final_system_diagnostics(system_bin, np.array([2]), "Test DM")
+
+    output = capsys.readouterr().out
+    assert "Hermiticity violation=" in output
+    assert "trace-preservation violation=" in output
+    assert herm_err == 0.0
+    assert trace_err > DIAGNOSTIC_WARNING_THRESHOLD
+
+
+def test_final_system_diagnostics_supports_multiple_subsystems(capsys):
+    pure_state = np.zeros((1, 4, 1), dtype=complex)
+    pure_state[:, 1, :] = 1.0
+    system_bin = [
+        np.ones((1, 1)),
+        qmps.convert_to_dm(pure_state),
+        np.ones((1, 1)),
+    ]
+
+    herm_err, trace_err = _final_system_diagnostics(
+        system_bin,
+        np.array([2, 2]),
+        "Two-TLS DM",
+    )
+
+    capsys.readouterr()
+    assert herm_err == 0.0
+    assert trace_err == 0.0
 
 
 def test_dm_svd_applies_relative_cutoff():
