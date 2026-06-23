@@ -40,6 +40,7 @@ input_params = qmps.parameters.InputParams(
     gamma_l=gamma_l,
     gamma_r=gamma_r,
     bond_max=10,
+    relative_cutoff=1e-7,
 )
 
 tlist = np.arange(0, input_params.tmax + input_params.delta_t / 2, input_params.delta_t)
@@ -58,14 +59,10 @@ pulse_time = 2.0
 photon_num = 1
 pulse_env = qmps.tophat_envelope(pulse_time, input_params)
 
-wg_initial_state_dm = qmps.convert_to_dm(
-    qmps.states.fock_pulse(
-        [None,pulse_env],
-        input_params.tmax,
-        input_params,
-        [0,photon_num]
-    )
-)
+# Create the pulse envelope
+wg_initial_state = qmps.states.fock_pulse(pulse_env,pulse_time,photon_num, input_params, direction='R')
+
+wg_initial_state_dm = qmps.convert_to_dm(wg_initial_state)
 
 
 #%%

@@ -12,8 +12,7 @@ from tqdm import tqdm
 
 from QwaveMPS.operators import swap
 from QwaveMPS.parameters import Bins
-from QwaveMPS.states import vacuum as vacuum_state
-from QwaveMPS.states import wg_ground
+from QwaveMPS.states import input_state_generator, wg_ground
 
 from QwaveMPS.operators_dm import (
     absorb_left_env,
@@ -53,9 +52,13 @@ def _svd_tensor_dm(tensor: np.ndarray, bond_max: int, d1: int, d2: int, tol: flo
 
 
 def _prepare_dm_input_bins(i_n0, params):
-    if i_n0 is not None:
-        return i_n0
-    return convert_to_dm(vacuum_state(params.tmax, params))
+    """Return a DM input-bin iterator that yields vacuum after its input is exhausted."""
+    vacuum_dm = convert_to_dm(wg_ground(int(np.prod(params.d_t_total))))
+    return input_state_generator(
+        params.d_t_total,
+        i_n0,
+        default_state=vacuum_dm,
+    )
 
 
 def _progress(iterable, total: int, desc: str):
@@ -82,7 +85,7 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
 
     params : InputParams
         Simulation parameters containing ``delta_t``, ``tmax``, ``bond_max``,
-        ``d_t_total`` and ``d_sys_total``.
+        ``relative_cutoff``, ``d_t_total`` and ``d_sys_total``.
 
     Returns
     -------
@@ -94,12 +97,15 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     delta_t = params.delta_t
     tmax = params.tmax
     bond = params.bond_max
+    relative_cutoff = params.relative_cutoff
     d_t_total = params.d_t_total
     d_sys_total = params.d_sys_total
 
-    i_ns = _prepare_dm_input_bins(i_n0, params)
     d_t = int(np.prod(d_t_total) ** 2)
     d_sys = int(np.prod(d_sys_total) ** 2)
+    n = int(tmax / delta_t)
+    input_field = _prepare_dm_input_bins(i_n0, params)
+    i_ns = [next(input_field) for _ in range(n)]
 
     sbins = []
     tbins = []
@@ -113,7 +119,6 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     tbins_in.append([np.ones((1, 1)), vacuum_dm, np.ones((1, 1))])
     schmidt.append(np.zeros(1))
 
-    n=int(tmax/delta_t)
     U_swap = swap(d_sys, d_t)
     U = reshape_liouvillian(expm(L * delta_t), [np.sqrt(d_sys), np.sqrt(d_t)])
 
@@ -131,14 +136,14 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
         i_nk = i_ns[k]
 
         phi1 = ncon([i_s, i_nk], [[-1, -2, 1], [1, -3, -4]])
-        i_s, stemp, i_nk = _svd_tensor_dm(phi1, bond, d_sys, d_t)
+        i_s, stemp, i_nk = _svd_tensor_dm(phi1, bond, d_sys, d_t, relative_cutoff)
         i_nk = stemp[:, None, None] * i_nk
         tbins_in.append(
             [ncon([left_iter, i_s, tr_s], [[-1, 1], [1, 2, -2], [2]]), i_nk, R_suffix[k + 1]]
         )
 
         phi1 = ncon([i_s, i_nk, U], [[-1, 2, 3], [3, 4, -4], [-2, -3, 2, 4]])
-        i_s, stemp, i_n = _svd_tensor_dm(phi1, bond, d_sys, d_t)
+        i_s, stemp, i_n = _svd_tensor_dm(phi1, bond, d_sys, d_t, relative_cutoff)
         i_s = i_s * stemp[None, None, :]
 
         right_with_in = absorb_right_env(R_suffix[k + 1], i_n, tr_w)
@@ -148,7 +153,7 @@ def t_evol_mar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
         )
 
         phi2 = ncon([i_s, i_n, U_swap], [[-1, 5, 2], [2, 6, -4], [-2, -3, 5, 6]])
-        i_n, stemp, i_st = _svd_tensor_dm(phi2, bond, d_t, d_sys)
+        i_n, stemp, i_st = _svd_tensor_dm(phi2, bond, d_t, d_sys, relative_cutoff)
         i_s = stemp[:, None, None] * i_st
 
         schmidt.append(stemp)
@@ -187,7 +192,7 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
 
     params : InputParams
         Simulation parameters containing ``delta_t``, ``tmax``, ``bond_max``,
-        ``d_t_total``, ``d_sys_total`` and ``tau``.
+        ``relative_cutoff``, ``d_t_total``, ``d_sys_total`` and ``tau``.
 
     Returns
     -------
@@ -202,13 +207,16 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     delta_t = params.delta_t
     tmax = params.tmax
     bond = params.bond_max
+    relative_cutoff = params.relative_cutoff
     d_t_total = params.d_t_total
     d_sys_total = params.d_sys_total
     tau = params.tau
 
-    i_ns = _prepare_dm_input_bins(i_n0, params)
     d_t = int(np.prod(d_t_total) ** 2)
     d_sys = int(np.prod(d_sys_total) ** 2)
+    n = int(round(tmax / delta_t, 0))
+    input_field = _prepare_dm_input_bins(i_n0, params)
+    i_ns = [next(input_field) for _ in range(n)]
 
     sbins = []
     tbins = []
@@ -225,7 +233,6 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
     schmidt.append(np.zeros(1))
     schmidt_tau.append(np.zeros(1))
 
-    n = int(round(tmax / delta_t, 0))
     l = int(round(tau / delta_t, 0))
 
     swap_t_t = swap(d_t, d_t)
@@ -252,17 +259,17 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
         for i in range(k, k + l - 1):
             i_n = nbins[i + 1]
             swaps = ncon([i_tau, i_n, swap_t_t], [[-1, 5, 2], [2, 6, -4], [-2, -3, 5, 6]])
-            i_n2, stemp, i_t = _svd_tensor_dm(swaps, bond, d_t, d_t)
+            i_n2, stemp, i_t = _svd_tensor_dm(swaps, bond, d_t, d_t, relative_cutoff)
             i_tau = ncon([np.diag(stemp), i_t], [[-1, 1], [1, -3, -4]])
             nbins[i] = i_n2
 
         i_1 = ncon([i_tau, i_stemp], [[-1, -2, 1], [1, -3, -4]])
-        i_t, stemp, i_stemp = _svd_tensor_dm(i_1, bond, d_t, d_sys)
+        i_t, stemp, i_stemp = _svd_tensor_dm(i_1, bond, d_t, d_sys, relative_cutoff)
         i_s = stemp[:, None, None] * i_stemp
 
         i_nk = i_ns[k]
         phi1 = ncon([i_s, i_nk], [[-1, -2, 1], [1, -3, -4]])
-        i_s, stemp, i_nk = _svd_tensor_dm(phi1, bond, d_sys, d_t)
+        i_s, stemp, i_nk = _svd_tensor_dm(phi1, bond, d_sys, d_t, relative_cutoff)
         i_nk = stemp[:, None, None] * i_nk
 
         right = R_suffix[k + 1]
@@ -275,9 +282,9 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
             [i_t, i_s, i_nk, U],
             [[-1, 3, 1], [1, 4, 2], [2, 5, -5], [-2, -3, -4, 3, 4, 5]],
         )
-        i_t, stemp, i_2 = _svd_tensor_dm(phi1, bond, d_t, d_t * d_sys)
+        i_t, stemp, i_2 = _svd_tensor_dm(phi1, bond, d_t, d_t * d_sys, relative_cutoff)
         i_2 = stemp[:, None, None] * i_2
-        i_stemp, stemp, i_n = _svd_tensor_dm(i_2, bond, d_sys, d_t)
+        i_stemp, stemp, i_n = _svd_tensor_dm(i_2, bond, d_sys, d_t, relative_cutoff)
         i_s = i_stemp * stemp[None, None, :]
 
         left = absorb_left_env(left_total, i_t, tr_w)
@@ -288,11 +295,11 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
         sbins.append([left, i_s, right])
 
         phi2 = ncon([i_s, i_n, U_swap], [[-1, 3, 2], [2, 4, -4], [-2, -3, 3, 4]])
-        i_n, stemp, i_stemp = _svd_tensor_dm(phi2, bond, d_t, d_sys)
+        i_n, stemp, i_stemp = _svd_tensor_dm(phi2, bond, d_t, d_sys, relative_cutoff)
 
         i_n = i_n * stemp[None, None, :]
         cont = ncon([i_t, i_n], [[-1, -2, 1], [1, -3, -4]])
-        i_t, stemp, i_n = _svd_tensor_dm(cont, bond, d_t, d_t)
+        i_t, stemp, i_n = _svd_tensor_dm(cont, bond, d_t, d_t, relative_cutoff)
         i_tau = i_t * stemp[None, None, :]
 
         left = absorb_left_env(left_total, i_tau, tr_w)
@@ -309,7 +316,7 @@ def t_evol_nmar_dm(L: np.ndarray, i_s0: np.ndarray, i_n0, params):
         for i in range(k + l - 1, k, -1):
             i_n = nbins[i - 1]
             swaps = ncon([i_n, i_tau, swap_t_t], [[-1, 5, 2], [2, 6, -4], [-2, -3, 5, 6]])
-            i_t, stemp, i_n2 = _svd_tensor_dm(swaps, bond, d_t, d_t)
+            i_t, stemp, i_n2 = _svd_tensor_dm(swaps, bond, d_t, d_t, relative_cutoff)
             i_tau = i_t * stemp[None, None, :]
             nbins[i] = i_n2
 

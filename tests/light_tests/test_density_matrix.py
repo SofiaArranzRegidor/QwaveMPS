@@ -5,6 +5,7 @@ Light tests for the density-matrix API.
 import numpy as np
 
 import QwaveMPS as qmps
+from QwaveMPS.simulation_dm import _prepare_dm_input_bins, _svd_tensor_dm
 
 
 def _make_markov_params():
@@ -43,6 +44,67 @@ def test_convert_to_dm_shapes():
     field_dm = qmps.convert_to_dm(qmps.states.vacuum(params.tmax, params))
     assert len(field_dm) == int(round(params.tmax / params.delta_t, 0))
     assert field_dm[0].shape == (1, 16, 1)
+
+
+def test_prepare_dm_input_bins_is_vacuum_iterator():
+    params = _make_markov_params()
+    input_field = _prepare_dm_input_bins(None, params)
+
+    first_bin = next(input_field)
+    second_bin = next(input_field)
+
+    assert first_bin.shape == (1, 16, 1)
+    assert np.array_equal(second_bin, first_bin)
+
+
+def test_prepare_dm_input_bins_yields_input_then_vacuum():
+    params = _make_markov_params()
+    occupied_state = np.zeros((1, 4, 1), dtype=complex)
+    occupied_state[:, 1, :] = 1
+    occupied = qmps.convert_to_dm(occupied_state)
+    input_field = _prepare_dm_input_bins([occupied], params)
+
+    assert np.array_equal(next(input_field), occupied)
+    assert np.array_equal(
+        next(input_field),
+        qmps.convert_to_dm(qmps.states.wg_ground(4)),
+    )
+
+
+def test_dm_svd_applies_relative_cutoff():
+    tensor = np.diag([1.0, 0.1, 0.01])
+
+    _, singular_values, _ = _svd_tensor_dm(
+        tensor,
+        bond_max=3,
+        d1=1,
+        d2=1,
+        tol=0.1,
+    )
+
+    assert singular_values.shape == (1,)
+    assert np.allclose(singular_values, np.array([1.0]))
+
+
+def test_markov_dm_evolution_uses_parameter_relative_cutoff(monkeypatch):
+    import QwaveMPS.simulation_dm as simulation_dm
+
+    params = _make_markov_params()
+    params.relative_cutoff = 1e-7
+    observed_cutoffs = []
+    original_svd = simulation_dm._svd_tensor_dm
+
+    def recording_svd(tensor, bond_max, d1, d2, tol=0):
+        observed_cutoffs.append(tol)
+        return original_svd(tensor, bond_max, d1, d2, tol)
+
+    monkeypatch.setattr(simulation_dm, "_svd_tensor_dm", recording_svd)
+    sys_dm = qmps.convert_to_dm(qmps.states.tls_excited())
+    H = qmps.hamiltonian_1tls(params)
+    simulation_dm.t_evol_mar_dm(qmps.liouvillian(H / params.delta_t), sys_dm, None, params)
+
+    assert observed_cutoffs
+    assert all(cutoff == params.relative_cutoff for cutoff in observed_cutoffs)
 
 
 def test_reshape_liouvillian_and_liouvillian_shapes():
