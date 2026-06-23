@@ -53,7 +53,7 @@ input_params = qmps.parameters.InputParams(
     bond_max=16,
     phase=0.0,
     tau=0.2,
-    relative_cutoff = 1e-7
+    relative_cutoff = 1e-7 # Relative cutoff of singular values, decrease if trace is not preserved together with increasing max bond dimension
 )
 
 tlist = np.arange(0, input_params.tmax + input_params.delta_t / 2, input_params.delta_t)
