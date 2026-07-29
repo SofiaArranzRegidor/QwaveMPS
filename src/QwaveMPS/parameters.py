@@ -36,6 +36,12 @@ class InputParams:
     bond_max : int
         Maximum MPS bond dimension (chi) to use for truncation.
 
+    relative_cutoff : float, default: 0
+        Relative singular-value cutoff used by density-matrix evolutions.
+        Singular values whose fraction of the sum of singular values is below
+        this cutoff are discarded. A value of 0 disables cutoff-based
+        truncation, leaving ``bond_max`` as the only truncation criterion.
+
     gamma_l, gamma_r : float
         Coupling (decay) rates to the left and right channels respectively.
         (may be removed from this class in future versions)
@@ -67,6 +73,7 @@ class InputParams:
     gamma_r2:float= 0
     tau: float = 0
     phase: float = 0
+    relative_cutoff: float = 0
     
     @property
     def d_t(self) -> int:
